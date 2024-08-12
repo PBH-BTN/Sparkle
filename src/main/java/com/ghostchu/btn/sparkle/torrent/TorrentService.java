@@ -2,6 +2,8 @@ package com.ghostchu.btn.sparkle.torrent;
 
 import com.ghostchu.btn.sparkle.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.torrent.internal.TorrentRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,6 +15,8 @@ public class TorrentService {
         this.torrentRepository = torrentRepository;
     }
 
+    @Modifying
+    @Transactional
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize){
         var torrentOptional =  torrentRepository.findByIdentifierAndSize(torrentIdentifier,torrentSize);
         if(torrentOptional.isPresent()){

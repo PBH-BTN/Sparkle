@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
@@ -61,7 +62,8 @@ public class BanHistoryService {
                 .submitterIp(banHistory.getSubmitterIp().getHostAddress())
                 .build();
     }
-
+    @Modifying
+    @Transactional
     public Iterable<BanHistory> saveBanHistories(List<BanHistory> banHistoryList) {
         return banHistoryRepository.saveAll(banHistoryList);
     }

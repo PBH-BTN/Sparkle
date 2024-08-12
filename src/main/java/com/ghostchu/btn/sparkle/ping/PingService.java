@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
@@ -39,6 +40,7 @@ public class PingService {
     @Value("${service.ping.protocol.max-version}")
     private int maxProtocolVersion;
 
+    @Modifying
     @Transactional
     public long handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
         Timestamp now  = new Timestamp(System.currentTimeMillis());
@@ -78,6 +80,7 @@ public class PingService {
         return snapshotList.size();
     }
 
+    @Modifying
     @Transactional
     public long handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
         Timestamp now  = new Timestamp(System.currentTimeMillis());

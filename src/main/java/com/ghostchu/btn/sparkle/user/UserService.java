@@ -5,6 +5,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.user.internal.User;
 import com.ghostchu.btn.sparkle.user.internal.UserRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -41,6 +43,8 @@ public class UserService {
         return optional.get();
     }
 
+    @Modifying
+    @Transactional
     public User saveUser(User user) {
         return userRepository.save(user);
     }

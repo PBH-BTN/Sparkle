@@ -5,8 +5,10 @@ import com.ghostchu.btn.sparkle.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +26,8 @@ public class SnapshotService {
         this.torrentService = torrentService;
     }
 
+    @Modifying
+    @Transactional
     public Iterable<Snapshot> saveSnapshots(List<Snapshot> snapshotList) {
         return snapshotRepository.saveAll(snapshotList);
     }
