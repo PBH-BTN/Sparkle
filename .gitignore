@@ -47,5 +47,5 @@ build/
 
 src/main/resources/static
 dependency-reduced-pom.xml
-application.properties
-application*.properties
+/application.properties
+/application*.properties
