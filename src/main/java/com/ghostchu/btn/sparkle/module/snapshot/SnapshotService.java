@@ -1,8 +1,8 @@
 package com.ghostchu.btn.sparkle.module.snapshot;
 
+import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
-import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.transaction.Transactional;

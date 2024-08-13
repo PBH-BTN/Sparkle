@@ -1,7 +1,10 @@
 package com.ghostchu.btn.sparkle.module.userapp;
 
 import com.ghostchu.btn.sparkle.module.user.UserDto;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor

@@ -1,9 +1,9 @@
 package com.ghostchu.btn.sparkle.module.banhistory;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
-import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
+import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
+import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.util.compare.NumberCompareMethod;
 import com.ghostchu.btn.sparkle.util.compare.StringCompareMethod;

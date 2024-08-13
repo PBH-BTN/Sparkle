@@ -2,12 +2,12 @@ package com.ghostchu.btn.sparkle.module.userapp;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
+import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.TooManyUserApplicationException;
 import com.ghostchu.btn.sparkle.exception.UserApplicationNotFoundException;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.module.user.UserDto;
 import com.ghostchu.btn.sparkle.module.user.UserService;
-import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import lombok.AllArgsConstructor;
 import lombok.Data;

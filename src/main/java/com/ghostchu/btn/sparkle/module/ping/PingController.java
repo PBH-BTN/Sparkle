@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.AccessDeniedException;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.CloudRuleAbility;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.ReconfigureAbility;
@@ -9,7 +10,6 @@ import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitPeersAbility;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnBanPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnRule;
-import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ServletUtil;

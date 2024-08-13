@@ -1,7 +1,7 @@
 package com.ghostchu.btn.sparkle.module.torrent;
 
-import com.ghostchu.btn.sparkle.module.torrent.internal.TorrentRepository;
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
+import com.ghostchu.btn.sparkle.module.torrent.internal.TorrentRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;

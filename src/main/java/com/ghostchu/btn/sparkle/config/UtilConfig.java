@@ -2,7 +2,6 @@ package com.ghostchu.btn.sparkle.config;
 
 import kong.unirest.core.Unirest;
 import kong.unirest.core.UnirestInstance;
-import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
