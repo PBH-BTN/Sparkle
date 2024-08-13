@@ -184,6 +184,10 @@
 			<artifactId>ipaddress</artifactId>
 			<version>5.5.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.konghq</groupId>
+			<artifactId>unirest-java-core</artifactId>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -191,6 +195,13 @@
 				<groupId>org.springframework.modulith</groupId>
 				<artifactId>spring-modulith-bom</artifactId>
 				<version>${spring-modulith.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.konghq</groupId>
+				<artifactId>unirest-java-bom</artifactId>
+				<version>4.3.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

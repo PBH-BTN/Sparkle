@@ -1,6 +1,6 @@
 package com.ghostchu.btn.sparkle.util;
 
-import com.ghostchu.btn.sparkle.ping.ClientAuthenticationCredential;
+import com.ghostchu.btn.sparkle.module.ping.ClientAuthenticationCredential;
 import jakarta.servlet.http.HttpServletRequest;
 
 public class ServletUtil {
