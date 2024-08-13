@@ -9,6 +9,7 @@ import com.ghostchu.btn.sparkle.ping.ability.impl.SubmitPeersAbility;
 import com.ghostchu.btn.sparkle.ping.dto.BtnBanPing;
 import com.ghostchu.btn.sparkle.ping.dto.BtnPeerPing;
 import com.ghostchu.btn.sparkle.ping.dto.BtnRule;
+import com.ghostchu.btn.sparkle.spring.controller.SparkleController;
 import com.ghostchu.btn.sparkle.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
@@ -33,7 +34,7 @@ import java.util.Map;
 @RequestMapping("/ping")
 @Transactional
 @Slf4j
-public class PingController {
+public class PingController extends SparkleController {
     @Autowired
     private PingService service;
     @Autowired
@@ -56,20 +57,20 @@ public class PingController {
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
         var cred = cred();
-        IPAddress ip = new IPAddressString(ServletUtil.getIP(req)).getAddress();
+        IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, AppSecret={}, UA={})",
-                ServletUtil.getIP(req), ping.getPeers().size(), handled, cred.getAppId(), cred.getAppSecret(), req.getHeader("User-Agent"));
+                ip(req), ping.getPeers().size(), handled, cred.getAppId(), cred.getAppSecret(), ua(req));
         return ResponseEntity.status(200).build();
     }
 
     @PostMapping("/bans/submit")
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException {
         var cred = cred();
-        IPAddress ip = new IPAddressString(ServletUtil.getIP(req)).getAddress();
+        IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, AppSecret={}, UA={})",
-                ServletUtil.getIP(req), ping.getBans().size(), handled, cred.getAppId(), cred.getAppSecret(), req.getHeader("User-Agent"));
+                ip(req), ping.getBans().size(), handled, cred.getAppId(), cred.getAppSecret(), ua(req));
         return ResponseEntity.status(200).build();
     }
 
@@ -77,7 +78,7 @@ public class PingController {
     public Map<String, Object> config() throws AccessDeniedException {
         var cred = cred();
         log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, AppSecret={}, UA={})",
-                ServletUtil.getIP(req), cred.getAppId(), cred.getAppSecret(), req.getHeader("User-Agent"));
+                ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
         Map<String, Object> rootObject = new LinkedHashMap<>();
         rootObject.put("min_protocol_version", pingService.getMinProtocolVersion());
         rootObject.put("max_protocol_version", pingService.getMaxProtocolVersion());
@@ -98,12 +99,12 @@ public class PingController {
         String rev = Hashing.goodFastHash(32).hashString(objectMapper.writeValueAsString(btn), StandardCharsets.UTF_8).toString();
         if (rev.equals(version)) {
             log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, AppSecret={}, UA={})",
-                    ServletUtil.getIP(req), cred.getAppId(), cred.getAppSecret(), req.getHeader("User-Agent"));
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
             return ResponseEntity.status(204).build();
         }
         btn.setVersion(rev);
         log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, AppSecret={}, UA={})",
-                ServletUtil.getIP(req), version, rev, cred.getAppId(), cred.getAppSecret(), req.getHeader("User-Agent"));
+                ip(req), version, rev, cred.getAppId(), cred.getAppSecret(), ua(req));
         return ResponseEntity.status(200).contentType(MediaType.APPLICATION_JSON).body(objectMapper.writeValueAsString(btn));
     }
 
@@ -114,13 +115,13 @@ public class PingController {
     private UserApplication cred() throws AccessDeniedException {
         ClientAuthenticationCredential cred = ServletUtil.getAuthenticationCredential(req);
         if (!cred.isValid()) {
-            log.warn("[FAIL] [UserApp] [{}] Credential not provided.", ServletUtil.getIP(req));
+            log.warn("[FAIL] [UserApp] [{}] Credential not provided.", ip(req));
             throw new AccessDeniedException("UserApplication 鉴权失败：请求中未包含凭据信息。");
         }
         var userAppOptional = userApplicationService.getUserApplication(cred.appId(), cred.appSecret());
         if (userAppOptional.isEmpty()) {
             log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
-                    ServletUtil.getIP(req), cred.appId(), cred.appSecret());
+                    ip(req), cred.appId(), cred.appSecret());
             throw new AccessDeniedException("UserApplication 鉴权失败：指定的用户应用程序不存在，这可能是因为：" +
                     "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
         }

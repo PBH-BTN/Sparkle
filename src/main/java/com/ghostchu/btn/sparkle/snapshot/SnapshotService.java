@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class SnapshotService {
+public class SnapshotService extends SparklePage{
 
     private final SnapshotRepository snapshotRepository;
     private final UserApplicationService userApplicationService;
@@ -32,11 +32,9 @@ public class SnapshotService {
         return snapshotRepository.saveAll(snapshotList);
     }
 
-    public SparklePage<List<SnapshotDto>> query(Specification<Snapshot> specification, Pageable pageable){
-       var page =  snapshotRepository.findAll(specification,pageable);
-       return new SparklePage<>(page.getPageable().getPageNumber()
-               , page.getPageable().getPageSize()
-               , page.getTotalElements(),page.getContent().stream().map(this::toDto).toList());
+    public SparklePage<Snapshot, SnapshotDto> query(Specification<Snapshot> specification, Pageable pageable) {
+        var page = snapshotRepository.findAll(specification, pageable);
+        return new SparklePage<>(page, ct -> ct.map(this::toDto));
     }
 
     public SnapshotDto toDto(Snapshot snapshot) {

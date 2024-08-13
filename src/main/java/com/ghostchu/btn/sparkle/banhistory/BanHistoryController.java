@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.banhistory;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.ghostchu.btn.sparkle.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
+import com.ghostchu.btn.sparkle.spring.controller.SparkleController;
 import com.ghostchu.btn.sparkle.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.util.compare.NumberCompareMethod;
 import com.ghostchu.btn.sparkle.util.compare.StringCompareMethod;
@@ -19,12 +20,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-public class BanHistoryController {
+public class BanHistoryController extends SparkleController {
     private final BanHistoryService banHistoryService;
 
     public BanHistoryController(BanHistoryService banHistoryService) {
@@ -34,22 +36,22 @@ public class BanHistoryController {
     @SaCheckLogin
     @GetMapping("/banhistory")
     public StdResp<SparklePage<?, ?>> recent(@RequestParam("page") Integer page, @RequestParam("pageSize") Integer pageSize) throws RequestPageSizeTooLargeException {
-        if (page == null) page = 0;
-        if (pageSize == null) pageSize = 100;
-        if (pageSize > 3000) {
-            throw new RequestPageSizeTooLargeException();
-        }
-        return new StdResp<>(true, null, banHistoryService.queryRecent(PageRequest.of(page, pageSize)));
+        var paging = paging(page, pageSize);
+        return new StdResp<>(true, null, banHistoryService.queryRecent(PageRequest.of(paging.page(), paging.pageSize())));
     }
 
     @SaCheckLogin
     @PostMapping("/banhistory/query")
     public StdResp<SparklePage<?, ?>> query(@RequestBody ComplexBanQueryRequest q) throws RequestPageSizeTooLargeException {
-        if (q.getPageSize() > 3000) {
-            throw new RequestPageSizeTooLargeException();
-        }
+        var paging = paging(q.getPage(), q.getPageSize());
         Specification<BanHistory> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if(q.getTimeFrom() != null){
+                predicates.add(cb.greaterThanOrEqualTo(root.get("insertTime"), new Timestamp(q.getTimeFrom())));
+            }
+            if(q.getTimeTo() != null){
+                predicates.add(cb.lessThanOrEqualTo(root.get("insertTime"), new Timestamp(q.getTimeTo())));
+            }
             if (StringUtils.isNotBlank(q.getPeerId())) {
                 predicates.add(q.getPeerIdCompareMethod().criteriaBuilder(cb, root.get("peerId"), q.getPeerId()));
             }
@@ -101,7 +103,7 @@ public class BanHistoryController {
             }
         };
         Sort sort = Sort.by(q.getSortOrder(), q.getSortBy());
-        return new StdResp<>(true, null, banHistoryService.complexQuery(specification, PageRequest.of(q.getPage() - 1, q.getPageSize(), sort)));
+        return new StdResp<>(true, null, banHistoryService.complexQuery(specification, PageRequest.of(paging.page(), paging.pageSize(), sort)));
     }
 
     @Data

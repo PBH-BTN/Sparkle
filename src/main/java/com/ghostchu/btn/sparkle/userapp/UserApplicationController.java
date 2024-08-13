@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.exception.TooManyUserApplicationException;
 import com.ghostchu.btn.sparkle.exception.UserApplicationNotFoundException;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
+import com.ghostchu.btn.sparkle.spring.controller.SparkleController;
 import com.ghostchu.btn.sparkle.user.UserDto;
 import com.ghostchu.btn.sparkle.user.UserService;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
@@ -19,7 +20,7 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/api")
-public class UserApplicationController {
+public class UserApplicationController extends SparkleController {
     private final UserApplicationService userApplicationService;
     private final UserService userService;
 

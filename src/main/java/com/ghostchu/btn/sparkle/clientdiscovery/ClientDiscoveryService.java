@@ -4,9 +4,11 @@ import com.ghostchu.btn.sparkle.clientdiscovery.internal.ClientDiscovery;
 import com.ghostchu.btn.sparkle.clientdiscovery.internal.ClientDiscoveryRepository;
 import com.ghostchu.btn.sparkle.user.UserService;
 import com.ghostchu.btn.sparkle.user.internal.User;
-import com.ghostchu.btn.sparkle.user.internal.UserRepository;
+import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +20,10 @@ import java.util.Set;
 @Service
 public class ClientDiscoveryService {
     private final ClientDiscoveryRepository clientDiscoveryRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
 
-    public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository, UserRepository userRepository, UserService userService) {
+    public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository, UserService userService) {
         this.clientDiscoveryRepository = clientDiscoveryRepository;
-        this.userRepository = userRepository;
         this.userService = userService;
     }
 
@@ -51,5 +51,15 @@ public class ClientDiscoveryService {
                 .lastSeenAt(clientDiscovery.getLastSeenAt().getTime())
                 .lastSeenBy(userService.toDto(clientDiscovery.getLastSeenBy()))
                 .build();
+    }
+
+    public SparklePage<ClientDiscovery, ClientDiscoveryDto> queryRecent(Pageable of) {
+        var page = clientDiscoveryRepository.findByOrderByFoundAtDesc(of);
+        return new SparklePage<>(page, ct -> ct.map(this::toDto));
+    }
+
+    public SparklePage<ClientDiscovery, ClientDiscoveryDto> query(Specification<ClientDiscovery> specification, Pageable of) {
+        var page = clientDiscoveryRepository.findAll(specification, of);
+        return new SparklePage<>(page, ct -> ct.map(this::toDto));
     }
 }

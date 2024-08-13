@@ -1,7 +1,9 @@
 package com.ghostchu.btn.sparkle.snapshot;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
 import com.ghostchu.btn.sparkle.snapshot.internal.Snapshot;
+import com.ghostchu.btn.sparkle.spring.controller.SparkleController;
 import com.ghostchu.btn.sparkle.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.util.compare.NumberCompareMethod;
 import com.ghostchu.btn.sparkle.util.compare.StringCompareMethod;
@@ -21,12 +23,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-public class SnapshotController {
+public class SnapshotController extends SparkleController {
     private final SnapshotService snapshotService;
 
     public SnapshotController(SnapshotService snapshotService) {
@@ -35,9 +38,16 @@ public class SnapshotController {
 
     @SaCheckLogin
     @PostMapping("/snapshot/query")
-    public StdResp<SparklePage<List<SnapshotDto>>> query(@RequestBody ComplexSnapshotQueryRequest q) {
+    public StdResp<SparklePage<?,?>> query(@RequestBody ComplexSnapshotQueryRequest q) throws RequestPageSizeTooLargeException {
+        var paging = paging(q.getPage(), q.getPageSize());
         Specification<Snapshot> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if(q.getTimeFrom() != null){
+                predicates.add(cb.greaterThanOrEqualTo(root.get("insertTime"), new Timestamp(q.getTimeFrom())));
+            }
+            if(q.getTimeTo() != null){
+                predicates.add(cb.lessThanOrEqualTo(root.get("insertTime"), new Timestamp(q.getTimeTo())));
+            }
             if (StringUtils.isNotBlank(q.getPeerId())) {
                 predicates.add(q.getPeerIdCompareMethod().criteriaBuilder(cb, root.get("peerId"), q.getPeerId()));
             }
@@ -78,7 +88,7 @@ public class SnapshotController {
             }
         };
         Sort sort = Sort.by(q.getSortOrder(), q.getSortBy());
-        return new StdResp<>(true, null, snapshotService.query(specification, PageRequest.of(q.getPage() - 1, q.getPageSize(), sort)));
+        return new StdResp<>(true, null, snapshotService.query(specification, PageRequest.of(paging.page(), paging.pageSize(), sort)));
     }
 
     @Data
