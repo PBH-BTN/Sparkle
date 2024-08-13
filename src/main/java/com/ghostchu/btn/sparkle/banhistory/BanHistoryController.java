@@ -10,6 +10,8 @@ import com.ghostchu.btn.sparkle.util.compare.StringCompareMethod;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,7 +44,7 @@ public class BanHistoryController extends SparkleController {
 
     @SaCheckLogin
     @PostMapping("/banhistory/query")
-    public StdResp<SparklePage<?, ?>> query(@RequestBody ComplexBanQueryRequest q) throws RequestPageSizeTooLargeException {
+    public StdResp<SparklePage<?, ?>> query(@RequestBody @Valid ComplexBanQueryRequest q) throws RequestPageSizeTooLargeException {
         var paging = paging(q.getPage(), q.getPageSize());
         Specification<BanHistory> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -111,7 +113,9 @@ public class BanHistoryController extends SparkleController {
     @NoArgsConstructor
     @Builder
     public static class ComplexBanQueryRequest {
+        @NotNull
         private Integer page;
+        @NotNull
         private Integer pageSize;
         private Long timeFrom;
         private Long timeTo;
