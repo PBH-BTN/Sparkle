@@ -29,4 +29,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
     Page<BanHistory> findByInsertTimeBetweenAndPeerClientNameLikeIgnoreCaseOrderByInsertTimeDesc(Timestamp from, Timestamp to, String peerClientName, Pageable pageable);
 
     Page<BanHistory> findByInsertTimeBetweenAndPeerIpEqualsOrderByInsertTimeDesc(Timestamp from, Timestamp to, InetAddress peerIp, Pageable pageable);
+
+    Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
+
 }

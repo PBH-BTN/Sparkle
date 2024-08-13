@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.banhistory;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.ghostchu.btn.sparkle.banhistory.internal.BanHistory;
+import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
 import com.ghostchu.btn.sparkle.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.util.compare.NumberCompareMethod;
 import com.ghostchu.btn.sparkle.util.compare.StringCompareMethod;
@@ -16,14 +17,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 public class BanHistoryController {
     private final BanHistoryService banHistoryService;
 
@@ -32,8 +32,22 @@ public class BanHistoryController {
     }
 
     @SaCheckLogin
+    @GetMapping("/banhistory")
+    public StdResp<SparklePage<?, ?>> recent(@RequestParam("page") Integer page, @RequestParam("pageSize") Integer pageSize) throws RequestPageSizeTooLargeException {
+        if (page == null) page = 0;
+        if (pageSize == null) pageSize = 100;
+        if (pageSize > 3000) {
+            throw new RequestPageSizeTooLargeException();
+        }
+        return new StdResp<>(true, null, banHistoryService.queryRecent(PageRequest.of(page, pageSize)));
+    }
+
+    @SaCheckLogin
     @PostMapping("/banhistory/query")
-    public StdResp<SparklePage<List<BanHistoryDto>>> query(@RequestBody ComplexBanQueryRequest q) {
+    public StdResp<SparklePage<?, ?>> query(@RequestBody ComplexBanQueryRequest q) throws RequestPageSizeTooLargeException {
+        if (q.getPageSize() > 3000) {
+            throw new RequestPageSizeTooLargeException();
+        }
         Specification<BanHistory> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (StringUtils.isNotBlank(q.getPeerId())) {
@@ -87,7 +101,7 @@ public class BanHistoryController {
             }
         };
         Sort sort = Sort.by(q.getSortOrder(), q.getSortBy());
-        return new StdResp<>(true, null, banHistoryService.query(specification, PageRequest.of(q.getPage() - 1, q.getPageSize(), sort)));
+        return new StdResp<>(true, null, banHistoryService.complexQuery(specification, PageRequest.of(q.getPage() - 1, q.getPageSize(), sort)));
     }
 
     @Data

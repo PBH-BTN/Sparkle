@@ -62,16 +62,20 @@ public class BanHistoryService {
                 .submitterIp(banHistory.getSubmitterIp().getHostAddress())
                 .build();
     }
+
     @Modifying
     @Transactional
     public Iterable<BanHistory> saveBanHistories(List<BanHistory> banHistoryList) {
         return banHistoryRepository.saveAll(banHistoryList);
     }
 
-    public SparklePage<List<BanHistoryDto>> query(Specification<BanHistory> specification, PageRequest pageable) {
-        var page =  banHistoryRepository.findAll(specification,pageable);
-        return new SparklePage<>(page.getPageable().getPageNumber()
-                , page.getPageable().getPageSize()
-                , page.getTotalElements(),page.getContent().stream().map(this::toDto).toList());
+    public SparklePage<BanHistory, BanHistoryDto> queryRecent(PageRequest pageable) {
+        var page = banHistoryRepository.findByOrderByInsertTimeDesc(pageable);
+        return new SparklePage<>(page, dat -> dat.map(this::toDto));
+    }
+
+    public SparklePage<BanHistory, BanHistoryDto> complexQuery(Specification<BanHistory> specification, PageRequest pageable) {
+        var page = banHistoryRepository.findAll(specification, pageable);
+        return new SparklePage<>(page, dat -> dat.map(this::toDto));
     }
 }

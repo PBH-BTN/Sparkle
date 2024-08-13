@@ -4,6 +4,6 @@ import org.springframework.http.HttpStatus;
 
 public class UserApplicationNotFoundException extends BusinessException {
     public UserApplicationNotFoundException() {
-        super(HttpStatus.NOT_FOUND, "Requested user application not found");
+        super(HttpStatus.NOT_FOUND, "请求的用户应用程序不存在");
     }
 }
