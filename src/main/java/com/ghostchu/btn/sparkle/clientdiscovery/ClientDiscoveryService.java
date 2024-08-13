@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.clientdiscovery;
 
 import com.ghostchu.btn.sparkle.clientdiscovery.internal.ClientDiscovery;
 import com.ghostchu.btn.sparkle.clientdiscovery.internal.ClientDiscoveryRepository;
+import com.ghostchu.btn.sparkle.user.UserService;
 import com.ghostchu.btn.sparkle.user.internal.User;
 import com.ghostchu.btn.sparkle.user.internal.UserRepository;
 import jakarta.persistence.LockModeType;
@@ -18,10 +19,12 @@ import java.util.Set;
 public class ClientDiscoveryService {
     private final ClientDiscoveryRepository clientDiscoveryRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
 
-    public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository, UserRepository userRepository) {
+    public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository, UserRepository userRepository, UserService userService) {
         this.clientDiscoveryRepository = clientDiscoveryRepository;
         this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @Transactional
@@ -36,5 +39,17 @@ public class ClientDiscoveryService {
                 .map(ci -> new ClientDiscovery(ci.hash(), ci.getClientName(), ci.getPeerId(), timeForFoundAt, user, timeForLastSeenAt, user))
                 .toList();
         clientDiscoveryRepository.saveAll(notInDatabase);
+    }
+
+    public ClientDiscoveryDto toDto(ClientDiscovery clientDiscovery) {
+        return ClientDiscoveryDto.builder()
+                .hash(clientDiscovery.getHash())
+                .clientName(clientDiscovery.getClientName())
+                .peerId(clientDiscovery.getPeerId())
+                .foundAt(clientDiscovery.getFoundAt().getTime())
+                .foundBy(userService.toDto(clientDiscovery.getFoundBy()))
+                .lastSeenAt(clientDiscovery.getLastSeenAt().getTime())
+                .lastSeenBy(userService.toDto(clientDiscovery.getLastSeenBy()))
+                .build();
     }
 }
