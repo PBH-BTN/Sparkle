@@ -10,8 +10,8 @@ import java.sql.Timestamp;
 
 @Entity
 @Table(name = "user",
-        uniqueConstraints = {@UniqueConstraint(columnNames = "githubIdentifier"), @UniqueConstraint(columnNames = "email")},
-        indexes = {@Index(columnList = "githubIdentifier")})
+        uniqueConstraints = {@UniqueConstraint(columnNames = "githubLogin"), @UniqueConstraint(columnNames = "githubUserId"),@UniqueConstraint(columnNames = "email")},
+        indexes = {@Index(columnList = "githubLogin"),@Index(columnList = "githubUserId")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

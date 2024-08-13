@@ -20,20 +20,20 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    @SaCheckLogin
-    public UserDto me() {
-        return (UserDto) StpUtil.getLoginId();
-    }
+//    @SaCheckLogin
+//    public UserDto me() {
+//        return (UserDto) StpUtil.getLoginId();
+//    }
 
     public Optional<User> getUser(long id) {
         return userRepository.findById(id);
     }
 
     public Optional<User> getUserByGithubLogin(String githubLogin) {
-        return userRepository.findByGithubIdentifier(githubLogin);
+        return userRepository.findByGithubLogin(githubLogin);
     }
-    public Optional<User> getUserByGithubUserId(String githubLogin) {
-        return userRepository.findByGithubIdentifier(githubLogin);
+    public Optional<User> getUserByGithubUserId(Long githubLogin) {
+        return userRepository.findByGithubUserId(githubLogin);
     }
 
     /**

@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends SparkleCommonRepository<User, Long> {
-    Optional<User> findByGithubIdentifier(@NonNull String githubIdentifier);
-
+    Optional<User> findByGithubLogin(@NonNull String githubLogin);
+    Optional<User> findByGithubUserId(@NonNull Long githubUserId);
     List<User> findByNickname(String nickname);
 }
