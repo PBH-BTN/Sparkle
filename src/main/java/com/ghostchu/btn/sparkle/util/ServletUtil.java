@@ -39,7 +39,7 @@ public class ServletUtil {
     }
 
     private static ClientAuthenticationCredential readModernFromAuthentication(HttpServletRequest request) {
-        String header = request.getHeader("Authentication");
+        String header = request.getHeader("Authorization");
         if (header == null) {
             return new ClientAuthenticationCredential(null, null);
         }
