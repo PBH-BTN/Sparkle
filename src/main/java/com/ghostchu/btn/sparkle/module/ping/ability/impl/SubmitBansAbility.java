@@ -1,9 +1,12 @@
 package com.ghostchu.btn.sparkle.module.ping.ability.impl;
 
 import com.ghostchu.btn.sparkle.module.ping.ability.AbstractCronJobEndpointAbility;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
+@EqualsAndHashCode(callSuper = true)
+@Data
 @Component
 public class SubmitBansAbility extends AbstractCronJobEndpointAbility {
     public SubmitBansAbility(
