@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
@@ -32,6 +33,11 @@ public class SnapshotService extends SparklePage{
         return snapshotRepository.saveAll(snapshotList);
     }
 
+    public SparklePage<Snapshot, SnapshotDto> queryRecent(PageRequest pageable) {
+        var page = snapshotRepository.findByOrderByInsertTimeDesc(pageable);
+        return new SparklePage<>(page, dat -> dat.map(this::toDto));
+    }
+
     public SparklePage<Snapshot, SnapshotDto> query(Specification<Snapshot> specification, Pageable pageable) {
         var page = snapshotRepository.findAll(specification, pageable);
         return new SparklePage<>(page, ct -> ct.map(this::toDto));
@@ -40,7 +46,7 @@ public class SnapshotService extends SparklePage{
     public SnapshotDto toDto(Snapshot snapshot) {
         return SnapshotDto.builder()
                 .id(snapshot.getId())
-                .userApplication(userApplicationService.toDto(snapshot.getUserApplication()))
+                .appId(snapshot.getUserApplication().getAppId())
                 .submitId(snapshot.getSubmitId())
                 .peerIp(snapshot.getPeerId())
                 .peerPort(snapshot.getPeerPort())
@@ -56,4 +62,6 @@ public class SnapshotService extends SparklePage{
                 .flags(snapshot.getFlags())
                 .build();
     }
+
+
 }

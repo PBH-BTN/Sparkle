@@ -1,7 +1,6 @@
 package com.ghostchu.btn.sparkle.module.snapshot;
 
 import com.ghostchu.btn.sparkle.module.torrent.TorrentDto;
-import com.ghostchu.btn.sparkle.module.userapp.UserApplicationDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class SnapshotDto {
     private Long id;
-    private UserApplicationDto userApplication;
+    private String appId;
     private String submitId;
     private String peerIp;
     private Integer peerPort;

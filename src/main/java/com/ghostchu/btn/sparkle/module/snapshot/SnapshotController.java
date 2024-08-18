@@ -18,10 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -35,7 +32,12 @@ public class SnapshotController extends SparkleController {
     public SnapshotController(SnapshotService snapshotService) {
         this.snapshotService = snapshotService;
     }
-
+    @SaCheckLogin
+    @GetMapping("/snapshot")
+    public StdResp<SparklePage<?, ?>> recent(@RequestParam("page") Integer page, @RequestParam("pageSize") Integer pageSize) throws RequestPageSizeTooLargeException {
+        var paging = paging(page, pageSize);
+        return new StdResp<>(true, null, snapshotService.queryRecent(PageRequest.of(paging.page(), paging.pageSize())));
+    }
     @SaCheckLogin
     @PostMapping("/snapshot/query")
     public StdResp<SparklePage<?,?>> query(@RequestBody ComplexSnapshotQueryRequest q) throws RequestPageSizeTooLargeException {
