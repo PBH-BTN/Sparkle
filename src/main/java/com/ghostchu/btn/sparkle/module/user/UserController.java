@@ -23,7 +23,7 @@ public class UserController extends SparkleController {
     @SaCheckLogin
     @GetMapping("/user/me")
     public UserDto me() {
-        return userService.toDto(userService.getUser((Long) StpUtil.getLoginId()).get());
+        return userService.toDto(userService.getUser((StpUtil.getLoginIdAsLong())).get());
     }
 
     @SaCheckPermission("user:read.other")

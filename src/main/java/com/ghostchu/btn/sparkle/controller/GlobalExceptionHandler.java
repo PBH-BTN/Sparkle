@@ -17,6 +17,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<StdResp<Void>> jvmExceptionHandler(Exception e){
+        log.error("Unexpected exception", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new StdResp<>(false, "服务器内部错误，请联系服务器管理员："+e.getClass().getName()+": "+e.getMessage(), null));
     }

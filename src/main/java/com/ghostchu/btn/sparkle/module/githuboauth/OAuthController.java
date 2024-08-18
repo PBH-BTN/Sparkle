@@ -131,7 +131,7 @@ public class OAuthController extends SparkleController {
         if (user.getId() <= 0) {
             throw new IllegalStateException("用户注册失败，请联系系统管理员。");
         }
-        StpUtil.login(userService.toDto(user));
+        StpUtil.login(user.getId());
         log.info("用户 {} (ID={}, GHLogin={}, GHUID={}) 已从 {} 登录", user.getNickname(), user.getId(), profile.getLogin(), profile.getId(), ip(req));
     }
 

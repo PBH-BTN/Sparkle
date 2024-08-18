@@ -6,7 +6,6 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.TooManyUserApplicationException;
 import com.ghostchu.btn.sparkle.exception.UserApplicationNotFoundException;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
-import com.ghostchu.btn.sparkle.module.user.UserDto;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import lombok.AllArgsConstructor;
@@ -34,7 +33,7 @@ public class UserApplicationController extends SparkleController {
     public StdResp<List<UserApplicationDto>> getUserApplications() throws UserNotFoundException {
         return new StdResp<>(true, null,
                 userApplicationService.getUserApplications(
-                      userService.getUser((Long)StpUtil.getLoginId()).get())
+                      userService.getUser(StpUtil.getLoginIdAsLong()).get())
                 .stream()
                 .map(userApplicationService::toDto).toList());
     }
@@ -47,7 +46,7 @@ public class UserApplicationController extends SparkleController {
             throw new UserApplicationNotFoundException();
         }
         var usrApp = optional.get();
-        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginId())) {
+        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.read-other-app");
         }
         return new StdResp<>(true, null, userApplicationService.toDto(usrApp));
@@ -61,7 +60,7 @@ public class UserApplicationController extends SparkleController {
             throw new UserApplicationNotFoundException();
         }
         var usrApp = optional.get();
-        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginId())) {
+        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.reset-other-appsecret");
         }
         return new StdResp<>(true, null, userApplicationService.toVerboseDto(userApplicationService.resetUserApplicationSecret(usrApp.getId())));
@@ -75,7 +74,7 @@ public class UserApplicationController extends SparkleController {
             throw new UserApplicationNotFoundException();
         }
         var usrApp = optional.get();
-        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginId())) {
+        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.edit-other-app");
         }
         return new StdResp<>(true, null, userApplicationService.toDto(userApplicationService.editUserApplicationComment(usrApp.getId(), req.getComment())));
@@ -90,7 +89,7 @@ public class UserApplicationController extends SparkleController {
             throw new UserApplicationNotFoundException();
         }
         var usrApp = optional.get();
-        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginId())) {
+        if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.delete-other-app");
         }
         return new StdResp<>(true, "用户应用程序删除成功", null);
@@ -99,7 +98,7 @@ public class UserApplicationController extends SparkleController {
     @SaCheckLogin
     @PutMapping("/userapp")
     public StdResp<UserApplicationVerboseDto> createUserApplication(@RequestBody UserApplicationCreateRequest req) throws UserNotFoundException, TooManyUserApplicationException {
-        var user = userService.getUser((Long) StpUtil.getLoginId()).get();
+        var user = userService.getUser(StpUtil.getLoginIdAsLong()).get();
         var usrApp = userApplicationService.generateUserApplicationForUser(user, req.getComment(), new Timestamp(System.currentTimeMillis()));
         return new StdResp<>(true, null, userApplicationService.toVerboseDto(usrApp));
     }
