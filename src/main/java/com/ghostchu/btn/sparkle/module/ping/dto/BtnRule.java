@@ -25,9 +25,9 @@ public class BtnRule {
     private Map<String, List<String>> clientNameRules;
     @JsonProperty("client_name_exclude")
     private Map<String, List<String>> excludeClientNameRules;
-    @JsonProperty("ip")
+    @JsonProperty("peerIp")
     private Map<String, List<String>> ipRules;
-    @JsonProperty("port")
+    @JsonProperty("peerPort")
     private Map<String, List<Integer>> portRules;
 
 
@@ -40,12 +40,12 @@ public class BtnRule {
         this.clientNameRules = new HashMap<>();
         for (RuleDto ruleEntityDto : list) {
             switch (ruleEntityDto.getType()) {
-                case "ip" -> {
+                case "peerIp" -> {
                     List<String> cat = ipRules.getOrDefault(ruleEntityDto.getCategory(), new ArrayList<>());
                     cat.add(ruleEntityDto.getContent());
                     ipRules.put(ruleEntityDto.getCategory(), cat);
                 }
-                case "port" -> {
+                case "peerPort" -> {
                     List<Integer> cat = portRules.getOrDefault(ruleEntityDto.getCategory(), new ArrayList<>());
                     cat.add(Integer.parseInt(ruleEntityDto.getContent()));
                     portRules.put(ruleEntityDto.getCategory(), cat);

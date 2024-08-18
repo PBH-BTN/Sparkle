@@ -23,7 +23,7 @@ import java.sql.Timestamp;
 @Builder
 public class Snapshot {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)

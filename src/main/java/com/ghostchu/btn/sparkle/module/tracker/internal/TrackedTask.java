@@ -1,4 +1,4 @@
-package com.ghostchu.btn.sparkle.module.rule.internal;
+package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,25 +9,26 @@ import lombok.Setter;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name = "rule",
-        indexes = {@Index(columnList = "category"), @Index(columnList = "type"), @Index(columnList = "expiredAt DESC")})
+@Table(name = "tracker_tasks",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"torrentInfoHash"})},
+        indexes = {@Index(columnList = "torrentInfoHash")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-public class Rule {
+public class TrackedTask {
     @Id
     @GeneratedValue
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)
-    private String category;
+    private byte[] torrentInfoHash;
     @Column(nullable = false)
-    private String content;
+    private Timestamp firstTimeSeen;
     @Column(nullable = false)
-    private String type;
+    private Timestamp lastTimeSeen;
     @Column(nullable = false)
-    private Timestamp createdAt;
+    private Long leechCount;
     @Column(nullable = false)
-    private Timestamp expiredAt;
+    private Long downloadedCount;
 }

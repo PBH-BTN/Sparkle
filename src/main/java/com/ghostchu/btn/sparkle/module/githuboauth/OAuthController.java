@@ -74,7 +74,7 @@ public class OAuthController extends SparkleController {
 
     @GetMapping("/callback")
     public void callback() throws IOException {
-//        String state = IP_STATE_MAPPING.getIfPresent(ip);
+//        String state = IP_STATE_MAPPING.getIfPresent(peerIp);
 //        if (state == null) {
 //            throw new IllegalStateException("Seems you didn't login to this BTN instance via login entrypoint but received login callback. Cross-site attack? Try again!");
 //        }

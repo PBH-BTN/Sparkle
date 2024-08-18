@@ -15,7 +15,7 @@ import lombok.Setter;
 @Setter
 public class Torrent {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)

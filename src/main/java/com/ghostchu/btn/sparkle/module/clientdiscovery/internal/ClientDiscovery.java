@@ -17,6 +17,7 @@ import java.sql.Timestamp;
 @DynamicUpdate
 public class ClientDiscovery {
     @Id
+    @GeneratedValue
     @Column(nullable = false, unique = true)
     private Long hash;
     @Column(nullable = false)
