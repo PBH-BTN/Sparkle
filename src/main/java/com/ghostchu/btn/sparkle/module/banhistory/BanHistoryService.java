@@ -45,7 +45,7 @@ public class BanHistoryService {
     public BanHistoryDto toDto(BanHistory banHistory) {
         return BanHistoryDto.builder()
                 .id(banHistory.getId())
-                .userApplication(userApplicationService.toDto(banHistory.getUserApplication()))
+                .appId(banHistory.getUserApplication().getAppId())
                 .submitId(banHistory.getSubmitId())
                 .peerIp(banHistory.getPeerIp().getHostAddress())
                 .peerPort(banHistory.getPeerPort())

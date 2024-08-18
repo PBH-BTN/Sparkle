@@ -18,5 +18,4 @@ public class UserDto {
     private String nickname;
     private Long registerAt;
     private Long lastSeenAt;
-    private Long lastAccessAt;
 }

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class BanHistoryDto {
     private Long id;
-    private UserApplicationDto userApplication;
+    private String appId;
     private String submitId;
     private String peerIp;
     private Integer peerPort;

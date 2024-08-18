@@ -63,7 +63,6 @@ public class UserService {
                 .nickname(user.getNickname())
                 .registerAt(user.getRegisterAt().getTime())
                 .lastSeenAt(user.getLastSeenAt().getTime())
-                .lastAccessAt(user.getLastAccessAt().getTime())
                 .build();
     }
 }
