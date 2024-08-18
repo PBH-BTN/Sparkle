@@ -87,7 +87,10 @@ public class SnapshotController extends SparkleController {
                 return cb.and(predicates.toArray(new Predicate[0]));
             }
         };
-        Sort sort = Sort.by(q.getSortOrder(), q.getSortBy());
+        Sort sort = Sort.unsorted();
+        if(q.getSortOrder() != null && q.getSortBy() != null){
+            sort = Sort.by(q.getSortOrder(), q.getSortBy());
+        }
         return new StdResp<>(true, null, snapshotService.query(specification, PageRequest.of(paging.page(), paging.pageSize(), sort)));
     }
 

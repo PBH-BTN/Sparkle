@@ -59,7 +59,10 @@ public class BanHistoryService {
                 .peerProgress(banHistory.getPeerProgress())
                 .downloaderProgress(banHistory.getDownloaderProgress())
                 .flags(banHistory.getFlags())
-                .submitterIp(banHistory.getSubmitterIp().getHostAddress())
+                .btnBan(banHistory.getBtnBan())
+                .module(banHistory.getModule())
+                .rule(banHistory.getRule())
+                .banUniqueId(banHistory.getBanUniqueId())
                 .build();
     }
 

@@ -27,5 +27,4 @@ public class SnapshotDto {
     private Double peerProgress;
     private Double downloaderProgress;
     private String flags;
-    private String submitterIp;
 }

@@ -1,7 +1,6 @@
 package com.ghostchu.btn.sparkle.module.banhistory;
 
 import com.ghostchu.btn.sparkle.module.torrent.TorrentDto;
-import com.ghostchu.btn.sparkle.module.userapp.UserApplicationDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,5 +26,8 @@ public class BanHistoryDto {
     private Double peerProgress;
     private Double downloaderProgress;
     private String flags;
-    private String submitterIp;
+    private Boolean btnBan;
+    private String module;
+    private String rule;
+    private String banUniqueId;
 }

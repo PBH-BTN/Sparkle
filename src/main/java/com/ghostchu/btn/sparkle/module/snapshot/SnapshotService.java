@@ -54,7 +54,6 @@ public class SnapshotService extends SparklePage{
                 .peerProgress(snapshot.getPeerProgress())
                 .downloaderProgress(snapshot.getDownloaderProgress())
                 .flags(snapshot.getFlags())
-                .submitterIp(snapshot.getSubmitterIp().getHostAddress())
                 .build();
     }
 }
