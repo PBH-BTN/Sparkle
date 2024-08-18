@@ -37,7 +37,7 @@ public class ClientDiscoveryController extends SparkleController {
     }
 
     @PostMapping("/clientdiscovery/query")
-    public StdResp<SparklePage<?,?>> complexQuery(@RequestBody ComplexSnapshotQueryRequest q) throws RequestPageSizeTooLargeException {
+    public StdResp<SparklePage<?,?>> complexQuery(@RequestBody ComplexDiscoverQueryRequest q) throws RequestPageSizeTooLargeException {
         var paging = paging(q.getPage(), q.getPageSize());
         Specification<ClientDiscovery> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -78,7 +78,7 @@ public class ClientDiscoveryController extends SparkleController {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ComplexSnapshotQueryRequest {
+    public static class ComplexDiscoverQueryRequest {
         private Integer page;
         private Integer pageSize;
         private Long foundAtTimeFrom;
