@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<div th:insert="~{components/common::header}"></div>
+<body>
+<div th:insert="~{components/common::navbar}"></div>
+
+<h1>创建新的用户应用程序</h1>
+
+<div class="container">
+    <form th:action="@{/userapp/create}" method="post">
+        <div>
+            <label for="comment">名称: </label>
+            <input type="text" name="comment" id="comment" required/>
+        </div>
+        <div>
+            <input class="btn btn-primary" type="submit">
+        </div>
+    </form>
+</div>
+</body>
+</html>

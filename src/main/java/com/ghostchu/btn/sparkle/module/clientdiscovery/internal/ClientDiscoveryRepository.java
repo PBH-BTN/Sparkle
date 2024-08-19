@@ -20,4 +20,6 @@ public interface ClientDiscoveryRepository extends SparkleCommonRepository<Clien
     int updateLastSeen(Collection<Long> ids, Timestamp lastSeenAt, User lastSeenBy);
 
     Page<ClientDiscovery> findByOrderByFoundAtDesc(Pageable pageable);
+
+    long countByFoundAtBetween(Timestamp foundAtStart, Timestamp foundAtEnd);
 }

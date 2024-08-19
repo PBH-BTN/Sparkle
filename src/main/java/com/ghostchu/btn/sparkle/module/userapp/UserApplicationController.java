@@ -30,21 +30,17 @@ public class UserApplicationController extends SparkleController {
     }
 
     @GetMapping("/userapp")
-    public StdResp<List<UserApplicationDto>> getUserApplications() throws UserNotFoundException {
+    public StdResp<List<UserApplicationDto>> getUserApplications() {
         return new StdResp<>(true, null,
                 userApplicationService.getUserApplications(
-                      userService.getUser(StpUtil.getLoginIdAsLong()).get())
-                .stream()
-                .map(userApplicationService::toDto).toList());
+                                userService.getUser(StpUtil.getLoginIdAsLong()).orElseThrow())
+                        .stream()
+                        .map(userApplicationService::toDto).toList());
     }
 
     @GetMapping("/userapp/{appId}")
     public StdResp<UserApplicationDto> getUserApplication(@PathVariable("appId") String appId) throws UserApplicationNotFoundException {
-        var optional = userApplicationService.getUserApplication(appId);
-        if (optional.isEmpty()) {
-            throw new UserApplicationNotFoundException();
-        }
-        var usrApp = optional.get();
+        var usrApp = userApplicationService.getUserApplication(appId).orElseThrow(UserApplicationNotFoundException::new);
         if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.read-other-app");
         }
@@ -53,11 +49,7 @@ public class UserApplicationController extends SparkleController {
 
     @PostMapping("/userapp/{appId}/resetAppSecret")
     public StdResp<UserApplicationVerboseDto> resetUserApplicationAppSecret(@PathVariable("appId") String appId) throws UserApplicationNotFoundException {
-        var optional = userApplicationService.getUserApplication(appId);
-        if (optional.isEmpty()) {
-            throw new UserApplicationNotFoundException();
-        }
-        var usrApp = optional.get();
+        var usrApp = userApplicationService.getUserApplication(appId).orElseThrow(UserApplicationNotFoundException::new);
         if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.reset-other-appsecret");
         }
@@ -66,11 +58,7 @@ public class UserApplicationController extends SparkleController {
 
     @PatchMapping("/userapp/{appId}")
     public StdResp<UserApplicationDto> editUserApplication(@PathVariable("appId") String appId, @RequestBody UserApplicationEditRequest req) throws UserApplicationNotFoundException {
-        var optional = userApplicationService.getUserApplication(appId);
-        if (optional.isEmpty()) {
-            throw new UserApplicationNotFoundException();
-        }
-        var usrApp = optional.get();
+        var usrApp = userApplicationService.getUserApplication(appId).orElseThrow(UserApplicationNotFoundException::new);
         if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.edit-other-app");
         }
@@ -79,20 +67,17 @@ public class UserApplicationController extends SparkleController {
 
     @DeleteMapping("/userapp/{appId}")
     public StdResp<Void> deleteUserApplication(@PathVariable("appId") String appId) throws UserApplicationNotFoundException {
-        var optional = userApplicationService.getUserApplication(appId);
-        if (optional.isEmpty()) {
-            throw new UserApplicationNotFoundException();
-        }
-        var usrApp = optional.get();
+        var usrApp = userApplicationService.getUserApplication(appId).orElseThrow(UserApplicationNotFoundException::new);
         if (!Objects.equals(usrApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.delete-other-app");
         }
+        userApplicationService.deleteUserApplication(usrApp.getId());
         return new StdResp<>(true, "用户应用程序删除成功", null);
     }
 
     @PutMapping("/userapp")
     public StdResp<UserApplicationVerboseDto> createUserApplication(@RequestBody UserApplicationCreateRequest req) throws UserNotFoundException, TooManyUserApplicationException {
-        var user = userService.getUser(StpUtil.getLoginIdAsLong()).get();
+        var user = userService.getUser(StpUtil.getLoginIdAsLong()).orElseThrow();
         var usrApp = userApplicationService.generateUserApplicationForUser(user, req.getComment(), new Timestamp(System.currentTimeMillis()));
         return new StdResp<>(true, null, userApplicationService.toVerboseDto(usrApp));
     }

@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Optional;
 @Repository
 public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPeer, Long> {
+
+
     @Query("""
             select t from TrackedPeer t
             where t.torrentInfoHash = ?1 and t.peerId <> ?2 and t.peerIp <> ?3
@@ -32,5 +34,16 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long countByTorrentInfoHashAndLeftNot(byte[] torrentInfoHash, Long left);
 
+    @Query("select count(distinct t.torrentInfoHash) from TrackedPeer t")
+    long countTrackingTorrents();
+
+    long countByLeft(Long left);
+
+    long countByLeftNot(Long left);
+
+    @Query("select count(*) from TrackedPeer t where t.uploaded = 0")
+    long countUsersWhoDidntUploadAnyData();
+    @Query("select count(*) from TrackedPeer t where t.uploaded != 0")
+    long countUsersWhoUploadedAnyData();
 
 }

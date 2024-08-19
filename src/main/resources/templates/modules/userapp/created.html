@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<div th:insert="~{components/common::header}"></div>
+<body>
+<div th:insert="~{components/common::navbar}"></div>
+
+<h1>用户应用程序创建成功</h1>
+<p>请妥善保存下面的凭据信息，这些信息只会显示一次！</p>
+<div class="container">
+    <dl class="row">
+        <dt class="col-sm-3">AppId</dt>
+        <dd class="col-sm-9" th:text="${userapp.getAppId()}"></dd>
+        <dt class="col-sm-3">AppSecret</dt>
+        <dd class="col-sm-9" th:text="${userapp.getAppSecret()}"></dd>
+    </dl>
+</div>
+</body>
+</html>

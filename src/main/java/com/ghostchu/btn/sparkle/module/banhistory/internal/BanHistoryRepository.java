@@ -32,4 +32,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 
     Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
 
+    long countByInsertTimeBetween(Timestamp insertTimeStart, Timestamp insertTimeEnd);
+
+
 }

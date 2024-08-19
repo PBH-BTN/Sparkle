@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<div th:insert="~{components/common::header}"></div>
+<body>
+<div th:insert="~{components/common::navbar}"></div>
+<h1 style="text-align: center">用户应用程序</h1>
+
+<div class="container">
+    <a class="btn btn-outline-primary" th:href="@{/userapp/create}">创建新用户应用程序</a>
+</div>
+
+<div class="container">
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">AppId</th>
+            <th scope="col">备注</th>
+            <th scope="col">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="app : ${userapps}">
+            <th scope="row" th:text="${app.getId()}">1</th>
+            <td th:text="${app.getAppId()}">000000000000000</td>
+            <td th:text="${app.getComment()}">测试</td>
+            <td><a th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}">删除</a> <a th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}">重置 AppSecret</a></td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>
