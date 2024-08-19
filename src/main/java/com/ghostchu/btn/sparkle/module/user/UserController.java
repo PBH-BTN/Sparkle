@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@SaCheckLogin
 @RequestMapping("/api")
 public class UserController extends SparkleController {
     private final UserService userService;
@@ -20,7 +21,6 @@ public class UserController extends SparkleController {
         this.userService = userService;
     }
 
-    @SaCheckLogin
     @GetMapping("/user/me")
     public UserDto me() {
         return userService.toDto(userService.getUser((StpUtil.getLoginIdAsLong())).get());
@@ -36,7 +36,6 @@ public class UserController extends SparkleController {
         return userService.toDto(usrOptional.get());
     }
 
-    @SaCheckLogin
     @GetMapping("/user/logout")
     public ResponseEntity<Void> logout() {
         StpUtil.logout();

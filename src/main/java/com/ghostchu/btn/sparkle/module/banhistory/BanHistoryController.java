@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@SaCheckLogin
 @RequestMapping("/api")
 public class BanHistoryController extends SparkleController {
     private final BanHistoryService banHistoryService;
@@ -35,14 +36,12 @@ public class BanHistoryController extends SparkleController {
         this.banHistoryService = banHistoryService;
     }
 
-    @SaCheckLogin
     @GetMapping("/banhistory")
     public StdResp<SparklePage<?, ?>> recent(@RequestParam("page") Integer page, @RequestParam("pageSize") Integer pageSize) throws RequestPageSizeTooLargeException {
         var paging = paging(page, pageSize);
         return new StdResp<>(true, null, banHistoryService.queryRecent(PageRequest.of(paging.page(), paging.pageSize())));
     }
 
-    @SaCheckLogin
     @PostMapping("/banhistory/query")
     public StdResp<SparklePage<?, ?>> query(@RequestBody @Valid ComplexBanQueryRequest q) throws RequestPageSizeTooLargeException {
         var paging = paging(q.getPage(), q.getPageSize());

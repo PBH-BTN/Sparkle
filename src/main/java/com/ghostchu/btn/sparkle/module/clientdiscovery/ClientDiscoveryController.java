@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.module.clientdiscovery;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscovery;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@SaCheckLogin
 @RequestMapping("/api")
 public class ClientDiscoveryController extends SparkleController {
     private final ClientDiscoveryService clientDiscoveryService;

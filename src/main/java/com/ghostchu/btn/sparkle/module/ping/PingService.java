@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
@@ -125,7 +126,7 @@ public class PingService {
         return banHistoryList.size();
     }
 
-
+    @Caching
     public BtnRule generateBtnRule() {
         List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
         List<InetAddress> untrustedIps = banHistoryService.generateUntrustedIPAddresses();

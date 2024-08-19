@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@SaCheckLogin
 @RequestMapping("/api")
 public class SnapshotController extends SparkleController {
     private final SnapshotService snapshotService;
@@ -32,13 +33,12 @@ public class SnapshotController extends SparkleController {
     public SnapshotController(SnapshotService snapshotService) {
         this.snapshotService = snapshotService;
     }
-    @SaCheckLogin
+
     @GetMapping("/snapshot")
     public StdResp<SparklePage<?, ?>> recent(@RequestParam("page") Integer page, @RequestParam("pageSize") Integer pageSize) throws RequestPageSizeTooLargeException {
         var paging = paging(page, pageSize);
         return new StdResp<>(true, null, snapshotService.queryRecent(PageRequest.of(paging.page(), paging.pageSize())));
     }
-    @SaCheckLogin
     @PostMapping("/snapshot/query")
     public StdResp<SparklePage<?,?>> query(@RequestBody ComplexSnapshotQueryRequest q) throws RequestPageSizeTooLargeException {
         var paging = paging(q.getPage(), q.getPageSize());

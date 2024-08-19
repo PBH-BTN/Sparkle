@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 @RestController
+@SaCheckLogin
 @RequestMapping("/api")
 public class UserApplicationController extends SparkleController {
     private final UserApplicationService userApplicationService;
@@ -28,7 +29,6 @@ public class UserApplicationController extends SparkleController {
         this.userService = userService;
     }
 
-    @SaCheckLogin
     @GetMapping("/userapp")
     public StdResp<List<UserApplicationDto>> getUserApplications() throws UserNotFoundException {
         return new StdResp<>(true, null,
@@ -38,7 +38,6 @@ public class UserApplicationController extends SparkleController {
                 .map(userApplicationService::toDto).toList());
     }
 
-    @SaCheckLogin
     @GetMapping("/userapp/{appId}")
     public StdResp<UserApplicationDto> getUserApplication(@PathVariable("appId") String appId) throws UserApplicationNotFoundException {
         var optional = userApplicationService.getUserApplication(appId);
@@ -52,7 +51,6 @@ public class UserApplicationController extends SparkleController {
         return new StdResp<>(true, null, userApplicationService.toDto(usrApp));
     }
 
-    @SaCheckLogin
     @PostMapping("/userapp/{appId}/resetAppSecret")
     public StdResp<UserApplicationVerboseDto> resetUserApplicationAppSecret(@PathVariable("appId") String appId) throws UserApplicationNotFoundException {
         var optional = userApplicationService.getUserApplication(appId);
@@ -66,7 +64,6 @@ public class UserApplicationController extends SparkleController {
         return new StdResp<>(true, null, userApplicationService.toVerboseDto(userApplicationService.resetUserApplicationSecret(usrApp.getId())));
     }
 
-    @SaCheckLogin
     @PatchMapping("/userapp/{appId}")
     public StdResp<UserApplicationDto> editUserApplication(@PathVariable("appId") String appId, @RequestBody UserApplicationEditRequest req) throws UserApplicationNotFoundException {
         var optional = userApplicationService.getUserApplication(appId);
@@ -80,8 +77,6 @@ public class UserApplicationController extends SparkleController {
         return new StdResp<>(true, null, userApplicationService.toDto(userApplicationService.editUserApplicationComment(usrApp.getId(), req.getComment())));
     }
 
-
-    @SaCheckLogin
     @DeleteMapping("/userapp/{appId}")
     public StdResp<Void> deleteUserApplication(@PathVariable("appId") String appId) throws UserApplicationNotFoundException {
         var optional = userApplicationService.getUserApplication(appId);
@@ -95,7 +90,6 @@ public class UserApplicationController extends SparkleController {
         return new StdResp<>(true, "用户应用程序删除成功", null);
     }
 
-    @SaCheckLogin
     @PutMapping("/userapp")
     public StdResp<UserApplicationVerboseDto> createUserApplication(@RequestBody UserApplicationCreateRequest req) throws UserNotFoundException, TooManyUserApplicationException {
         var user = userService.getUser(StpUtil.getLoginIdAsLong()).get();
