@@ -21,19 +21,19 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
-                <a class="nav-link" href="#">首页</a>
+                <a class="nav-link" th:href="@{/}">首页</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">用户应用程序</a>
+                <a class="nav-link" th:href="@{/userapp/}">用户应用程序</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">封禁记录</a>
+                <a class="nav-link disabled" aria-disabled="true" href="#">封禁记录</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">提交记录</a>
+                <a class="nav-link disabled" aria-disabled="true" href="#">提交记录</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">特征发现</a>
+                <a class="nav-link disabled" aria-disabled="true" href="#">特征发现</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link disabled" aria-disabled="true">Tracker</a>
@@ -42,4 +42,7 @@
     </div>
 </div>
 </nav>
+<div th:fragment="footer">
+<p style="text-align: center; color: gray; font-size: 10px">这是一个页脚，以后也许能放点东西</p>
+</div>
 </html>

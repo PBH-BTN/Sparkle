@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.module;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryRepository;
@@ -31,6 +32,9 @@ public class IndexController extends SparkleController {
 
     @GetMapping("/")
     public String index(Model model) {
+        if (!StpUtil.isLogin()) {
+            return "redirect:/auth/oauth2/github/login";
+        }
         Timestamp daysAgo = new Timestamp(LocalDateTime.now().minusDays(14).atOffset(ZoneOffset.UTC).toInstant().toEpochMilli());
         Timestamp timeNow = new Timestamp(System.currentTimeMillis());
         var metrics = new IndexBtnMetrics(
@@ -56,13 +60,14 @@ public class IndexController extends SparkleController {
     }
 
     public record IndexTrackerMetrics(
-        long torrents,
-        long peers,
-        long seeders,
-        long leechers,
-        long haveUploadPeers,
-        long noUploadPeers
-    ){}
+            long torrents,
+            long peers,
+            long seeders,
+            long leechers,
+            long haveUploadPeers,
+            long noUploadPeers
+    ) {
+    }
 
     public record IndexBtnMetrics(
             long allTimeBans,
@@ -72,5 +77,6 @@ public class IndexController extends SparkleController {
             long rangeSubmits,
             long allTimeClientDiscovery,
             long rangeClientDiscovery
-    ){}
+    ) {
+    }
 }

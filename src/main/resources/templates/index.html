@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <div th:insert="~{components/common::header}"></div>
-<div th:insert="~{components/common::navbar}"></div>
 <body>
+<div th:insert="~{components/common::navbar}"></div>
+
+<div class="alert alert-warning" role="alert">
+    <b>🚧改版装修中</b> BTN 2.0 正在加紧施工中。由于缺乏前端人手，目前前端仅基本功能可用，不影响后端运行和上报收集等功能。
+</div>
+
 <div class="jumbotron">
     <h1 class="display-4">Sparkle - BTN Instance</h1>
     <p class="lead">互联共通，连接你我。</p>
@@ -69,5 +74,6 @@
         </div>
     </div>
 </div>
+<div th:replace="components/common::footer"></div>
 </body>
 </html>
