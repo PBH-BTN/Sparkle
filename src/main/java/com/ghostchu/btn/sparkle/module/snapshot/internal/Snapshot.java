@@ -58,7 +58,7 @@ public class Snapshot {
     private Double peerProgress;
     @Column(nullable = false)
     private Double downloaderProgress;
-    @Column(nullable = false)
+    @Column
     private String flags;
     @Column(nullable = false)
     private InetAddress submitterIp;
