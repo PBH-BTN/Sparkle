@@ -46,7 +46,7 @@ public class UserApplicationViewController {
             StpUtil.checkPermission("userapp.reset-other-appsecret");
         }
         model.addAttribute("userapp", userApp);
-        return "/modules/userapp/created";
+        return "modules/userapp/created";
     }
 
 

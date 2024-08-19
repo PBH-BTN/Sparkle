@@ -35,6 +35,6 @@ public class User {
     private Timestamp lastAccessAt;
     @Column(nullable = false)
     private String githubLogin;
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long githubUserId;
 }

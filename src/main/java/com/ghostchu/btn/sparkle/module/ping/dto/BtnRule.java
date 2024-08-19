@@ -40,12 +40,12 @@ public class BtnRule {
         this.clientNameRules = new HashMap<>();
         for (RuleDto ruleEntityDto : list) {
             switch (ruleEntityDto.getType()) {
-                case "peerIp" -> {
+                case "ip" -> {
                     List<String> cat = ipRules.getOrDefault(ruleEntityDto.getCategory(), new ArrayList<>());
                     cat.add(ruleEntityDto.getContent());
                     ipRules.put(ruleEntityDto.getCategory(), cat);
                 }
-                case "peerPort" -> {
+                case "port" -> {
                     List<Integer> cat = portRules.getOrDefault(ruleEntityDto.getCategory(), new ArrayList<>());
                     cat.add(Integer.parseInt(ruleEntityDto.getContent()));
                     portRules.put(ruleEntityDto.getCategory(), cat);

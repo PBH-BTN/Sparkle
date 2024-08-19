@@ -12,6 +12,7 @@ public interface RuleRepository extends SparkleCommonRepository<Rule, Long> {
 
     List<Rule> findByType(String type);
 
-    List<Rule> findByExpiredAtGreaterThan(Timestamp expiredAt);
+    List<Rule> findByExpiredAtGreaterThan(Timestamp time);
+
 
 }
