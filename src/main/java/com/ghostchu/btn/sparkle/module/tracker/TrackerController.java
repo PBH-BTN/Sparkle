@@ -1,34 +1,32 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
-import com.dampcake.bencode.BencodeOutputStream;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
+import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
-import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Controller
 @RequestMapping("/tracker")
@@ -38,16 +36,22 @@ public class TrackerController extends SparkleController {
     private HttpServletRequest req;
     @Autowired
     private TrackerService trackerService;
+    @Autowired
+    private HttpServletResponse resp;
     @Value("${service.tracker.announce-interval}")
     private long announceInterval;
+    @Autowired
+    private ObjectMapper jacksonObjectMapper;
 
     @GetMapping("/announce")
     @ResponseBody
     @Transactional
     @Lock(LockModeType.WRITE)
-    public String announce() throws IOException {
-        Validate.notBlank(req.getParameter("info_hash"));
-        byte[] infoHash = req.getParameter("info_hash").getBytes(StandardCharsets.ISO_8859_1);
+    public byte[] announce() {
+        var infoHashes = extractInfoHashes(req.getQueryString());
+        Validate.isTrue(infoHashes.size() == 1);
+        byte[] infoHash = infoHashes.getFirst();
+        Validate.isTrue(infoHash.length == 20);
         Validate.notBlank(req.getParameter("peer_id"));
         byte[] peerId = req.getParameter("peer_id").getBytes(StandardCharsets.ISO_8859_1);
         String peerIp = Optional.ofNullable(req.getParameter("ip")).orElse(ip(req));
@@ -87,11 +91,7 @@ public class TrackerController extends SparkleController {
         var peers = trackerService.fetchPeersFromTorrent(infoHash, null, null, numWant);
         log.info(peers.toString());
         // 合成响应
-        @Cleanup
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        @Cleanup
-        BencodeOutputStream bencoder = new BencodeOutputStream(out);
-        bencoder.writeDictionary(new HashMap<>() {{
+        var map = new HashMap<>() {{
             put("interval", announceInterval / 1000);
             put("complete", peers.seeders());
             put("incomplete", peers.leechers());
@@ -111,10 +111,26 @@ public class TrackerController extends SparkleController {
                     }
                 }});
             }
-        }});
-        bencoder.flush();
-        log.info("Announce ok!");
-        return out.toString(StandardCharsets.UTF_8);
+        }};
+        return BencodeUtil.INSTANCE.encode(map);
+    }
+
+    @GetMapping("/scrape")
+    @ResponseBody
+    public ResponseEntity<byte[]> scrape() {
+        var infoHashes = extractInfoHashes(req.getQueryString());
+        var map = new LinkedHashMap<>();
+        var files = new TreeMap<>();
+        for (byte[] infoHash : infoHashes) {
+            files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new TreeMap<>() {{
+                var peers = trackerService.scrape(infoHash);
+                put("complete", peers.seeders() + 15);
+                put("incomplete", peers.leechers() + 15);
+                put("downloaded", peers.downloaded() + 15);
+            }});
+        }
+        map.put("files", files);
+        return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
     }
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
@@ -135,5 +151,23 @@ public class TrackerController extends SparkleController {
         return new String(buffer.array(), StandardCharsets.ISO_8859_1);
     }
 
+    /**
+     * 套他猴子的 BitTorrent 总给我整花活
+     * @param queryString 查询字符串
+     * @return 使用 ISO_8859_1 进行 URL 解码的 Info Hash 集合
+     */
+    public static List<byte[]> extractInfoHashes(String queryString) {
+        List<byte[]> infoHashes = new ArrayList<>();
+        String[] params = queryString.split("&");
+        for (String param : params) {
+            if (param.startsWith("info_hash=")) {
+                String encodedHash = param.substring("info_hash=".length());
+                byte[] decodedHash = URLDecoder.decode(encodedHash, StandardCharsets.ISO_8859_1).getBytes(StandardCharsets.ISO_8859_1);
+                infoHashes.add(decodedHash);
+            }
+        }
+
+        return infoHashes;
+    }
 
 }
