@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
+import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,19 +75,31 @@ public class TrackerController extends SparkleController {
         boolean compact = "1".equals(req.getParameter("compact"));
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
         var reqIpInetAddress = new IPAddressString(ip(req)).getAddress().toInetAddress();
-        var peerIpInetAddress = new IPAddressString(peerIp).getAddress().toInetAddress();
-        trackerService.executeAnnounce(new TrackerService.PeerAnnounce(
-                infoHash,
-                peerId,
-                reqIpInetAddress,
-                peerIpInetAddress,
-                port,
-                uploaded,
-                downloaded,
-                left,
-                peerEvent,
-                ua(req)
-        ));
+        List<InetAddress> peerIps = getPossiblePeerIps(req)
+                .stream()
+                .distinct()
+                .map(ip -> new IPAddressString(ip).getAddress())
+                .filter(Objects::nonNull)
+                .map(IPAddress::toInetAddress).toList();
+        for (InetAddress ip : peerIps) {
+            try {
+                trackerService.executeAnnounce(new TrackerService.PeerAnnounce(
+                        infoHash,
+                        peerId,
+                        reqIpInetAddress,
+                        ip,
+                        port,
+                        uploaded,
+                        downloaded,
+                        left,
+                        peerEvent,
+                        ua(req)
+                ));
+            } catch (Exception e) {
+                log.error("Unable to handle Torrent announce", e);
+            }
+        }
+
         //var peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, peerIpInetAddress, numWant);
         var peers = trackerService.fetchPeersFromTorrent(infoHash, null, null, numWant);
         log.info(peers.toString());
@@ -131,6 +144,21 @@ public class TrackerController extends SparkleController {
         }
         map.put("files", files);
         return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
+    }
+
+    public List<String> getPossiblePeerIps(HttpServletRequest req) {
+        List<String> found = new ArrayList<>();
+        found.add(ip(req));
+        if (req.getParameter("ip") != null) {
+            found.addAll(List.of(req.getParameterValues("ip")));
+        }
+        if (req.getParameter("ipv4") != null) {
+            found.addAll(List.of(req.getParameterValues("ipv4")));
+        }
+        if (req.getParameter("ipv6") != null) {
+            found.addAll(List.of(req.getParameterValues("ipv6")));
+        }
+        return found;
     }
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
