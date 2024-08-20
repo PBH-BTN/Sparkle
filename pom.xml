@@ -202,7 +202,11 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.16.0</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.kohsuke</groupId>
+			<artifactId>github-api</artifactId>
+			<version>1.324</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
