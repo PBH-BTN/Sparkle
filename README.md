@@ -31,4 +31,4 @@ Sparkle 是一个遵循 [BTN 规范](https://github.com/PBH-BTN/BTN-Spec) 的官
 
 ## API 文档
 
-[在 ApiFox 上查看](https://apifox.com/apidoc/shared-82cc6ad8-a2c2-4903-bed0-5d18ad6b3545)
+https://btn-sparkle.apifox.cn
