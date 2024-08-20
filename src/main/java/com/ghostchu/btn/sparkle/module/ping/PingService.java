@@ -127,13 +127,14 @@ public class PingService {
         return banHistoryList.size();
     }
 
+    @Cacheable({"btnRule#600000"})
     public BtnRule generateBtnRule() {
         List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
-        List<InetAddress> untrustedIps = banHistoryService.generateUntrustedIPAddresses();
+        List<String> untrustedIps = banHistoryService.generateUntrustedIPAddresses();
         entities.addAll(untrustedIps.stream().map(ip -> new RuleDto(
                 0L,
                 "BTN-自动生成-不受信任IP",
-                ip.getHostAddress(),
+                ip,
                 "ip",
                 System.currentTimeMillis(),
                 System.currentTimeMillis()

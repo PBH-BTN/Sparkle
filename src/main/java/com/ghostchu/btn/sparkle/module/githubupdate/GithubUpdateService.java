@@ -1,10 +1,8 @@
 package com.ghostchu.btn.sparkle.module.githubupdate;
 
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
-import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.rule.RuleService;
-import com.ghostchu.btn.sparkle.util.MsgUtil;
 import jakarta.transaction.Transactional;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +14,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -93,7 +91,7 @@ public class GithubUpdateService {
                 ).stream()
                 .filter(banHistory -> !banHistory.getPeerId().toLowerCase(Locale.ROOT).startsWith("-gp"))
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history->history.getPeerIp().getHostAddress())
+                .map(history -> history.getPeerIp().getHostAddress())
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -102,13 +100,13 @@ public class GithubUpdateService {
     private String generate123pan() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                "%offline-download (devel) (anacrolix/torrent unknown)%",
-                pastTimestamp(),
-                nowTimestamp()
-        )
+                        "%offline-download (devel) (anacrolix/torrent unknown)%",
+                        pastTimestamp(),
+                        nowTimestamp()
+                )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history->history.getPeerIp().getHostAddress())
+                .map(history -> history.getPeerIp().getHostAddress())
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -117,13 +115,13 @@ public class GithubUpdateService {
     private String generateDeadBeef() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                "%ޭ__%",
-                pastTimestamp(),
-                nowTimestamp()
-        )
+                        "%ޭ__%",
+                        pastTimestamp(),
+                        nowTimestamp()
+                )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history->history.getPeerIp().getHostAddress())
+                .map(history -> history.getPeerIp().getHostAddress())
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -132,13 +130,13 @@ public class GithubUpdateService {
     private String generateBaiduNetdisk() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                "go.torrent dev 20181121%",
-                pastTimestamp(),
-                nowTimestamp()
-        )
+                        "go.torrent dev 20181121%",
+                        pastTimestamp(),
+                        nowTimestamp()
+                )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history->history.getPeerIp().getHostAddress())
+                .map(history -> history.getPeerIp().getHostAddress())
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -148,13 +146,13 @@ public class GithubUpdateService {
     private String generateDtTorrents() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerIdLikeOrPeerClientNameLike(
-                "-DT%",
-                "dt/torrent%",
-                pastTimestamp(),
-                nowTimestamp()
-        ).stream()
+                        "-DT%",
+                        "dt/torrent%",
+                        pastTimestamp(),
+                        nowTimestamp()
+                ).stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history->history.getPeerIp().getHostAddress())
+                .map(history -> history.getPeerIp().getHostAddress())
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -163,15 +161,15 @@ public class GithubUpdateService {
     private String generateHpTorrents() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerIdLikeOrPeerClientNameLike(
-                "-HP%",
-                "hp/torrent%",
-                pastTimestamp(),
-                nowTimestamp()
+                        "-HP%",
+                        "hp/torrent%",
+                        pastTimestamp(),
+                        nowTimestamp()
 
-        )
+                )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history->history.getPeerIp().getHostAddress())
+                .map(history -> history.getPeerIp().getHostAddress())
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -206,12 +204,7 @@ public class GithubUpdateService {
     }
 
     private String generateUntrustedIps() {
-        var strJoiner = new StringJoiner("\n");
-        banHistoryService.generateUntrustedIPAddresses()
-                .stream().map(InetAddress::getHostAddress)
-                .forEach(strJoiner::add);
-        log.info("已生成规则：{} 条", strJoiner.toString().lines().count());
-        return strJoiner.toString();
+        return String.join("\n", banHistoryService.generateUntrustedIPAddresses());
     }
 
     private Timestamp nowTimestamp() {
