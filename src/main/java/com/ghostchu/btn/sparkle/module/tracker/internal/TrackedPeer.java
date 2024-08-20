@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.net.InetAddress;
 import java.sql.Timestamp;
@@ -19,6 +20,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @Getter
 @Setter
+@DynamicUpdate
 public class TrackedPeer {
     @Id
     @GeneratedValue

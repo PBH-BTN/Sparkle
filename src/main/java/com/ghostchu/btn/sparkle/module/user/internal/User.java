@@ -5,17 +5,19 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.sql.Timestamp;
 
 @Entity
 @Table(name = "user",
-        uniqueConstraints = {@UniqueConstraint(columnNames = "githubLogin"), @UniqueConstraint(columnNames = "githubUserId"),@UniqueConstraint(columnNames = "email")},
+        uniqueConstraints = {@UniqueConstraint(columnNames = "githubId")},
         indexes = {@Index(columnList = "githubLogin"),@Index(columnList = "githubUserId")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@DynamicUpdate
 public class User {
     @Id
     @GeneratedValue

@@ -27,7 +27,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -112,15 +111,18 @@ public class OAuthController extends SparkleController {
 
     private void userLogin(GithubUserProfile profile, String emailSelected) {
         User user;
-        Optional<User> userOptional = userService.getUserByGithubLogin(profile.getLogin());
+        var userOptional = userService.getUserByGithubUserId(profile.getId());
+        if (userOptional.isEmpty()) {
+            userOptional = userService.getUserByGithubLogin(profile.getLogin());
+        }
         if (userOptional.isPresent()) {
             user = userOptional.get();
         } else {
             user = new User();
             user.setEmail(emailSelected);
             user.setRegisterAt(new Timestamp(System.currentTimeMillis()));
-            user.setGithubLogin(profile.getLogin());
         }
+        user.setGithubLogin(profile.getLogin());
         user.setGithubUserId(profile.getId());
         user.setAvatar(profile.getAvatarUrl());
         user.setNickname(profile.getName() == null ? profile.getLogin() : profile.getName());
