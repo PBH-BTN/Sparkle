@@ -123,7 +123,7 @@ public class OAuthController extends SparkleController {
         }
         user.setGithubUserId(profile.getId());
         user.setAvatar(profile.getAvatarUrl());
-        user.setNickname(profile.getName());
+        user.setNickname(profile.getName() == null ? profile.getLogin() : profile.getName());
         user.setLastSeenAt(new Timestamp(System.currentTimeMillis()));
         user.setLastAccessAt(new Timestamp(System.currentTimeMillis()));
         user = userService.saveUser(user);

@@ -126,7 +126,6 @@ public class PingService {
         return banHistoryList.size();
     }
 
-    @Caching
     public BtnRule generateBtnRule() {
         List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
         List<InetAddress> untrustedIps = banHistoryService.generateUntrustedIPAddresses();

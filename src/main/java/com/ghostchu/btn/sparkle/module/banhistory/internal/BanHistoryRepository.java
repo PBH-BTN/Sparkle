@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.banhistory.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -14,12 +15,13 @@ import java.util.List;
 public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory, Long> {
     @Query("""
                 SELECT DISTINCT ban.peerIp FROM BanHistory ban
-                WHERE 
+                WHERE
                     ban.module LIKE '%ProgressCheatBlocker%'
                     AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
                 GROUP BY ban.peerIp
                 HAVING COUNT (DISTINCT ban.userApplication.appId) >= ?3
             """)
+    @Transactional
     List<InetAddress> generateUntrustedIPAddresses(Timestamp from, Timestamp to, int threshold);
 
     Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(Timestamp from, Timestamp to, Pageable pageable);
