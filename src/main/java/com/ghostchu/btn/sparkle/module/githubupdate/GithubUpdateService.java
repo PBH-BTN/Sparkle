@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.githubupdate;
 
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
+import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.rule.RuleService;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
@@ -19,6 +20,7 @@ import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.StringJoiner;
 
@@ -74,7 +76,9 @@ public class GithubUpdateService {
                         pastTimestamp(),
                         nowTimestamp()
                 )
-                .stream().filter(banHistory -> banHistory.getPeerIp().getHostAddress().endsWith("::1"))
+                .stream()
+                .filter(banHistory -> banHistory.getPeerIp().getHostAddress().endsWith("::1"))
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
                 .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
@@ -87,6 +91,7 @@ public class GithubUpdateService {
                         nowTimestamp()
                 ).stream()
                 .filter(banHistory -> !banHistory.getPeerId().toLowerCase(Locale.ROOT).startsWith("-gp"))
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
                 .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
@@ -97,7 +102,10 @@ public class GithubUpdateService {
                 "%offline-download (devel) (anacrolix/torrent unknown)%",
                 pastTimestamp(),
                 nowTimestamp()
-        ).forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+        )
+                .stream()
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
 
@@ -107,7 +115,10 @@ public class GithubUpdateService {
                 "%ޭ__%",
                 pastTimestamp(),
                 nowTimestamp()
-        ).forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+        )
+                .stream()
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
 
@@ -117,7 +128,10 @@ public class GithubUpdateService {
                 "go.torrent dev 20181121%",
                 pastTimestamp(),
                 nowTimestamp()
-        ).forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+        )
+                .stream()
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
 
@@ -129,7 +143,9 @@ public class GithubUpdateService {
                 "dt/torrent%",
                 pastTimestamp(),
                 nowTimestamp()
-        ).forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+        ).stream()
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
 
@@ -141,7 +157,10 @@ public class GithubUpdateService {
                 pastTimestamp(),
                 nowTimestamp()
 
-        ).forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+        )
+                .stream()
+                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
         return strJoiner.toString();
     }
 
