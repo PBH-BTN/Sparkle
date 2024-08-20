@@ -54,7 +54,7 @@ public class TrackerService {
         ).orElse(new TrackedPeer(
                 null,
                 announce.reqIp(),
-                ByteUtil.bytesToHex(announce.peerId()),
+                ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
                 announce.peerIp(),
                 announce.peerPort(),
                 ByteUtil.bytesToHex(announce.infoHash()),

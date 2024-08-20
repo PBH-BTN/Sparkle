@@ -13,6 +13,7 @@ import com.ghostchu.btn.sparkle.module.snapshot.SnapshotService;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.PeerUtil;
 import jakarta.transaction.Transactional;
@@ -57,8 +58,8 @@ public class PingService {
                                 .submitId(UUID.randomUUID().toString())
                                 .peerIp(IPUtil.toInet(peer.getIpAddress()))
                                 .peerPort(peer.getPeerPort())
-                                .peerId(PeerUtil.cutPeerId(peer.getPeerId()))
-                                .peerClientName(PeerUtil.cutClientName(peer.getClientName()))
+                                .peerId(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())))
+                                .peerClientName(ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))
                                 .torrent(torrentService.createOrGetTorrent(peer.getTorrentIdentifier(), peer.getTorrentSize()))
                                 .fromPeerTraffic(peer.getDownloaded())
                                 .fromPeerTrafficSpeed(peer.getRtDownloadSpeed())
@@ -98,8 +99,8 @@ public class PingService {
                                 .submitId(UUID.randomUUID().toString())
                                 .peerIp(IPUtil.toInet(peer.getIpAddress()))
                                 .peerPort(peer.getPeerPort())
-                                .peerId(PeerUtil.cutPeerId(peer.getPeerId()))
-                                .peerClientName(PeerUtil.cutClientName(peer.getClientName()))
+                                .peerId(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())))
+                                .peerClientName(ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))
                                 .torrent(torrentService.createOrGetTorrent(peer.getTorrentIdentifier(), peer.getTorrentSize()))
                                 .fromPeerTraffic(peer.getDownloaded())
                                 .fromPeerTrafficSpeed(peer.getRtDownloadSpeed())
