@@ -5,10 +5,12 @@ import com.ghostchu.btn.sparkle.util.ByteUtil;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -109,6 +111,7 @@ public class TrackerService {
         }
     }
 
+    @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
         List<Peer> v4 = new ArrayList<>();
         List<Peer> v6 = new ArrayList<>();
@@ -136,12 +139,13 @@ public class TrackerService {
         return new TrackedPeerList(v4, v6, seeders.get(), leechers.get(), downloaded);
     }
 
-    public ScrapeResponse scrape(byte[] torrentInfoHash){
-        var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash),0L);
-        var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash),0L);
+    @Cacheable(value = {"scrape#3000"}, key = "#torrentInfoHash")
+    public ScrapeResponse scrape(byte[] torrentInfoHash) {
+        var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
         var downloaded = 0L;
         var optional = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(torrentInfoHash));
-        if(optional.isPresent()){
+        if (optional.isPresent()) {
             downloaded = optional.get().getDownloadedCount();
         }
         return new ScrapeResponse(seeders, leechers, downloaded);
@@ -151,7 +155,8 @@ public class TrackerService {
             long seeders,
             long leechers,
             long downloaded
-    ){}
+    ) implements Serializable{
+    }
 
     public record PeerAnnounce(
             byte[] infoHash,
@@ -164,7 +169,7 @@ public class TrackerService {
             long left,
             PeerEvent peerEvent,
             String userAgent
-    ) {
+    ) implements Serializable{
 
     }
 
@@ -174,13 +179,13 @@ public class TrackerService {
             long seeders,
             long leechers,
             long downloaded
-    ) {
+    ) implements Serializable{
     }
 
     public record Peer(
             String ip,
             int port,
             byte[] peerId
-    ) {
+    ) implements Serializable {
     }
 }

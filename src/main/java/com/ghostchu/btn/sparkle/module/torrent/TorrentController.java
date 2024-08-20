@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,6 +20,7 @@ import java.util.Locale;
 @RestController
 @RequestMapping("/api/torrent")
 public class TorrentController extends SparkleController {
+
     @GetMapping("/hash")
     public StdResp<HashInfoHashResponse> hashInfoHash(@RequestParam("hash") @NotEmpty @Valid String hash) {
         String torrentInfoHandled = hash.toLowerCase(Locale.ROOT); // 转小写处理

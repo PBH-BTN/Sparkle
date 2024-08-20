@@ -8,6 +8,8 @@ import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
@@ -36,6 +38,7 @@ public class BanHistoryService {
         this.torrentService = torrentService;
     }
 
+    @Cacheable({"untrustedIpAddress#600000"})
     @Transactional
     @Lock(LockModeType.READ)
     public List<InetAddress> generateUntrustedIPAddresses() {

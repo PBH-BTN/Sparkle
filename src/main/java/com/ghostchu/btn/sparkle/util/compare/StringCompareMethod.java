@@ -4,7 +4,9 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 
-public enum StringCompareMethod implements CriteriaBuilderSupport<String>{
+import java.io.Serializable;
+
+public enum StringCompareMethod implements CriteriaBuilderSupport<String>, Serializable {
     CONTAINS,
     NOT_CONTAINS,
     EQUALS,

@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication
 @EnableAsync
 @EnableScheduling
-@EnableCaching
 @EnableTransactionManagement
 public class SparkleApplication {
 

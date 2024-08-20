@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SnapshotDto {
+public class SnapshotDto implements Serializable {
     private Long id;
     private String appId;
     private String submitId;

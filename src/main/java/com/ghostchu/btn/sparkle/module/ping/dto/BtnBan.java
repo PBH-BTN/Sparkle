@@ -6,10 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class BtnBan {
+public class BtnBan implements Serializable {
 
     @NotNull
     @JsonProperty("btn_ban")

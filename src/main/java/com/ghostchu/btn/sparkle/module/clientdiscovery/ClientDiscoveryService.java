@@ -4,6 +4,7 @@ import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscovery;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryRepository;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
@@ -36,7 +37,10 @@ public class ClientDiscoveryService {
         found.forEach(clientDiscoveryEntity -> hashInDatabase.add(clientDiscoveryEntity.getHash()));
         var notInDatabase = clientIdentities.stream()
                 .filter(c -> !hashInDatabase.contains(c.hash()))
-                .map(ci -> new ClientDiscovery(ci.hash(), ci.getClientName(), ci.getPeerId(), timeForFoundAt, user, timeForLastSeenAt, user))
+                .map(ci -> new ClientDiscovery(
+                        ci.hash(),
+                        ByteUtil.filterUTF8(ci.getClientName()),
+                        ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, user, timeForLastSeenAt, user))
                 .toList();
         clientDiscoveryRepository.saveAll(notInDatabase);
     }

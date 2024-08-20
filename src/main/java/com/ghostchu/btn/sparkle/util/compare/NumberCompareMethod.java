@@ -4,7 +4,9 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 
-public enum NumberCompareMethod implements CriteriaBuilderSupport<Number> {
+import java.io.Serializable;
+
+public enum NumberCompareMethod implements CriteriaBuilderSupport<Number>, Serializable {
     LESS_THAN,
     LESS_THAN_EQUAL,
     GREATER_THAN,

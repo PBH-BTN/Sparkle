@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
 @NoArgsConstructor
 @Data
 @Builder
-public class SparklePage<Entity,Dto> {
+public class SparklePage<Entity,Dto> implements Serializable {
     private int page;
     private int size;
     private long total;

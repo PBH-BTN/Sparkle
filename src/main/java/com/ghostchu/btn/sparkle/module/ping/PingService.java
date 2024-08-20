@@ -20,6 +20,7 @@ import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +48,7 @@ public class PingService {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<Snapshot> snapshotList = ping.getPeers().stream()
-                .peek(peer -> identitySet.add(new ClientIdentity(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())), ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))))
+                .peek(peer -> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()), PeerUtil.cutClientName(peer.getClientName()))))
                 .map(peer -> {
                     try {
                         return Snapshot.builder()
@@ -87,7 +88,7 @@ public class PingService {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<BanHistory> banHistoryList = ping.getBans().stream()
-                .peek(peer -> identitySet.add(new ClientIdentity(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeer().getPeerId())), ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getPeer().getClientName())))))
+                .peek(peer -> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeer().getPeerId()),PeerUtil.cutClientName(peer.getPeer().getClientName()))))
                 .map(ban -> {
                     var peer = ban.getPeer();
                     try {

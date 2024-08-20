@@ -99,10 +99,7 @@ public class TrackerController extends SparkleController {
                 log.error("Unable to handle Torrent announce", e);
             }
         }
-
-        //var peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, peerIpInetAddress, numWant);
         var peers = trackerService.fetchPeersFromTorrent(infoHash, null, null, numWant);
-        log.info(peers.toString());
         // 合成响应
         var map = new HashMap<>() {{
             put("interval", announceInterval / 1000);

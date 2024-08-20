@@ -1,6 +1,8 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
-public enum PeerEvent {
+import java.io.Serializable;
+
+public enum PeerEvent implements Serializable {
     STARTED,
     COMPLETED,
     STOPPED,

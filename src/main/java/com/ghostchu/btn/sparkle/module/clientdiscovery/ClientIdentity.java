@@ -5,11 +5,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode
-public class ClientIdentity {
+public class ClientIdentity implements Serializable {
     private String peerId;
     private String clientName;
     private transient Long hash = null;

@@ -1,9 +1,11 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
+import java.io.Serializable;
+
 public record ClientAuthenticationCredential(
         String appId,
         String appSecret
-) {
+) implements Serializable {
     public boolean isValid(){
         return appId != null && appSecret != null;
     }

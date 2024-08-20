@@ -3,7 +3,6 @@ package com.ghostchu.btn.sparkle.module.snapshot;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
-import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
@@ -18,12 +17,10 @@ import java.util.List;
 public class SnapshotService extends SparklePage{
 
     private final SnapshotRepository snapshotRepository;
-    private final UserApplicationService userApplicationService;
     private final TorrentService torrentService;
 
-    public SnapshotService(SnapshotRepository snapshotRepository, UserApplicationService userApplicationService, TorrentService torrentService) {
+    public SnapshotService(SnapshotRepository snapshotRepository, TorrentService torrentService) {
         this.snapshotRepository = snapshotRepository;
-        this.userApplicationService = userApplicationService;
         this.torrentService = torrentService;
     }
 

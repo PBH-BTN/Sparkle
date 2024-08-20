@@ -58,7 +58,7 @@ public class UserApplicationService {
 
     @Modifying
     @Transactional
-    public UserApplication generateUserApplicationForUser(User user, String comment, Timestamp createdAt) throws UserNotFoundException, TooManyUserApplicationException {
+    public UserApplication generateUserApplicationForUser(User user, String comment, Timestamp createdAt) throws TooManyUserApplicationException {
         long userOwnedApps = userApplicationRepository.countByUser(user);
         if(userOwnedApps >= userMaxApps){
             throw new TooManyUserApplicationException();

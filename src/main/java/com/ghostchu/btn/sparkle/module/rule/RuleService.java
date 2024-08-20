@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.rule;
 
 import com.ghostchu.btn.sparkle.module.rule.internal.Rule;
 import com.ghostchu.btn.sparkle.module.rule.internal.RuleRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -21,6 +22,7 @@ public class RuleService {
      *
      * @return 仍然处于有效期内的规则列表
      */
+    @Cacheable({"unexpiredRules#600000"})
     public List<RuleDto> getUnexpiredRules() {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         return ruleRepository.findByExpiredAtGreaterThan(timestamp).stream().map(this::toDto).toList();
