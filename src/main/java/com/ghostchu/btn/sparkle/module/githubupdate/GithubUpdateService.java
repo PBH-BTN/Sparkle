@@ -93,8 +93,9 @@ public class GithubUpdateService {
                 ).stream()
                 .filter(banHistory -> !banHistory.getPeerId().toLowerCase(Locale.ROOT).startsWith("-gp"))
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .map(history->history.getPeerIp().getHostAddress())
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -107,8 +108,9 @@ public class GithubUpdateService {
         )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .map(history->history.getPeerIp().getHostAddress())
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -121,8 +123,9 @@ public class GithubUpdateService {
         )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .map(history->history.getPeerIp().getHostAddress())
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -135,8 +138,9 @@ public class GithubUpdateService {
         )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .map(history->history.getPeerIp().getHostAddress())
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -150,8 +154,9 @@ public class GithubUpdateService {
                 nowTimestamp()
         ).stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .map(history->history.getPeerIp().getHostAddress())
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -166,8 +171,9 @@ public class GithubUpdateService {
         )
                 .stream()
                 .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .map(history->history.getPeerIp().getHostAddress())
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 

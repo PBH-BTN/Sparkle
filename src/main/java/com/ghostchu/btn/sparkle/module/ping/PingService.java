@@ -20,7 +20,6 @@ import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
@@ -45,13 +44,13 @@ public class PingService {
     @Modifying
     @Transactional
     public long handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
-        Timestamp now  = new Timestamp(System.currentTimeMillis());
+        Timestamp now = new Timestamp(System.currentTimeMillis());
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<Snapshot> snapshotList = ping.getPeers().stream()
-                .peek(peer-> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()),PeerUtil.cutClientName( peer.getClientName()))))
-                .map(peer-> {
-                    try{
-                       return Snapshot.builder()
+                .peek(peer -> identitySet.add(new ClientIdentity(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())), ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))))
+                .map(peer -> {
+                    try {
+                        return Snapshot.builder()
                                 .insertTime(now)
                                 .populateTime(new Timestamp(ping.getPopulateTime()))
                                 .userApplication(userApplication)
@@ -70,7 +69,7 @@ public class PingService {
                                 .flags(peer.getPeerFlag())
                                 .submitterIp(submitterIp)
                                 .build();
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         log.error("[ERROR] [Ping] 无法创建 Snapshot 对象", e);
                         return null;
                     }
@@ -78,20 +77,20 @@ public class PingService {
                 .filter(Objects::nonNull)
                 .toList();
         snapshotService.saveSnapshots(snapshotList);
-        clientDiscoveryService.handleIdentities(userApplication.getUser(),now,now,identitySet);
+        clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
         return snapshotList.size();
     }
 
     @Modifying
     @Transactional
     public long handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
-        Timestamp now  = new Timestamp(System.currentTimeMillis());
+        Timestamp now = new Timestamp(System.currentTimeMillis());
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<BanHistory> banHistoryList = ping.getBans().stream()
-                .peek(peer-> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeer().getPeerId()),PeerUtil.cutClientName( peer.getPeer().getClientName()))))
-                .map(ban-> {
+                .peek(peer -> identitySet.add(new ClientIdentity(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeer().getPeerId())), ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getPeer().getClientName())))))
+                .map(ban -> {
                     var peer = ban.getPeer();
-                    try{
+                    try {
                         return BanHistory.builder()
                                 .insertTime(now)
                                 .populateTime(new Timestamp(ping.getPopulateTime()))
@@ -115,7 +114,7 @@ public class PingService {
                                 .rule(ban.getRule())
                                 .banUniqueId(ban.getBanUniqueId())
                                 .build();
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         log.error("[ERROR] [Ping] 无法创建 BanHistory 对象", e);
                         return null;
                     }
@@ -123,7 +122,7 @@ public class PingService {
                 .filter(Objects::nonNull)
                 .toList();
         banHistoryService.saveBanHistories(banHistoryList);
-        clientDiscoveryService.handleIdentities(userApplication.getUser(),now,now,identitySet);
+        clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
         return banHistoryList.size();
     }
 
@@ -131,12 +130,12 @@ public class PingService {
         List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
         List<InetAddress> untrustedIps = banHistoryService.generateUntrustedIPAddresses();
         entities.addAll(untrustedIps.stream().map(ip -> new RuleDto(
-            0L,
-            "BTN-自动生成-不受信任IP",
-            ip.getHostAddress(),
-            "ip",
-            System.currentTimeMillis(),
-            System.currentTimeMillis()
+                0L,
+                "BTN-自动生成-不受信任IP",
+                ip.getHostAddress(),
+                "ip",
+                System.currentTimeMillis(),
+                System.currentTimeMillis()
         )).toList());
         return new BtnRule(entities);
     }
