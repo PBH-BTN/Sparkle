@@ -25,9 +25,9 @@ public class BtnRule {
     private Map<String, List<String>> clientNameRules;
     @JsonProperty("client_name_exclude")
     private Map<String, List<String>> excludeClientNameRules;
-    @JsonProperty("peerIp")
+    @JsonProperty("ip")
     private Map<String, List<String>> ipRules;
-    @JsonProperty("peerPort")
+    @JsonProperty("port")
     private Map<String, List<Integer>> portRules;
 
 
