@@ -30,12 +30,30 @@ public class ServletUtil {
         if (cred.isValid()) {
             return cred;
         }
+        cred = readOldModernFromAuthentication(request); // 显然，BUG 变成了特性
+        if (cred.isValid()) {
+            return cred;
+        }
         cred = readModernFromHeader(request);
         if (cred.isValid()) {
             return cred;
         }
         cred = readLegacy(request);
         return cred;
+    }
+
+
+    private static ClientAuthenticationCredential readOldModernFromAuthentication(HttpServletRequest request) {
+        String header = request.getHeader("Authentication");
+        if (header == null) {
+            return new ClientAuthenticationCredential(null, null);
+        }
+        header = header.substring(7);
+        String[] parser = header.split("@", 2);
+        if (parser.length == 2) {
+            return new ClientAuthenticationCredential(parser[0], parser[1]);
+        }
+        return new ClientAuthenticationCredential(null, null);
     }
 
     private static ClientAuthenticationCredential readModernFromAuthentication(HttpServletRequest request) {
