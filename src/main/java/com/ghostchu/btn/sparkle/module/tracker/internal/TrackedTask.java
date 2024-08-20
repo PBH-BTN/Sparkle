@@ -22,7 +22,7 @@ public class TrackedTask {
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)
-    private byte[] torrentInfoHash;
+    private String torrentInfoHash;
     @Column(nullable = false)
     private Timestamp firstTimeSeen;
     @Column(nullable = false)

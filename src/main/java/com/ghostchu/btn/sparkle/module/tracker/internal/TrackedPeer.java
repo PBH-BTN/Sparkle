@@ -27,13 +27,13 @@ public class TrackedPeer {
     @Column(nullable = false)
     private InetAddress reqIp;
     @Column(nullable = false)
-    private byte[] peerId;
+    private String peerId;
     @Column(nullable = false)
     private InetAddress peerIp;
     @Column(nullable = false)
     private Integer peerPort;
     @Column(nullable = false)
-    private byte[] torrentInfoHash;
+    private String torrentInfoHash;
 //    @Column // too complex, we just give up it until somebody want to PR it
 //    private byte[] torrentInfoHashSha1;
     @Column(nullable = false)

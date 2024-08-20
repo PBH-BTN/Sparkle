@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 @Repository
 public interface TrackedTaskRepository extends SparkleCommonRepository<TrackedTask, Long> {
-    Optional<TrackedTask> findByTorrentInfoHash(byte[] torrentInfoHash);
+    Optional<TrackedTask> findByTorrentInfoHash(String torrentInfoHash);
 }

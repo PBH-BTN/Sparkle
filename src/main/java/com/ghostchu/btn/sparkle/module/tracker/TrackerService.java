@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.ghostchu.btn.sparkle.module.tracker.internal.*;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,15 +49,15 @@ public class TrackerService {
     public void executeAnnounce(PeerAnnounce announce) {
         var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
                 announce.peerIp(),
-                announce.peerId(),
-                announce.infoHash()
+                ByteUtil.bytesToHex(announce.peerId()),
+                ByteUtil.bytesToHex(announce.infoHash())
         ).orElse(new TrackedPeer(
                 null,
                 announce.reqIp(),
-                announce.peerId(),
+                ByteUtil.bytesToHex(announce.peerId()),
                 announce.peerIp(),
                 announce.peerPort(),
-                announce.infoHash(),
+                ByteUtil.bytesToHex(announce.infoHash()),
                 announce.uploaded(),
                 announce.uploaded(),
                 announce.downloaded(),
@@ -85,9 +86,9 @@ public class TrackerService {
         trackedPeer.setPeerPort(announce.peerPort());
         trackedPeer.setPeerIp(announce.peerIp());
         trackedPeer.setReqIp(announce.reqIp());
-        var trackedTask = trackedTaskRepository.findByTorrentInfoHash(announce.infoHash()).orElse(new TrackedTask(
+        var trackedTask = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(announce.infoHash())).orElse(new TrackedTask(
                 null,
-                announce.infoHash(),
+                ByteUtil.bytesToHex(announce.infoHash()),
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
                 0L, 0L
@@ -114,13 +115,13 @@ public class TrackerService {
         AtomicInteger seeders = new AtomicInteger();
         AtomicInteger leechers = new AtomicInteger();
         long downloaded = 0;
-        trackedPeerRepository.fetchPeersFromTorrent(torrentInfoHash, Math.min(numWant, maxPeersReturn))
+        trackedPeerRepository.fetchPeersFromTorrent(ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))
                 .forEach(peer -> {
                     if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                        v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), peer.getPeerId()));
+                        v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
                     }
                     if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                        v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), peer.getPeerId()));
+                        v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
                     }
                     if (peer.getLeft() == 0) {
                         seeders.incrementAndGet();
@@ -128,7 +129,7 @@ public class TrackerService {
                         leechers.incrementAndGet();
                     }
                 });
-        var trackedTask = trackedTaskRepository.findByTorrentInfoHash(torrentInfoHash);
+        var trackedTask = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(torrentInfoHash));
         if (trackedTask.isPresent()) {
             downloaded = trackedTask.get().getDownloadedCount();
         }
@@ -136,10 +137,10 @@ public class TrackerService {
     }
 
     public ScrapeResponse scrape(byte[] torrentInfoHash){
-        var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(torrentInfoHash,0L);
-        var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(torrentInfoHash,0L);
+        var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash),0L);
+        var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash),0L);
         var downloaded = 0L;
-        var optional = trackedTaskRepository.findByTorrentInfoHash(torrentInfoHash);
+        var optional = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(torrentInfoHash));
         if(optional.isPresent()){
             downloaded = optional.get().getDownloadedCount();
         }
