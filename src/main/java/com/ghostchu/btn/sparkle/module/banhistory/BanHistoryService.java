@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.banhistory;
 
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
+import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
@@ -52,6 +53,14 @@ public class BanHistoryService {
         return ipMerger.merge(list);
     }
 
+    @Cacheable(value = "banHistoryMetrics#1800000", key = "#from+'-'+#to")
+    public BanHistoryMetrics getMetrics(Timestamp from, Timestamp to){
+        return new BanHistoryMetrics(
+                banHistoryRepository.count(),
+                banHistoryRepository.countByInsertTimeBetween(from,to)
+        );
+    }
+
     public BanHistoryDto toDto(BanHistory banHistory) {
         return BanHistoryDto.builder()
                 .id(banHistory.getId())
@@ -91,4 +100,9 @@ public class BanHistoryService {
         var page = banHistoryRepository.findAll(specification, pageable);
         return new SparklePage<>(page, dat -> dat.map(this::toDto));
     }
+
+    public record BanHistoryMetrics(
+            long total,
+            long recent
+    ){}
 }

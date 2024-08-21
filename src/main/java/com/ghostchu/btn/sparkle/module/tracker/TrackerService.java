@@ -51,7 +51,7 @@ public class TrackerService {
     public void executeAnnounce(PeerAnnounce announce) {
         var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
                 announce.peerIp(),
-                ByteUtil.bytesToHex(announce.peerId()),
+                ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
                 ByteUtil.bytesToHex(announce.infoHash())
         ).orElse(new TrackedPeer(
                 null,
@@ -104,8 +104,10 @@ public class TrackerService {
             trackedTask.setDownloadedCount(trackedTask.getDownloadedCount() + 1);
         }
         trackedTaskRepository.save(trackedTask);
-        if (announce.peerEvent() == PeerEvent.STOPPED && trackedPeer.getId() != null) {
-            trackedPeerRepository.delete(trackedPeer);
+        if (announce.peerEvent() == PeerEvent.STOPPED) {
+            if (trackedPeer.getId() != null) {
+                trackedPeerRepository.delete(trackedPeer);
+            }
         } else {
             trackedPeerRepository.save(trackedPeer);
         }
@@ -139,7 +141,7 @@ public class TrackerService {
         return new TrackedPeerList(v4, v6, seeders.get(), leechers.get(), downloaded);
     }
 
-    @Cacheable(value = {"scrape#3000"}, key = "#torrentInfoHash")
+    @Cacheable(value = {"scrape#300000"}, key = "#torrentInfoHash")
     public ScrapeResponse scrape(byte[] torrentInfoHash) {
         var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
         var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
@@ -151,11 +153,23 @@ public class TrackerService {
         return new ScrapeResponse(seeders, leechers, downloaded);
     }
 
+    public record TrackerMetrics(
+            long activeTorrents,
+            long totalTorrents,
+            long peers,
+            long seeders,
+            long leechers,
+            long peersHaveUpload,
+            long peersNoUpload
+            ) {
+
+    }
+
     public record ScrapeResponse(
             long seeders,
             long leechers,
             long downloaded
-    ) implements Serializable{
+    ) implements Serializable {
     }
 
     public record PeerAnnounce(
@@ -169,7 +183,7 @@ public class TrackerService {
             long left,
             PeerEvent peerEvent,
             String userAgent
-    ) implements Serializable{
+    ) implements Serializable {
 
     }
 
@@ -179,7 +193,7 @@ public class TrackerService {
             long seeders,
             long leechers,
             long downloaded
-    ) implements Serializable{
+    ) implements Serializable {
     }
 
     public record Peer(

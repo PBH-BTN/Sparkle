@@ -8,6 +8,7 @@ import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
@@ -45,6 +46,14 @@ public class ClientDiscoveryService {
         clientDiscoveryRepository.saveAll(notInDatabase);
     }
 
+    @Cacheable(value = "clientDiscoveryMetrics#1800000", key = "#from+'-'+#to")
+    public ClientDiscoveryMetrics getMetrics(Timestamp from, Timestamp to){
+        return new ClientDiscoveryMetrics(
+                clientDiscoveryRepository.count(),
+                clientDiscoveryRepository.countByFoundAtBetween(from,to)
+        );
+    }
+
     public ClientDiscoveryDto toDto(ClientDiscovery clientDiscovery) {
         return ClientDiscoveryDto.builder()
                 .hash(clientDiscovery.getHash())
@@ -66,4 +75,9 @@ public class ClientDiscoveryService {
         var page = clientDiscoveryRepository.findAll(specification, of);
         return new SparklePage<>(page, ct -> ct.map(this::toDto));
     }
+
+    public record ClientDiscoveryMetrics(
+            long total,
+            long recent
+    ){}
 }

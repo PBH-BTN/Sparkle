@@ -1,16 +1,19 @@
 package com.ghostchu.btn.sparkle.module.snapshot;
 
+import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Service
@@ -28,6 +31,14 @@ public class SnapshotService extends SparklePage{
     @Transactional
     public Iterable<Snapshot> saveSnapshots(List<Snapshot> snapshotList) {
         return snapshotRepository.saveAll(snapshotList);
+    }
+
+    @Cacheable(value = "snapshotMetrics#1800000", key = "#from+'-'+#to")
+    public SnapshotMetrics getMetrics(Timestamp from, Timestamp to){
+        return new SnapshotMetrics(
+                snapshotRepository.count(),
+                snapshotRepository.countByInsertTimeBetween(from,to)
+        );
     }
 
     public SparklePage<Snapshot, SnapshotDto> queryRecent(PageRequest pageable) {
@@ -60,5 +71,8 @@ public class SnapshotService extends SparklePage{
                 .build();
     }
 
-
+    public record SnapshotMetrics(
+            long total,
+            long recent
+    ){}
 }
