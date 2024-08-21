@@ -82,6 +82,12 @@ public class PingController extends SparkleController {
         Map<String, Object> rootObject = new LinkedHashMap<>();
         rootObject.put("min_protocol_version", pingService.getMinProtocolVersion());
         rootObject.put("max_protocol_version", pingService.getMaxProtocolVersion());
+
+        if (ua(req).contains("PeerBanHelper/5")) { // bug workaround
+            rootObject.put("min_protocol_version", 6);
+            rootObject.put("max_protocol_version", 6);
+        }
+
         Map<String, Object> abilityObject = new LinkedHashMap<>();
         rootObject.put("ability", abilityObject);
         abilityObject.put("submit_peers", submitPeersAbility);
