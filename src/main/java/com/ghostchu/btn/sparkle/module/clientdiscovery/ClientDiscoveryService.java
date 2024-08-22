@@ -12,6 +12,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -31,6 +32,7 @@ public class ClientDiscoveryService {
 
     @Transactional
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Async
     public void handleIdentities(User user, Timestamp timeForFoundAt, Timestamp timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
         clientDiscoveryRepository.updateLastSeen(clientIdentities.stream().map(ClientIdentity::hash).toList(), timeForLastSeenAt, user);
         var found = clientDiscoveryRepository.findAllById(clientIdentities.stream().map(ClientIdentity::hash).toList());

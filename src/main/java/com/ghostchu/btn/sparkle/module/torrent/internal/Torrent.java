@@ -8,7 +8,8 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "torrent",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"identifier","size"})})
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"identifier","size"})},
+        indexes = {@Index(columnList = "identifier")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

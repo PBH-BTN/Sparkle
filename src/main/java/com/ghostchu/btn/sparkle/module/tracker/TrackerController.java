@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
+import com.ghostchu.btn.sparkle.util.MsgUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.LockModeType;
@@ -22,12 +23,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.net.InetAddress;
-import java.net.URLDecoder;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/tracker")
@@ -100,12 +100,14 @@ public class TrackerController extends SparkleController {
             }
         }
         var peers = trackerService.fetchPeersFromTorrent(infoHash, null, null, numWant);
+
         // 合成响应
         var map = new HashMap<>() {{
             put("interval", announceInterval / 1000);
             put("complete", peers.seeders());
             put("incomplete", peers.leechers());
             put("downloaded", peers.downloaded());
+            put("warning message", new SparkleTrackerMetricsMessage(peers.seeders(),peers.leechers(), peers.downloaded(), peerIps).toString());
             if (compact) {
                 put("peers", compactPeers(peers.v4(), false));
                 if (!peers.v6().isEmpty())
@@ -195,4 +197,24 @@ public class TrackerController extends SparkleController {
         return infoHashes;
     }
 
+    private record SparkleTrackerMetricsMessage(
+            long seeders,
+            long leechers,
+            long finishes,
+            List<InetAddress> ips
+    ){
+        @Override
+        public String toString() {
+            StringJoiner joiner = new StringJoiner(", ","[","]");
+            ips.stream().filter(inet->inet instanceof Inet4Address).forEach(net->joiner.add(net.getHostAddress()));
+            ips.stream().filter(inet->inet instanceof Inet6Address).forEach(net->joiner.add(net.getHostAddress()));
+            return "[Sparkle] S:%s L:%s F:%s, Announce IPs: %s"
+                    .formatted(
+                            seeders,
+                            leechers,
+                            finishes,
+                            joiner.toString()
+                    );
+        }
+    }
 }

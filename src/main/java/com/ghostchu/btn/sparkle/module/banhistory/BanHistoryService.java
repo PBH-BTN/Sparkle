@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
@@ -87,8 +88,9 @@ public class BanHistoryService {
 
     @Modifying
     @Transactional
-    public Iterable<BanHistory> saveBanHistories(List<BanHistory> banHistoryList) {
-        return banHistoryRepository.saveAll(banHistoryList);
+    @Async
+    public void saveBanHistories(List<BanHistory> banHistoryList) {
+        banHistoryRepository.saveAll(banHistoryList);
     }
 
     public SparklePage<BanHistory, BanHistoryDto> queryRecent(PageRequest pageable) {

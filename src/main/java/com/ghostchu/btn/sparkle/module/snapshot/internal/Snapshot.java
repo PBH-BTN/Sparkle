@@ -10,12 +10,13 @@ import java.sql.Timestamp;
 
 @Entity
 @Table(name = "snapshot",
-        indexes = {@Index(columnList = "insertTime")
+        indexes = {@Index(columnList = "insertTime DESC")
                 , @Index(columnList = "userApplication")
                 , @Index(columnList = "peerId")
                 , @Index(columnList = "peerClientName")
                 , @Index(columnList = "torrent")
-                , @Index(columnList = "peerIp")})
+                , @Index(columnList = "peerIp")
+                , @Index(columnList = "torrent, peerIp, userApplication, insertTime DESC")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
