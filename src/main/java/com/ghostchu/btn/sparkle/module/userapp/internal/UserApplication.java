@@ -32,5 +32,6 @@ public class UserApplication {
     @JoinColumn(nullable = false, name = "user")
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
-
+    @Column(nullable = false)
+    private Boolean banned;
 }

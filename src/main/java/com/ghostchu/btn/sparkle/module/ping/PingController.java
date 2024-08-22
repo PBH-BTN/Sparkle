@@ -57,6 +57,11 @@ public class PingController extends SparkleController {
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
         var cred = cred();
+        if(cred.getBanned()){
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Peers 数据：(AppId={}, AppSecret={}, UA={})",
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+        }
         IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, AppSecret={}, UA={})",
@@ -67,6 +72,11 @@ public class PingController extends SparkleController {
     @PostMapping("/bans/submit")
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException {
         var cred = cred();
+        if(cred.getBanned()){
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Bans 数据：(AppId={}, AppSecret={}, UA={})",
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+        }
         IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, AppSecret={}, UA={})",
@@ -100,6 +110,11 @@ public class PingController extends SparkleController {
     @GetMapping("/rules/retrieve")
     public ResponseEntity<String> rule() throws IOException, AccessDeniedException {
         var cred = cred();
+        if(cred.getBanned()){
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求云端规则：(AppId={}, AppSecret={}, UA={})",
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+        }
         String version = req.getParameter("rev");
         BtnRule btn = service.generateBtnRule();
         String rev = Hashing.goodFastHash(32).hashString(objectMapper.writeValueAsString(btn), StandardCharsets.UTF_8).toString();

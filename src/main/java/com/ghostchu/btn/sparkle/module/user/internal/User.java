@@ -39,4 +39,6 @@ public class User {
     private String githubLogin;
     @Column(nullable = true)
     private Long githubUserId;
+    @Column(nullable = false)
+    private Boolean banned;
 }

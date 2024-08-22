@@ -20,4 +20,5 @@ public class UserDto implements Serializable {
     private String nickname;
     private Long registerAt;
     private Long lastSeenAt;
+    private Boolean banned;
 }

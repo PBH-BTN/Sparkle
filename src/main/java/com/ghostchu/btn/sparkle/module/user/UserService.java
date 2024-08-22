@@ -64,6 +64,7 @@ public class UserService {
                 .nickname(user.getNickname())
                 .registerAt(user.getRegisterAt().getTime())
                 .lastSeenAt(user.getLastSeenAt().getTime())
+                .banned(user.getBanned())
                 .build();
     }
 }

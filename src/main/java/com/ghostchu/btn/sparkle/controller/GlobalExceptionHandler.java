@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.controller;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import com.ghostchu.btn.sparkle.exception.BusinessException;
+import com.ghostchu.btn.sparkle.exception.UserBannedException;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<StdResp<Void>> businessExceptionHandler(BusinessException e){
         return ResponseEntity.status(e.getStatusCode()).body(new StdResp<>(false, e.getMessage(), null));
+    }
+    @ExceptionHandler(UserBannedException.class)
+    public ResponseEntity<StdResp<Void>> userBannedException(UserBannedException e){
+        return ResponseEntity.status(403).body(new StdResp<>(false,"此用户已被管理员停用，请与系统管理员联系以获取更多信息。", null));
     }
     @ExceptionHandler(NotLoginException.class)
     public ResponseEntity<StdResp<Void>> businessExceptionHandler(NotLoginException e){
