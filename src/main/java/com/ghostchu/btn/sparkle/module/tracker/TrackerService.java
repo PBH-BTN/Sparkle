@@ -40,7 +40,7 @@ public class TrackerService {
         this.maxPeersReturn = maxPeersReturn;
     }
 
-    @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
+    @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
     @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(new Timestamp(System.currentTimeMillis() - inactiveInterval));

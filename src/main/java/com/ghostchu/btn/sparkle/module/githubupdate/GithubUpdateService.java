@@ -1,8 +1,7 @@
 package com.ghostchu.btn.sparkle.module.githubupdate;
 
-import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
+import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
-import com.ghostchu.btn.sparkle.module.rule.RuleService;
 import jakarta.transaction.Transactional;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +19,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class GithubUpdateService {
     private final BanHistoryRepository banHistoryRepository;
-    private final RuleService ruleService;
-    private final BanHistoryService banHistoryService;
+    private final AnalyseService analyseService;
     @Value("${service.githubruleupdate.access-token}")
     private String accessToken;
     @Value("${service.githubruleupdate.org-name}")
@@ -39,15 +36,13 @@ public class GithubUpdateService {
     @Value("${service.githubruleupdate.past-interval}")
     private long pastInterval;
 
-    public GithubUpdateService(RuleService ruleService, BanHistoryService banHistoryService,
-                               BanHistoryRepository banHistoryRepository) {
-        this.ruleService = ruleService;
-        this.banHistoryService = banHistoryService;
+    public GithubUpdateService(BanHistoryRepository banHistoryRepository, AnalyseService analyseService) {
         this.banHistoryRepository = banHistoryRepository;
+        this.analyseService = analyseService;
     }
 
 
-    @Scheduled(fixedRateString = "${service.githubruleupdate.interval}")
+    @Scheduled(fixedDelayString = "${service.githubruleupdate.interval}")
     @Transactional
     public void githubRuleUpdate() throws IOException {
         log.info("开始更新 GitHub 同步规则存储库...");
@@ -58,6 +53,7 @@ public class GithubUpdateService {
         }
         var repository = organization.getRepository(repoName);
         updateFile(repository, "untrusted-ips.txt", generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "overdownload-ips.txt", generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "hp_torrent.txt", generateHpTorrents().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "dt_torrent.txt", generateDtTorrents().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "go.torrent dev 20181121.txt", generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
@@ -204,7 +200,10 @@ public class GithubUpdateService {
     }
 
     private String generateUntrustedIps() {
-        return String.join("\n", banHistoryService.generateUntrustedIPAddresses());
+        return String.join("\n", analyseService.getUntrustedIPAddresses().stream().map(r->r.getIp().getHostAddress()).toList());
+    }
+    private String generateOverDownloadIps() {
+        return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(r->r.getIp().getHostAddress()).toList());
     }
 
     private Timestamp nowTimestamp() {

@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
+import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
@@ -37,6 +38,7 @@ public class PingService {
     private final SnapshotService snapshotService;
     private final TorrentService torrentService;
     private final ClientDiscoveryService clientDiscoveryService;
+    private final AnalyseService analyseService;
     @Value("${service.ping.protocol.min-version}")
     private int minProtocolVersion;
     @Value("${service.ping.protocol.max-version}")
@@ -127,17 +129,25 @@ public class PingService {
         return banHistoryList.size();
     }
 
-    @Cacheable({"btnRule#600000"})
+    @Cacheable({"btnRule#60000"})
     public BtnRule generateBtnRule() {
         List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
-        List<String> untrustedIps = banHistoryService.generateUntrustedIPAddresses();
-        entities.addAll(untrustedIps.stream().map(ip -> new RuleDto(
-                0L,
-                "BTN-自动生成-不受信任IP",
-                ip,
+        // 不要全选规则，有的规则可能不是 IP 类型的
+        entities.addAll(analyseService.getUntrustedIPAddresses().stream().map(a->new RuleDto(
+                null,
+                a.getModule(),
+                a.getIp().getHostAddress(),
                 "ip",
-                System.currentTimeMillis(),
-                System.currentTimeMillis()
+                0L,
+                0L
+        )).toList());
+        entities.addAll(analyseService.getOverDownloadIPAddresses().stream().map(a->new RuleDto(
+                null,
+                a.getModule(),
+                a.getIp().getHostAddress(),
+                "ip",
+                0L,
+                0L
         )).toList());
         return new BtnRule(entities);
     }

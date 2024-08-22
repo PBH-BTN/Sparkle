@@ -28,12 +28,6 @@ public class BanHistoryService {
     private final BanHistoryRepository banHistoryRepository;
     private final IPMerger ipMerger;
 
-
-    @Value("${service.banhistory.untrustipgenerate.offset}")
-    private long untrustedIpAddressGenerateOffset;
-    @Value("${service.banhistory.untrustipgenerate.threshold}")
-    private int untrustedIpAddressGenerateThreshold;
-
     public BanHistoryService(BanHistoryRepository banHistoryRepository,
                              TorrentService torrentService,
                              IPMerger ipMerger) {
@@ -42,17 +36,6 @@ public class BanHistoryService {
         this.ipMerger = ipMerger;
     }
 
-
-    @Transactional
-    @Lock(LockModeType.READ)
-    public List<String> generateUntrustedIPAddresses() {
-        var list = banHistoryRepository
-                .generateUntrustedIPAddresses(new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), new Timestamp(System.currentTimeMillis()), untrustedIpAddressGenerateThreshold)
-                .stream()
-                .map(InetAddress::getHostAddress)
-                .collect(Collectors.toList());
-        return ipMerger.merge(list);
-    }
 
     @Cacheable(value = "banHistoryMetrics#1800000", key = "#from+'-'+#to")
     public BanHistoryMetrics getMetrics(Timestamp from, Timestamp to){
