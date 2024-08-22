@@ -13,6 +13,7 @@ import com.ghostchu.btn.sparkle.module.rule.RuleService;
 import com.ghostchu.btn.sparkle.module.snapshot.SnapshotService;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
+import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
@@ -39,6 +40,7 @@ public class PingService {
     private final TorrentService torrentService;
     private final ClientDiscoveryService clientDiscoveryService;
     private final AnalyseService analyseService;
+    private final UserService userService;
     @Value("${service.ping.protocol.min-version}")
     private int minProtocolVersion;
     @Value("${service.ping.protocol.max-version}")
@@ -48,6 +50,9 @@ public class PingService {
     @Transactional
     public long handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
         Timestamp now = new Timestamp(System.currentTimeMillis());
+        var usr = userApplication.getUser();
+        usr.setLastAccessAt(now);
+        userService.saveUser(usr);
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<Snapshot> snapshotList = ping.getPeers().stream()
                 .peek(peer -> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()), PeerUtil.cutClientName(peer.getClientName()))))
@@ -88,9 +93,12 @@ public class PingService {
     @Transactional
     public long handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
         Timestamp now = new Timestamp(System.currentTimeMillis());
+        var usr = userApplication.getUser();
+        usr.setLastAccessAt(now);
+        userService.saveUser(usr);
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<BanHistory> banHistoryList = ping.getBans().stream()
-                .peek(peer -> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeer().getPeerId()),PeerUtil.cutClientName(peer.getPeer().getClientName()))))
+                .peek(peer -> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeer().getPeerId()), PeerUtil.cutClientName(peer.getPeer().getClientName()))))
                 .map(ban -> {
                     var peer = ban.getPeer();
                     try {
@@ -133,7 +141,7 @@ public class PingService {
     public BtnRule generateBtnRule() {
         List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
         // 不要全选规则，有的规则可能不是 IP 类型的
-        entities.addAll(analyseService.getUntrustedIPAddresses().stream().map(a->new RuleDto(
+        entities.addAll(analyseService.getUntrustedIPAddresses().stream().map(a -> new RuleDto(
                 null,
                 a.getModule(),
                 a.getIp().getHostAddress(),
@@ -141,7 +149,7 @@ public class PingService {
                 0L,
                 0L
         )).toList());
-        entities.addAll(analyseService.getOverDownloadIPAddresses().stream().map(a->new RuleDto(
+        entities.addAll(analyseService.getOverDownloadIPAddresses().stream().map(a -> new RuleDto(
                 null,
                 a.getModule(),
                 a.getIp().getHostAddress(),

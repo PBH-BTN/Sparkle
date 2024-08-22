@@ -1,11 +1,11 @@
 package com.ghostchu.btn.sparkle.module.user;
 
-import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.module.user.internal.UserRepository;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +33,7 @@ public class UserService {
     public Optional<User> getUserByGithubLogin(String githubLogin) {
         return userRepository.findByGithubLogin(githubLogin);
     }
+
     public Optional<User> getUserByGithubUserId(Long githubLogin) {
         return userRepository.findByGithubUserId(githubLogin);
     }
@@ -45,7 +46,7 @@ public class UserService {
      */
     public User exchangeUserFromUserDto(UserDto dto) throws UserNotFoundException {
         var optional = userRepository.findById(dto.getId());
-        if(optional.isEmpty()){
+        if (optional.isEmpty()) {
             throw new UserNotFoundException();
         }
         return optional.get();
@@ -53,6 +54,7 @@ public class UserService {
 
     @Modifying
     @Transactional
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     public User saveUser(User user) {
         return userRepository.save(user);
     }
