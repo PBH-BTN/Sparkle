@@ -16,7 +16,7 @@ public class TorrentService {
     }
 
     @Modifying
-    @Transactional
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize){
         var torrentOptional =  torrentRepository.findByIdentifierAndSize(torrentIdentifier,torrentSize);
         if(torrentOptional.isPresent()){
