@@ -48,5 +48,9 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 
     List<BanHistory> findDistinctByPeerIdLikeAndInsertTimeBetween(String peerId, Timestamp from, Timestamp to);
 
+    @Query(nativeQuery = true, value = "SELECT * from banhistory ban WHERE ban.insert_time >= ?2 AND ban.insert_time <= ?3 AND host(ban.peer_ip) LIKE ?1")
+    @Transactional
+    List<BanHistory> findByPeerIp(String peerIp,Timestamp insertTimeStart, Timestamp insertTimeEnd);
+
     List<BanHistory> findDistinctByPeerClientNameLikeAndInsertTimeBetween(String peerClientName, Timestamp from, Timestamp to);
 }

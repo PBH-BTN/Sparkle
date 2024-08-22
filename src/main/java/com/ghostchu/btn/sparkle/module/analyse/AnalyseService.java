@@ -4,6 +4,7 @@ import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPMerger;
+import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.EntityManager;
@@ -52,9 +53,9 @@ public class AnalyseService {
         var list = ipMerger.merge(banHistoryRepository
                 .generateUntrustedIPAddresses(new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), new Timestamp(System.currentTimeMillis()), untrustedIpAddressGenerateThreshold)
                 .stream()
-                .map(InetAddress::getHostAddress)
+                .map(IPUtil::toString)
                 .collect(Collectors.toList()));
-        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, new IPAddressString(ip).getAddress().toInetAddress(), UNTRUSTED_IP, "Generated at" + MsgUtil.getNowDateTimeString())).toList();
+        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, IPUtil.toInet(ip), UNTRUSTED_IP, "Generated at" + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         analysedRuleRepository.saveAll(untrustedIps);
     }
@@ -124,12 +125,12 @@ public class AnalyseService {
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
         query.setParameter(2, overDownloadGenerateThreshold);
         List<Object[]> queryResult = query.getResultList();
-        var ips = ipMerger.merge(queryResult.stream().map(arr -> ((InetAddress) arr[1]).getHostAddress()).collect(Collectors.toList()));
+        var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1]))).collect(Collectors.toList()));
         List<AnalysedRule> rules = new ArrayList<>();
         for (String ip : ips) {
             rules.add(new AnalysedRule(
                     null,
-                    new IPAddressString(ip).getAddress().toInetAddress(),
+                    IPUtil.toInet(ip),
                     OVER_DOWNLOAD,
                     "Generated at " + MsgUtil.getNowDateTimeString()
             ));

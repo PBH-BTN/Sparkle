@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.githubupdate;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
+import com.ghostchu.btn.sparkle.util.IPUtil;
 import jakarta.transaction.Transactional;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -65,16 +66,17 @@ public class GithubUpdateService {
 
     private String generateDot1IPV6() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "Transmission 2.96",
+        banHistoryRepository.findByPeerIp(
+                        "%::1",
                         pastTimestamp(),
                         nowTimestamp()
                 )
                 .stream()
-                .filter(banHistory -> banHistory.getPeerIp().getHostAddress().endsWith("::1"))
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
+                .filter(banHistory -> banHistory.getPeerClientName().startsWith("Transmission"))
+                .map(ban-> IPUtil.toString(ban.getPeerIp()))
                 .distinct()
-                .forEach(banHistory -> strJoiner.add(banHistory.getPeerIp().getHostAddress()));
+                .sorted()
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -86,8 +88,8 @@ public class GithubUpdateService {
                         nowTimestamp()
                 ).stream()
                 .filter(banHistory -> !banHistory.getPeerId().toLowerCase(Locale.ROOT).startsWith("-gp"))
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history -> history.getPeerIp().getHostAddress())
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -101,8 +103,8 @@ public class GithubUpdateService {
                         nowTimestamp()
                 )
                 .stream()
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history -> history.getPeerIp().getHostAddress())
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -116,8 +118,8 @@ public class GithubUpdateService {
                         nowTimestamp()
                 )
                 .stream()
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history -> history.getPeerIp().getHostAddress())
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -131,8 +133,8 @@ public class GithubUpdateService {
                         nowTimestamp()
                 )
                 .stream()
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history -> history.getPeerIp().getHostAddress())
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -147,8 +149,8 @@ public class GithubUpdateService {
                         pastTimestamp(),
                         nowTimestamp()
                 ).stream()
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history -> history.getPeerIp().getHostAddress())
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -164,8 +166,8 @@ public class GithubUpdateService {
 
                 )
                 .stream()
-                .sorted(Comparator.comparing(o -> o.getPeerIp().getHostAddress()))
-                .map(history -> history.getPeerIp().getHostAddress())
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
