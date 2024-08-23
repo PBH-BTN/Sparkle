@@ -62,7 +62,23 @@ public class GithubUpdateService {
         updateFile(repository, "123pan.txt", generate123pan().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "random-peerid.txt", generateGopeedDev().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "dot1_v6_tagging.txt", generateDot1IPV6().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
     }
+    private String generateStrangeIPV6() {
+        var strJoiner = new StringJoiner("\n");
+        banHistoryRepository.findByPeerIp(
+                        "%2e0:61ff:fe%",
+                        pastTimestamp(),
+                        nowTimestamp()
+                )
+                .stream()
+                .map(ban-> IPUtil.toString(ban.getPeerIp()))
+                .distinct()
+                .sorted()
+                .forEach(strJoiner::add);
+        return strJoiner.toString();
+    }
+
 
     private String generateDot1IPV6() {
         var strJoiner = new StringJoiner("\n");
