@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.ping;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.AccessDeniedException;
+import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.CloudRuleAbility;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.ReconfigureAbility;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitBansAbility;
@@ -53,40 +54,65 @@ public class PingController extends SparkleController {
     private CloudRuleAbility cloudRuleAbility;
     @Autowired
     private UserApplicationService userApplicationService;
+    @Autowired
+    private AuditService auditService;
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
         var cred = cred();
-        if(cred.getBanned()){
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("appId", cred.getAppId());
+        if (isCredBanned(cred)) {
             log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Peers 数据：(AppId={}, AppSecret={}, UA={})",
                     ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            audit.put("error", "UserApplication Banned");
+            auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, AppSecret={}, UA={})",
                 ip(req), ping.getPeers().size(), handled, cred.getAppId(), cred.getAppSecret(), ua(req));
+        audit.put("peers_size", ping.getPeers().size());
+        audit.put("peers_handled", handled);
+        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
 
     @PostMapping("/bans/submit")
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException {
         var cred = cred();
-        if(cred.getBanned()){
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("appId", cred.getAppId());
+        if (isCredBanned(cred)) {
             log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Bans 数据：(AppId={}, AppSecret={}, UA={})",
                     ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            audit.put("error", "UserApplication Banned");
+            auditService.log(req, "BTN_BANS_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, AppSecret={}, UA={})",
                 ip(req), ping.getBans().size(), handled, cred.getAppId(), cred.getAppSecret(), ua(req));
+        audit.put("bans_size", ping.getBans().size());
+        audit.put("bans_handled", handled);
+        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
 
     @GetMapping("/config")
-    public Map<String, Object> config() throws AccessDeniedException {
+    public ResponseEntity<Object> config() throws AccessDeniedException {
         var cred = cred();
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("appId", cred.getAppId());
+        if (isCredBanned(cred)) {
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求配置文件：(AppId={}, AppSecret={}, UA={})",
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            audit.put("error", "UserApplication Banned");
+            auditService.log(req, "BTN_CONFIG", false, audit);
+            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+        }
         log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, AppSecret={}, UA={})",
                 ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
         Map<String, Object> rootObject = new LinkedHashMap<>();
@@ -104,15 +130,20 @@ public class PingController extends SparkleController {
         abilityObject.put("submit_bans", submitBansAbility);
         abilityObject.put("reconfigure", reconfigureAbility);
         abilityObject.put("rules", cloudRuleAbility);
-        return rootObject;
+        auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
+        return ResponseEntity.ok().body(rootObject);
     }
 
     @GetMapping("/rules/retrieve")
     public ResponseEntity<String> rule() throws IOException, AccessDeniedException {
         var cred = cred();
-        if(cred.getBanned()){
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("appId", cred.getAppId());
+        if (isCredBanned(cred)) {
             log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求云端规则：(AppId={}, AppSecret={}, UA={})",
                     ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            audit.put("error", "UserApplication Banned");
+            auditService.log(req, "BTN_RULES_RETRIEVE", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         String version = req.getParameter("rev");
@@ -126,11 +157,18 @@ public class PingController extends SparkleController {
         btn.setVersion(rev);
         log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, AppSecret={}, UA={})",
                 ip(req), version, rev, cred.getAppId(), cred.getAppSecret(), ua(req));
+        audit.put("from", version);
+        audit.put("to", rev);
+        auditService.log(req, "BTN_RULES_RETRIEVE", true, audit);
         return ResponseEntity.status(200).contentType(MediaType.APPLICATION_JSON).body(objectMapper.writeValueAsString(btn));
     }
 
     private void checkIfInvalidPBH() throws AccessDeniedException {
         String ua = req.getHeader("User-Agent");
+    }
+
+    public boolean isCredBanned(UserApplication userApplication) {
+        return userApplication.getBanned() || userApplication.getUser().getBanned();
     }
 
     private UserApplication cred() throws AccessDeniedException {

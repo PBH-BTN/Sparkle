@@ -23,7 +23,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
@@ -145,7 +144,7 @@ public class PingService {
         entities.addAll(analyseService.getUntrustedIPAddresses().stream().map(a -> new RuleDto(
                 null,
                 a.getModule(),
-                a.getIp().getHostAddress(),
+                a.getIp(),
                 "ip",
                 0L,
                 0L
@@ -153,7 +152,7 @@ public class PingService {
         entities.addAll(analyseService.getOverDownloadIPAddresses().stream().map(a -> new RuleDto(
                 null,
                 a.getModule(),
-                a.getIp().getHostAddress(),
+                a.getIp(),
                 "ip",
                 0L,
                 0L

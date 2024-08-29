@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.githubupdate;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
+import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import jakarta.transaction.Transactional;
@@ -17,7 +18,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Locale;
 import java.util.StringJoiner;
 
@@ -218,10 +218,10 @@ public class GithubUpdateService {
     }
 
     private String generateUntrustedIps() {
-        return String.join("\n", analyseService.getUntrustedIPAddresses().stream().map(r->r.getIp().getHostAddress()).toList());
+        return String.join("\n", analyseService.getUntrustedIPAddresses().stream().map(AnalysedRule::getIp).toList());
     }
     private String generateOverDownloadIps() {
-        return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(r->r.getIp().getHostAddress()).toList());
+        return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(AnalysedRule::getIp).toList());
     }
 
     private Timestamp nowTimestamp() {

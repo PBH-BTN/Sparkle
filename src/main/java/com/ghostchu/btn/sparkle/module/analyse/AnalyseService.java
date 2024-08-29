@@ -6,7 +6,6 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
-import inet.ipaddr.IPAddressString;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -55,7 +54,7 @@ public class AnalyseService {
                 .stream()
                 .map(IPUtil::toString)
                 .collect(Collectors.toList()));
-        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, IPUtil.toInet(ip), UNTRUSTED_IP, "Generated at" + MsgUtil.getNowDateTimeString())).toList();
+        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, ip, UNTRUSTED_IP, "Generated at" + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         analysedRuleRepository.saveAll(untrustedIps);
     }
@@ -130,7 +129,7 @@ public class AnalyseService {
         for (String ip : ips) {
             rules.add(new AnalysedRule(
                     null,
-                    IPUtil.toInet(ip),
+                    ip,
                     OVER_DOWNLOAD,
                     "Generated at " + MsgUtil.getNowDateTimeString()
             ));

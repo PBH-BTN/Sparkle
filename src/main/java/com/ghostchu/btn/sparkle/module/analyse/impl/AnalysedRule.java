@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 
-import java.net.InetAddress;
-
 @Entity
 @Table(name = "analyse_rules",
         indexes = {@Index(columnList = "module"),@Index(columnList = "ip")}
@@ -24,7 +22,7 @@ public class AnalysedRule {
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)
-    private InetAddress ip;
+    private String ip;
     @Column(nullable = false)
     private String module;
     @Column(nullable = false)

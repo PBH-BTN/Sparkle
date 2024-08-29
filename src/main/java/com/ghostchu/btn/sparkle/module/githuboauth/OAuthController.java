@@ -5,12 +5,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
+import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import kong.unirest.core.HttpResponse;
 import kong.unirest.core.UnirestInstance;
 import lombok.AllArgsConstructor;
@@ -26,6 +28,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +58,8 @@ public class OAuthController extends SparkleController {
     private HttpServletRequest req;
     @Autowired
     private HttpServletResponse resp;
+    @Autowired
+    private AuditService auditService;
 
     @GetMapping("/login")
     public void loginToGithub() throws IOException {
@@ -72,6 +77,7 @@ public class OAuthController extends SparkleController {
     }
 
     @GetMapping("/callback")
+    @Transactional
     public void callback() throws IOException {
 //        String state = IP_STATE_MAPPING.getIfPresent(peerIp);
 //        if (state == null) {
@@ -133,6 +139,11 @@ public class OAuthController extends SparkleController {
         if (user.getId() <= 0) {
             throw new IllegalStateException("用户注册失败，请联系系统管理员。");
         }
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("user", user.getId());
+        audit.put("github", profile.getId());
+        audit.put("githubLogin", profile.getLogin());
+        auditService.log(req, "USER_LOGIN", true, audit);
         StpUtil.login(user.getId());
         log.info("用户 {} (ID={}, GHLogin={}, GHUID={}) 已从 {} 登录", user.getNickname(), user.getId(), profile.getLogin(), profile.getId(), ip(req));
     }
