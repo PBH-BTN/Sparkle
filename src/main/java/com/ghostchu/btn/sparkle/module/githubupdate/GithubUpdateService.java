@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.githubupdate;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
+import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import jakarta.transaction.Transactional;
@@ -20,12 +21,14 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class GithubUpdateService {
     private final BanHistoryRepository banHistoryRepository;
     private final AnalyseService analyseService;
+    private final BanHistoryService banHistoryService;
     @Value("${service.githubruleupdate.access-token}")
     private String accessToken;
     @Value("${service.githubruleupdate.org-name}")
@@ -37,9 +40,10 @@ public class GithubUpdateService {
     @Value("${service.githubruleupdate.past-interval}")
     private long pastInterval;
 
-    public GithubUpdateService(BanHistoryRepository banHistoryRepository, AnalyseService analyseService) {
+    public GithubUpdateService(BanHistoryRepository banHistoryRepository, AnalyseService analyseService, BanHistoryService banHistoryService) {
         this.banHistoryRepository = banHistoryRepository;
         this.analyseService = analyseService;
+        this.banHistoryService = banHistoryService;
     }
 
 
@@ -218,6 +222,8 @@ public class GithubUpdateService {
     }
 
     private String generateUntrustedIps() {
+        var list = analyseService.getUntrustedIPAddresses().stream().map(AnalysedRule::getIp).collect(Collectors.toList());
+        list.addAll(banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("aria2/1.34.0", pastTimestamp(), nowTimestamp()).stream().map(h -> h.getPeerIp().getHostAddress()).toList());
         return String.join("\n", analyseService.getUntrustedIPAddresses().stream().map(AnalysedRule::getIp).toList());
     }
     private String generateOverDownloadIps() {
