@@ -2,46 +2,54 @@ package com.ghostchu.btn.sparkle.module.banhistory;
 
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
-import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
-import com.ghostchu.btn.sparkle.util.IPMerger;
+import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class BanHistoryService {
     private final TorrentService torrentService;
     private final BanHistoryRepository banHistoryRepository;
-    private final IPMerger ipMerger;
 
     public BanHistoryService(BanHistoryRepository banHistoryRepository,
-                             TorrentService torrentService,
-                             IPMerger ipMerger) {
+                             TorrentService torrentService, GeoIPManager geoIPManager) {
         this.banHistoryRepository = banHistoryRepository;
         this.torrentService = torrentService;
-        this.ipMerger = ipMerger;
+//        AtomicInteger count = new AtomicInteger();
+//        CompletableFuture.runAsync(() -> {
+//            while(true){
+//                var list = banHistoryRepository.findByGeoIPIsNull(PageRequest.of(0, 100000));
+//                System.out.println("BanHistory: Get "+list.getSize()+" ips");
+//                if(list.isEmpty()) {
+//                    System.out.println("BanHistory OK!");
+//                    break;
+//                }
+//                var handled =list.stream().parallel().peek(b -> b.setGeoIP(geoIPManager.geoData(b.getPeerIp())))
+//                        .toList();
+//                System.gc();
+//                System.out.println("Mapped "+handled.size()+" records");
+//                banHistoryRepository.saveAll(handled);
+//                count.addAndGet(handled.size());
+//                System.out.println("BanHistory: Already successfully handled "+count.get()+" records, Execute next batch");
+//            }
+//        });
     }
 
-
     @Cacheable(value = "banHistoryMetrics#1800000", key = "#from+'-'+#to")
-    public BanHistoryMetrics getMetrics(Timestamp from, Timestamp to){
+    public BanHistoryMetrics getMetrics(Timestamp from, Timestamp to) {
         return new BanHistoryMetrics(
                 banHistoryRepository.count(),
-                banHistoryRepository.countByInsertTimeBetween(from,to)
+                banHistoryRepository.countByInsertTimeBetween(from, to)
         );
     }
 
@@ -89,5 +97,6 @@ public class BanHistoryService {
     public record BanHistoryMetrics(
             long total,
             long recent
-    ){}
+    ) {
+    }
 }

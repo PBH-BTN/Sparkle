@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.snapshot;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
+import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -15,13 +16,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,9 +30,28 @@ public class SnapshotService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    public SnapshotService(SnapshotRepository snapshotRepository, TorrentService torrentService) {
+    public SnapshotService(SnapshotRepository snapshotRepository, TorrentService torrentService, GeoIPManager geoIPManager) {
         this.snapshotRepository = snapshotRepository;
         this.torrentService = torrentService;
+//        this.geoIPManager = geoIPManager;
+//        AtomicInteger count = new AtomicInteger();
+//        CompletableFuture.runAsync(() -> {
+//            while (true) {
+//                var list = snapshotRepository.findByGeoIPIsNull(PageRequest.of(0, 100000));
+//                System.out.println("Snapshot: Get " + list.getSize() + " ips");
+//                if (list.isEmpty()) {
+//                    System.out.println("Snapshot OK!");
+//                    break;
+//                }
+//                var handled = list.stream().parallel().peek(snapshot -> snapshot.setGeoIP(geoIPManager.geoData(snapshot.getPeerIp())))
+//                        .toList();
+//                System.gc();
+//                System.out.println("Mapped " + handled.size() + " records");
+//                snapshotRepository.saveAll(handled);
+//                count.addAndGet(handled.size());
+//                System.out.println("Snapshot: Already successfully handled " + count.get() + " records, Execute next batch");
+//            }
+//        });
     }
 
     @Modifying
@@ -44,6 +61,7 @@ public class SnapshotService {
     public void saveSnapshots(List<Snapshot> snapshotList) {
         snapshotRepository.saveAll(snapshotList);
     }
+
 
     @Cacheable(value = "snapshotMetrics#1800000", key = "#from+'-'+#to")
     public SnapshotMetrics getMetrics(Timestamp from, Timestamp to) {

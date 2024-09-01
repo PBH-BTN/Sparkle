@@ -213,7 +213,16 @@
 			<artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
 			<version>2.17.2</version>
 		</dependency>
-
+        <dependency>
+            <groupId>com.maxmind.geoip2</groupId>
+            <artifactId>geoip2</artifactId>
+            <version>4.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.mizosoft.methanol</groupId>
+            <artifactId>methanol</artifactId>
+            <version>1.7.0</version>
+        </dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>

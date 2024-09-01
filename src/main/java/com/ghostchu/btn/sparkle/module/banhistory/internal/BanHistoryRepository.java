@@ -36,7 +36,6 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 
     long countByInsertTimeBetween(Timestamp insertTimeStart, Timestamp insertTimeEnd);
 
-
     @Query("""
                 SELECT DISTINCT ban FROM BanHistory ban
                 WHERE

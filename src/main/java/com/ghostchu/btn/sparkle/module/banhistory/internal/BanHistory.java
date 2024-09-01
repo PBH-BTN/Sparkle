@@ -2,8 +2,11 @@ package com.ghostchu.btn.sparkle.module.banhistory.internal;
 
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
+import com.ghostchu.btn.sparkle.util.ipdb.IPGeoData;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.net.InetAddress;
 import java.sql.Timestamp;
@@ -72,4 +75,10 @@ public class BanHistory {
     private String rule;
     @Column(nullable = false)
     private String banUniqueId;
+    //    @Column(columnDefinition = "json")
+//    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonType.class)
+    private IPGeoData geoIP;
+
 }

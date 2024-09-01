@@ -6,10 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 
 import java.net.InetAddress;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -21,22 +21,24 @@ import java.util.Map;
 @NoArgsConstructor
 @Getter
 @Setter
-@DynamicUpdate
 public class Audit {
     @Id
     @GeneratedValue
     @Column(nullable = false, unique = true)
     private Long id;
-    @Column()
+    @Column(nullable = false)
+    private Timestamp timestamp;
+    @Column
     private InetAddress ip;
     @Column(nullable = false)
     private String action;
     @Column(nullable = false)
     private Boolean success;
-    @Column(nullable = false, columnDefinition = "json")
+    @Column(nullable = false, columnDefinition = "jsonb")
     @Type(JsonType.class)
     private Map<String, List<String>> headers;
-    @Column(nullable = false, columnDefinition = "json")
+    @Column(nullable = false, columnDefinition = "jsonb")
     @Type(JsonType.class)
     private Map<String, Object> details;
+
 }

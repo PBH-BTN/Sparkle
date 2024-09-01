@@ -63,4 +63,7 @@ public class Snapshot {
     private String flags;
     @Column(nullable = false)
     private InetAddress submitterIp;
+//    @Column( columnDefinition = "jsonb")
+//    @Type(JsonType.class)
+//    private IPGeoData geoIP;
 }

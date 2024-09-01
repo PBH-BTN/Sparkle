@@ -18,6 +18,7 @@ import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.PeerUtil;
+import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class PingService {
     private final ClientDiscoveryService clientDiscoveryService;
     private final AnalyseService analyseService;
     private final UserService userService;
+    private final GeoIPManager geoIPManager;
     @Value("${service.ping.protocol.min-version}")
     private int minProtocolVersion;
     @Value("${service.ping.protocol.max-version}")
@@ -76,6 +78,7 @@ public class PingService {
                                 .downloaderProgress(peer.getDownloaderProgress())
                                 .flags(peer.getPeerFlag())
                                 .submitterIp(submitterIp)
+                                // .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
                                 .build();
                     } catch (Exception e) {
                         log.error("[ERROR] [Ping] 无法创建 Snapshot 对象", e);
@@ -124,6 +127,7 @@ public class PingService {
                                 .module(ban.getModule())
                                 .rule(ban.getRule())
                                 .banUniqueId(ban.getBanUniqueId())
+                                .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
                                 .build();
                     } catch (Exception e) {
                         log.error("[ERROR] [Ping] 无法创建 BanHistory 对象", e);
