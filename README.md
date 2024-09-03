@@ -29,6 +29,20 @@ Sparkle 是一个遵循 [BTN 规范](https://github.com/PBH-BTN/BTN-Spec) 的官
 
 目前 Sparkle 仍处于早期开发阶段，我们暂时不提供部署教程。
 
+## 功能
+
+* [x] BTN: Submit Peers Ability (Async)
+* [x] BTN: Submit Bans Ability (Async)
+* [x] BTN: Rules Ability (Async)
+* [x] BTN: Reconfigure Ability (Async)
+* [x] 客户端特征发现 
+* [x] 操作与行为审计
+* [x] 自动生成不可信 IP 规则 (从 BanHistory)
+* [x] 自动生成过量下载规则 (从 Snapshot)
+* [x] 与 Github 仓库同步生成的规则
+* [x] BitTorrent Tracker (HTTP/HTTPS)，支持 Scrape 协议，并可持久记录下载次数，支持响应缓存，并与客户端特征发现集成
+* [x] Snapshot/Ban 记录搜索 
+
 ## API 文档
 
 https://btn-sparkle.apifox.cn
