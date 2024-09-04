@@ -18,6 +18,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.util.List;
@@ -92,6 +93,6 @@ public class SnapshotService {
 
     }
 
-    public record SnapshotMetrics(long total, long recent) {
+    public record SnapshotMetrics(long total, long recent) implements Serializable {
     }
 }

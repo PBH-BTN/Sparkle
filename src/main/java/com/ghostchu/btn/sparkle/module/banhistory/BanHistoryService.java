@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -97,6 +98,6 @@ public class BanHistoryService {
     public record BanHistoryMetrics(
             long total,
             long recent
-    ) {
+    ) implements Serializable {
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,5 +82,6 @@ public class ClientDiscoveryService {
     public record ClientDiscoveryMetrics(
             long total,
             long recent
-    ){}
+    ) implements Serializable {
+    }
 }
