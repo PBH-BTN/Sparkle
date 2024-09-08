@@ -67,7 +67,26 @@ public class GithubUpdateService {
         updateFile(repository, "random-peerid.txt", generateGopeedDev().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "dot1_v6_tagging.txt", generateDot1IPV6().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "high-risk-ips.txt", generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
     }
+
+    private String generateHighRiskIps() {
+        var strJoiner = new StringJoiner("\n");
+        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("Transmission 2.94", pastTimestamp(), nowTimestamp())
+                .stream()
+                .map(ban -> IPUtil.toString(ban.getPeerIp()))
+                .distinct()
+                .sorted()
+                .forEach(strJoiner::add);
+        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("aria2", pastTimestamp(), nowTimestamp())
+                .stream()
+                .map(ban -> IPUtil.toString(ban.getPeerIp()))
+                .distinct()
+                .sorted()
+                .forEach(strJoiner::add);
+        return strJoiner.toString();
+    }
+
     private String generateStrangeIPV6() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findByPeerIp(
