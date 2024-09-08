@@ -72,13 +72,13 @@ public class GithubUpdateService {
 
     private String generateHighRiskIps() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("Transmission 2.94", pastTimestamp(), nowTimestamp())
+        banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toString(ban.getPeerIp()))
                 .distinct()
                 .sorted()
                 .forEach(strJoiner::add);
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("aria2", pastTimestamp(), nowTimestamp())
+        banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2", "%ProgressCheatBlocker%", pastTimestamp(), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toString(ban.getPeerIp()))
                 .distinct()

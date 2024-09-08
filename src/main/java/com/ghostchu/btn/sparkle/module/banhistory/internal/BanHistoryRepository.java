@@ -52,4 +52,6 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
     List<BanHistory> findByPeerIp(String peerIp,Timestamp insertTimeStart, Timestamp insertTimeEnd);
 
     List<BanHistory> findDistinctByPeerClientNameLikeAndInsertTimeBetween(String peerClientName, Timestamp from, Timestamp to);
+
+    List<BanHistory> findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween(String peerClientName, String module, Timestamp from, Timestamp to);
 }
