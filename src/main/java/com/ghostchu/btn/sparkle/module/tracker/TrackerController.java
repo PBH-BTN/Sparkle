@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
-import com.ghostchu.btn.sparkle.util.MsgUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.LockModeType;
@@ -27,7 +26,6 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/tracker")
@@ -107,7 +105,8 @@ public class TrackerController extends SparkleController {
             put("complete", peers.seeders());
             put("incomplete", peers.leechers());
             put("downloaded", peers.downloaded());
-            put("warning message", new SparkleTrackerMetricsMessage(peers.seeders(),peers.leechers(), peers.downloaded(), peerIps).toString());
+            put("external ip", ip(req));
+            // put("warning message", new SparkleTrackerMetricsMessage(peers.seeders(),peers.leechers(), peers.downloaded(), peerIps).toString());
             if (compact) {
                 put("peers", compactPeers(peers.v4(), false));
                 if (!peers.v6().isEmpty())
@@ -142,6 +141,7 @@ public class TrackerController extends SparkleController {
             }});
         }
         map.put("files", files);
+        map.put("external ip", ip(req));
         return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
     }
 
