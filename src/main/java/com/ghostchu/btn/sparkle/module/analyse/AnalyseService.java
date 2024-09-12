@@ -54,7 +54,7 @@ public class AnalyseService {
                 .stream()
                 .map(IPUtil::toString)
                 .collect(Collectors.toList()));
-        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, ip, UNTRUSTED_IP, "Generated at" + MsgUtil.getNowDateTimeString())).toList();
+        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, ip, UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         analysedRuleRepository.saveAll(untrustedIps);
     }
