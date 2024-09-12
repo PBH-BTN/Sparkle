@@ -17,7 +17,6 @@ import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -71,7 +70,7 @@ public class TrackerService {
                 new Timestamp(System.currentTimeMillis())
         ));
         if (trackedPeer.getDownloadedOffset() > announce.downloaded()
-                || trackedPeer.getUploadedOffset() > announce.uploaded()) {
+            || trackedPeer.getUploadedOffset() > announce.uploaded()) {
             trackedPeer.setDownloaded(trackedPeer.getDownloaded() + announce.downloaded());
             trackedPeer.setUploaded(trackedPeer.getUploaded() + announce.uploaded());
         } else {
@@ -117,30 +116,28 @@ public class TrackerService {
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
         List<Peer> v4 = new ArrayList<>();
         List<Peer> v6 = new ArrayList<>();
-        AtomicInteger seeders = new AtomicInteger();
-        AtomicInteger leechers = new AtomicInteger();
+        int seeders = 0;
+        int leechers = 0;
         long downloaded = 0;
-        trackedPeerRepository.fetchPeersFromTorrent(ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))
-                .forEach(peer -> {
-                    if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                        v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
-                    }
-                    if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                        v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
-                    }
-                    if (peer.getLeft() == 0) {
-                        seeders.incrementAndGet();
-                    } else {
-                        leechers.incrementAndGet();
-                    }
-                });
+        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
+            if (peer.getPeerIp() instanceof Inet4Address ipv4) {
+                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
+            }
+            if (peer.getPeerIp() instanceof Inet6Address ipv6) {
+                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
+            }
+            if (peer.getLeft() == 0) {
+                seeders++;
+            } else {
+                leechers++;
+            }
+        }
         var trackedTask = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(torrentInfoHash));
         if (trackedTask.isPresent()) {
             downloaded = trackedTask.get().getDownloadedCount();
         }
-        return new TrackedPeerList(v4, v6, seeders.get(), leechers.get(), downloaded);
+        return new TrackedPeerList(v4, v6, seeders, leechers, downloaded);
     }
-
 
 
     @Cacheable(value = {"scrape#300000"}, key = "#torrentInfoHash")
@@ -163,7 +160,7 @@ public class TrackerService {
             long leechers,
             long peersHaveUpload,
             long peersNoUpload
-            ) {
+    ) {
 
     }
 
