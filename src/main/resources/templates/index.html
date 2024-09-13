@@ -7,9 +7,12 @@
 <div class="alert alert-warning" role="alert">
     <b>🚧改版装修中</b> BTN 2.0 正在加紧施工中。由于缺乏前端人手，目前前端仅基本功能可用，不影响后端运行和上报收集等功能。
 </div>
-
 <div class="alert alert-danger" role="alert">
     <b>🛑对 PBH v5 的服务终止</b> BTN Sparkle 现在不再接受任何来自 PeerBanHelper v5.x 的数据，且不再返回 BTN 规则，请尽快升级到 PeerBanHelper v6.x <a href="https://github.com/PBH-BTN/PeerBanHelper/issues/372">了解更多</a>
+</div>
+<div class="alert alert-success" role="alert" th:if="${user.getRandomGroup() == 1}">
+    <b>💡正在参与灰度测试 (Group 1)</b> 正在参与 “Sparkle 中国大陆 CDN 节点” 灰度测试，你的 BTN 网络请求将自动路由至中国大陆
+    CDN 节点。如果出现问题，请随时联系服务器管理员。
 </div>
 
 <div class="jumbotron">

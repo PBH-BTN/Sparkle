@@ -41,4 +41,6 @@ public class User {
     private Long githubUserId;
     @Column(nullable = false)
     private Boolean banned;
+    @Column(nullable = false)
+    private Integer randomGroup;
 }

@@ -9,6 +9,7 @@ import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryR
 import com.ghostchu.btn.sparkle.module.snapshot.SnapshotService;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
+import com.ghostchu.btn.sparkle.module.user.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,9 +26,10 @@ public class IndexController extends SparkleController {
     private final BanHistoryService banHistoryService;
     private final SnapshotService snapshotService;
     private final ClientDiscoveryService clientDiscoveryService;
+    private final UserService userService;
 
     public IndexController(BanHistoryRepository banHistoryRepository, SnapshotRepository snapshotRepository,
-                           ClientDiscoveryRepository clientDiscoveryRepository, TrackedPeerRepository trackedPeerRepository, BanHistoryService banHistoryService, SnapshotService snapshotService, ClientDiscoveryService clientDiscoveryService) {
+                           ClientDiscoveryRepository clientDiscoveryRepository, TrackedPeerRepository trackedPeerRepository, BanHistoryService banHistoryService, SnapshotService snapshotService, ClientDiscoveryService clientDiscoveryService, UserService userService) {
         super();
         this.banHistoryRepository = banHistoryRepository;
         this.snapshotRepository = snapshotRepository;
@@ -36,6 +38,7 @@ public class IndexController extends SparkleController {
         this.banHistoryService = banHistoryService;
         this.snapshotService = snapshotService;
         this.clientDiscoveryService = clientDiscoveryService;
+        this.userService = userService;
     }
 
     @GetMapping("/")
@@ -55,6 +58,7 @@ public class IndexController extends SparkleController {
 //                trackedPeerRepository.countUsersWhoDidntUploadAnyData()
 //        );
 //        model.addAttribute("trackerMetrics", trackerMetrics);
+        model.addAttribute("user", userService.getUser(StpUtil.getLoginIdAsLong()).get());
         return "index";
     }
 

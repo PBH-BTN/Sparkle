@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.AccessDeniedException;
@@ -14,6 +15,7 @@ import com.ghostchu.btn.sparkle.module.ping.dto.BtnRule;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
+import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.Hashing;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
@@ -21,12 +23,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -56,6 +61,13 @@ public class PingController extends SparkleController {
     private UserApplicationService userApplicationService;
     @Autowired
     private AuditService auditService;
+    @Value("${sparkle.root}")
+    private String sparkleRoot;
+    @Value("${sparkle.gray.root}")
+    private String sparkleGrayRoot;
+    @Autowired
+    private GeoIPManager geoIPManager;
+
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
@@ -102,7 +114,7 @@ public class PingController extends SparkleController {
     }
 
     @GetMapping("/config")
-    public ResponseEntity<Object> config() throws AccessDeniedException {
+    public ResponseEntity<Object> config() throws AccessDeniedException, JsonProcessingException, UnknownHostException {
         var cred = cred();
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
@@ -131,7 +143,15 @@ public class PingController extends SparkleController {
         abilityObject.put("reconfigure", reconfigureAbility);
         abilityObject.put("rules", cloudRuleAbility);
         auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
-        return ResponseEntity.ok().body(rootObject);
+        var json = objectMapper.writeValueAsString(rootObject);
+        var countryIso = geoIPManager.geoData(InetAddress.getByName(ip(req))).getCountryIso();
+        if (countryIso.equalsIgnoreCase("CN")) {
+            if (cred.getUser().getRandomGroup() == 1) {
+                json = json.replace(sparkleRoot, sparkleGrayRoot);
+                log.info("为用户 {} 的配置请求返回灰度地址", cred.getUser().getNickname());
+            }
+        }
+        return ResponseEntity.ok().body(json);
     }
 
     @GetMapping("/rules/retrieve")
@@ -182,7 +202,7 @@ public class PingController extends SparkleController {
             log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
                     ip(req), cred.appId(), cred.appSecret());
             throw new AccessDeniedException("UserApplication 鉴权失败：指定的用户应用程序不存在，这可能是因为：" +
-                    "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
+                                            "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
         }
         return userAppOptional.get();
     }
