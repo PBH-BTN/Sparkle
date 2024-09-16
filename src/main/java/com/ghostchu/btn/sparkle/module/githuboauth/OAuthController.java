@@ -31,6 +31,7 @@ import java.sql.Timestamp;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -127,6 +128,7 @@ public class OAuthController extends SparkleController {
             user = new User();
             user.setEmail(emailSelected);
             user.setRegisterAt(new Timestamp(System.currentTimeMillis()));
+            user.setRandomGroup(ThreadLocalRandom.current().nextInt(9));
         }
         user.setGithubLogin(profile.getLogin());
         user.setGithubUserId(profile.getId());

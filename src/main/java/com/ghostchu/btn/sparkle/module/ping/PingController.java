@@ -63,8 +63,8 @@ public class PingController extends SparkleController {
     private AuditService auditService;
     @Value("${sparkle.root}")
     private String sparkleRoot;
-    @Value("${sparkle.gray.root}")
-    private String sparkleGrayRoot;
+    @Value("${sparkle.root.china}")
+    private String sparkleRootChina;
     @Autowired
     private GeoIPManager geoIPManager;
 
@@ -146,10 +146,7 @@ public class PingController extends SparkleController {
         var json = objectMapper.writeValueAsString(rootObject);
         var countryIso = geoIPManager.geoData(InetAddress.getByName(ip(req))).getCountryIso();
         if (countryIso.equalsIgnoreCase("CN")) {
-            if (cred.getUser().getRandomGroup() == 1) {
-                json = json.replace(sparkleRoot, sparkleGrayRoot);
-                log.info("为用户 {} 的配置请求返回灰度地址", cred.getUser().getNickname());
-            }
+            json = json.replace(sparkleRoot, sparkleRootChina);
         }
         return ResponseEntity.ok().body(json);
     }
