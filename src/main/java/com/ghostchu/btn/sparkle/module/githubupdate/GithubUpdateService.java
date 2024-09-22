@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
+import inet.ipaddr.IPAddressString;
 import jakarta.transaction.Transactional;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -68,6 +67,21 @@ public class GithubUpdateService {
         updateFile(repository, "dot1_v6_tagging.txt", generateDot1IPV6().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "high-risk-ips.txt", generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "ipv6-dhcp-address.txt", generateDhcpAddress().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String generateDhcpAddress() {
+        var strJoiner = new StringJoiner("\n");
+        Set<String> ipSet = new HashSet<>();
+        var result = banHistoryRepository.findByInsertTimeBetweenOrderByInsertTimeDescIPVx(pastTimestamp(), nowTimestamp(), 6);
+        result
+                .stream()
+                .map(ban -> new IPAddressString(ban.getHostAddress()).getAddress())
+                .filter(Objects::nonNull)
+                .filter(ip -> ip.isIPv6() && ip.toFullString().contains(":0000:0000:0000:"))
+                .forEach(ip -> ipSet.add(ip.toString()));
+        ipSet.stream().sorted().forEach(strJoiner::add);
+        return strJoiner.toString();
     }
 
     private String generateHighRiskIps() {
@@ -95,7 +109,7 @@ public class GithubUpdateService {
                         nowTimestamp()
                 )
                 .stream()
-                .map(ban-> IPUtil.toString(ban.getPeerIp()))
+                .map(ban -> IPUtil.toString(ban.getPeerIp()))
                 .distinct()
                 .sorted()
                 .forEach(strJoiner::add);
@@ -112,7 +126,7 @@ public class GithubUpdateService {
                 )
                 .stream()
                 .filter(banHistory -> banHistory.getPeerClientName().startsWith("Transmission"))
-                .map(ban-> IPUtil.toString(ban.getPeerIp()))
+                .map(ban -> IPUtil.toString(ban.getPeerIp()))
                 .distinct()
                 .sorted()
                 .forEach(strJoiner::add);
@@ -245,6 +259,7 @@ public class GithubUpdateService {
         list.addAll(banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("aria2/1.34.0", pastTimestamp(), nowTimestamp()).stream().map(h -> h.getPeerIp().getHostAddress()).toList());
         return String.join("\n", analyseService.getUntrustedIPAddresses().stream().map(AnalysedRule::getIp).toList());
     }
+
     private String generateOverDownloadIps() {
         return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(AnalysedRule::getIp).toList());
     }

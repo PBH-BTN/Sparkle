@@ -26,6 +26,19 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 
     Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(Timestamp from, Timestamp to, Pageable pageable);
 
+    @Query("""
+                SELECT DISTINCT ban.peerIp FROM BanHistory ban
+                WHERE
+                    family(ban.peerIp) = ?3
+                    AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
+                    AND ban.module LIKE '%ProgressCheatBlocker%'
+                GROUP BY ban.peerIp
+            """)
+    @Transactional
+    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(Timestamp from, Timestamp to, int family);
+
+    List<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(Timestamp from, Timestamp to);
+
     Page<BanHistory> findByInsertTimeBetweenAndPeerIdLikeIgnoreCaseOrderByInsertTimeDesc(Timestamp from, Timestamp to, String peerId, Pageable pageable);
 
     Page<BanHistory> findByInsertTimeBetweenAndPeerClientNameLikeIgnoreCaseOrderByInsertTimeDesc(Timestamp from, Timestamp to, String peerClientName, Pageable pageable);
