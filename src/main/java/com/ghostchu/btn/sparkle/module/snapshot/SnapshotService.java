@@ -80,7 +80,7 @@ public class SnapshotService {
     }
 
     public SnapshotDto toDto(Snapshot snapshot) {
-        return SnapshotDto.builder().id(snapshot.getId()).appId(snapshot.getUserApplication().getAppId()).submitId(snapshot.getSubmitId()).peerIp(snapshot.getPeerId()).peerPort(snapshot.getPeerPort()).peerId(snapshot.getPeerId()).peerClientName(snapshot.getPeerClientName()).torrent(torrentService.toDto(snapshot.getTorrent())).fromPeerTraffic(snapshot.getFromPeerTraffic()).fromPeerTrafficSpeed(snapshot.getFromPeerTrafficSpeed()).toPeerTraffic(snapshot.getToPeerTraffic()).toPeerTrafficSpeed(snapshot.getToPeerTrafficSpeed()).peerProgress(snapshot.getPeerProgress()).downloaderProgress(snapshot.getDownloaderProgress()).flags(snapshot.getFlags()).build();
+        return SnapshotDto.builder().id(snapshot.getId()).appId(snapshot.getUserApplication().getAppId()).submitId(snapshot.getSubmitId()).peerIp(snapshot.getPeerIp()).peerPort(snapshot.getPeerPort()).peerId(snapshot.getPeerId()).peerClientName(snapshot.getPeerClientName()).torrent(torrentService.toDto(snapshot.getTorrent())).fromPeerTraffic(snapshot.getFromPeerTraffic()).fromPeerTrafficSpeed(snapshot.getFromPeerTrafficSpeed()).toPeerTraffic(snapshot.getToPeerTraffic()).toPeerTrafficSpeed(snapshot.getToPeerTrafficSpeed()).peerProgress(snapshot.getPeerProgress()).downloaderProgress(snapshot.getDownloaderProgress()).flags(snapshot.getFlags()).build();
     }
 
     public record SnapshotOverDownloadResult(
