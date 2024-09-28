@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
+import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,18 +23,18 @@ public class UserController extends SparkleController {
     }
 
     @GetMapping("/user/me")
-    public UserDto me() {
-        return userService.toDto(userService.getUser((StpUtil.getLoginIdAsLong())).get());
+    public StdResp<UserDto> me() {
+        return new StdResp<>(true, null, userService.toDto(userService.getUser((StpUtil.getLoginIdAsLong())).get()));
     }
 
     @SaCheckPermission("user:read.other")
     @GetMapping("/user/{id}")
-    public UserDto other(@PathVariable("id") Long id) throws UserNotFoundException {
+    public StdResp<UserDto> other(@PathVariable("id") Long id) throws UserNotFoundException {
         var usrOptional = userService.getUser(id);
         if(usrOptional.isEmpty()){
             throw new UserNotFoundException();
         }
-        return userService.toDto(usrOptional.get());
+        return new StdResp<>(true, null, userService.toDto(usrOptional.get()));
     }
 
     @GetMapping("/user/logout")
