@@ -92,7 +92,7 @@ public class GithubUpdateService {
                 .distinct()
                 .sorted()
                 .forEach(strJoiner::add);
-        banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2", "%ProgressCheatBlocker%", pastTimestamp(), nowTimestamp())
+        banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toString(ban.getPeerIp()))
                 .distinct()
@@ -125,7 +125,16 @@ public class GithubUpdateService {
                         nowTimestamp()
                 )
                 .stream()
-                .filter(banHistory -> banHistory.getPeerClientName().startsWith("Transmission"))
+                .map(ban -> IPUtil.toString(ban.getPeerIp()))
+                .distinct()
+                .sorted()
+                .forEach(strJoiner::add);
+        banHistoryRepository.findByPeerIp(
+                        "%::2",
+                        pastTimestamp(),
+                        nowTimestamp()
+                )
+                .stream()
                 .map(ban -> IPUtil.toString(ban.getPeerIp()))
                 .distinct()
                 .sorted()
