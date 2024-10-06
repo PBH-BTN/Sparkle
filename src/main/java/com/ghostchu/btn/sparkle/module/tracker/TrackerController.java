@@ -53,7 +53,6 @@ public class TrackerController extends SparkleController {
         Validate.isTrue(infoHash.length == 20);
         Validate.notBlank(req.getParameter("peer_id"));
         byte[] peerId = req.getParameter("peer_id").getBytes(StandardCharsets.ISO_8859_1);
-        String peerIp = Optional.ofNullable(req.getParameter("ip")).orElse(ip(req));
         Validate.isTrue(StringUtils.isNumeric(req.getParameter("port")));
         int port = Integer.parseInt(req.getParameter("port"));
         Validate.isTrue(StringUtils.isNumeric(req.getParameter("uploaded")));

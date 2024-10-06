@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
+import inet.ipaddr.IPAddressString;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -127,12 +128,19 @@ public class AnalyseService {
         var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1]))).collect(Collectors.toList()));
         List<AnalysedRule> rules = new ArrayList<>();
         for (String ip : ips) {
-            rules.add(new AnalysedRule(
-                    null,
-                    ip,
-                    OVER_DOWNLOAD,
-                    "Generated at " + MsgUtil.getNowDateTimeString()
-            ));
+            try {
+                if (new IPAddressString(ip).getAddress().isLocal()) {
+                    continue;
+                }
+                rules.add(new AnalysedRule(
+                        null,
+                        ip,
+                        OVER_DOWNLOAD,
+                        "Generated at " + MsgUtil.getNowDateTimeString()
+                ));
+            } catch (Exception ignored) {
+
+            }
         }
         analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
         analysedRuleRepository.saveAll(rules);
