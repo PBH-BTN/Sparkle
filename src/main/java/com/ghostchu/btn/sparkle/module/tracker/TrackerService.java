@@ -119,7 +119,7 @@ public class TrackerService {
         int seeders = 0;
         int leechers = 0;
         long downloaded = 0;
-        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
+        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(ByteUtil.bytesToHex(torrentInfoHash), ByteUtil.bytesToHex(peerId), Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
                 v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
             }

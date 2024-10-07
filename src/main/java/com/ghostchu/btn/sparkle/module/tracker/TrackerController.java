@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.LockModeType;
@@ -148,7 +149,7 @@ public class TrackerController extends SparkleController {
                 log.error("Unable to handle Torrent announce", e);
             }
         }
-        var peers = trackerService.fetchPeersFromTorrent(infoHash, null, null, numWant);
+        var peers = trackerService.fetchPeersFromTorrent(infoHash, ByteUtil.bytesToHex(peerId), null, numWant);
 
         // 合成响应
         var map = new HashMap<>() {{

@@ -21,10 +21,10 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     @Query("""
             select t from TrackedPeer t
-            where t.torrentInfoHash = ?1 
-            order by RANDOM() limit ?2
+            where t.torrentInfoHash = ?1 and t.peerId <> ?2
+            order by RANDOM() limit ?3
             """)
-    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, int limit);
+    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
 
     Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHash(InetAddress peerIp, String peerId, String torrentInfoHash);
 
