@@ -102,7 +102,7 @@ public class OAuthController extends SparkleController {
         HttpResponse<String> authResp = unirest.get("https://api.github.com/user")
                 .header("Authorization", "Bearer " + callback.getAccessToken())
                 .asString();
-        if (!authResp.isSuccess()) {
+        if (!authResp.isSuccess() && re.getStatus() != 200) {
             throw new IllegalStateException("An error occurred when requesting user Github profile via access token: " + re.getStatus() + " - " + re.getStatusText() + " : " + re.getBody());
         }
         GithubUserProfile userProfile = objectMapper.readValue(authResp.getBody(), GithubUserProfile.class);
