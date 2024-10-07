@@ -60,7 +60,7 @@ public class AnalyseService {
     @Scheduled(fixedDelayString = "${analyse.overdownload.interval}")
     public void cronUntrustedIPAddresses() {
         var list = ipMerger.merge(banHistoryRepository
-                        .generateUntrustedIPAddresses(TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), new Timestamp(System.currentTimeMillis()), untrustedIpAddressGenerateThreshold)
+                        .generateUntrustedIPAddresses(TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), OffsetDateTime.now(), untrustedIpAddressGenerateThreshold)
                 .stream()
                 .map(IPUtil::toString)
                         .collect(Collectors.toList()))

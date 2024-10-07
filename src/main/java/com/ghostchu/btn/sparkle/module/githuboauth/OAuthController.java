@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
@@ -127,15 +127,15 @@ public class OAuthController extends SparkleController {
         } else {
             user = new User();
             user.setEmail(emailSelected);
-            user.setRegisterAt(new Timestamp(System.currentTimeMillis()));
+            user.setRegisterAt(OffsetDateTime.now());
             user.setRandomGroup(ThreadLocalRandom.current().nextInt(9));
         }
         user.setGithubLogin(profile.getLogin());
         user.setGithubUserId(profile.getId());
         user.setAvatar(profile.getAvatarUrl());
         user.setNickname(profile.getName() == null ? profile.getLogin() : profile.getName());
-        user.setLastSeenAt(new Timestamp(System.currentTimeMillis()));
-        user.setLastAccessAt(new Timestamp(System.currentTimeMillis()));
+        user.setLastSeenAt(OffsetDateTime.now());
+        user.setLastAccessAt(OffsetDateTime.now());
         user.setBanned(false);
         user = userService.saveUser(user);
         if (user.getId() <= 0) {
