@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
+import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import inet.ipaddr.IPAddress;
@@ -41,6 +42,8 @@ public class TrackerController extends SparkleController {
     private long announceInterval;
     @Autowired
     private ObjectMapper jacksonObjectMapper;
+    @Autowired
+    private AuditService auditService;
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
         ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
@@ -171,6 +174,7 @@ public class TrackerController extends SparkleController {
                 }});
             }
         }};
+        auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", req.getHeader("User-Agent")));
         return BencodeUtil.INSTANCE.encode(map);
     }
 
@@ -190,6 +194,7 @@ public class TrackerController extends SparkleController {
         }
         map.put("files", files);
         map.put("external ip", ip(req));
+        auditService.log(req, "TRACKER_SCRAPE", true, Map.of("hash", infoHashes, "user-agent", req.getHeader("User-Agent")));
         return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
     }
 
