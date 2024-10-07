@@ -90,14 +90,18 @@ public class TrackerController extends SparkleController {
     @Transactional
     @Lock(LockModeType.WRITE)
     public byte[] announce() {
-        if (req.getQueryString() == null
-                || req.getHeader("User-Agent").contains("Mozilla")
-                || req.getHeader("User-Agent").contains("Chrome")
-                || req.getHeader("User-Agent").contains("Firefox")
-                || req.getHeader("User-Agent").contains("Safari")
-                || req.getHeader("User-Agent").contains("Edge")
-                || req.getHeader("User-Agent").contains("Opera")) {
+        if (req.getQueryString() == null) {
             return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
+        }
+        if (ua(req) != null) {
+            if (ua(req).contains("Mozilla")
+                    || ua(req).contains("Chrome")
+                    || ua(req).contains("Firefox")
+                    || ua(req).contains("Safari")
+                    || ua(req).contains("Edge")
+                    || ua(req).contains("Opera")) {
+                return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
+            }
         }
         var infoHashes = extractInfoHashes(req.getQueryString());
         Validate.isTrue(infoHashes.size() == 1);

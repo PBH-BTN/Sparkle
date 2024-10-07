@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public abstract class SparkleController {
 
     public String ua(HttpServletRequest req){
-        return req.getHeader("User-Agent");
+        return req.getHeader("User-Agent") != null ? req.getHeader("User-Agent") : "Unknown";
     }
 
     public String ip(HttpServletRequest req){
