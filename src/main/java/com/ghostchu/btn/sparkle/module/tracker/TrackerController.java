@@ -42,11 +42,60 @@ public class TrackerController extends SparkleController {
     @Autowired
     private ObjectMapper jacksonObjectMapper;
 
+    public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
+        ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
+        for (TrackerService.Peer peer : peers) {
+            String ip = peer.ip();
+            try {
+                for (byte address : InetAddress.getByName(ip).getAddress()) {
+                    buffer.put(address);
+                }
+                int in = peer.port();
+                buffer.put((byte) ((in >>> 8) & 0xFF));
+                buffer.put((byte) (in & 0xFF));
+            } catch (UnknownHostException e) {
+                throw new IllegalStateException("incorrect ip format encountered when compact peer ip");
+            }
+        }
+        return new String(buffer.array(), StandardCharsets.ISO_8859_1);
+    }
+
+    /**
+     * 套他猴子的 BitTorrent 总给我整花活
+     *
+     * @param queryString 查询字符串
+     * @return 使用 ISO_8859_1 进行 URL 解码的 Info Hash 集合
+     */
+    public static List<byte[]> extractInfoHashes(String queryString) {
+        List<byte[]> infoHashes = new ArrayList<>();
+        if (queryString == null)
+            throw new IllegalArgumentException("No queryString provided");
+        String[] params = queryString.split("&");
+        for (String param : params) {
+            if (param.startsWith("info_hash=")) {
+                String encodedHash = param.substring("info_hash=".length());
+                byte[] decodedHash = URLDecoder.decode(encodedHash, StandardCharsets.ISO_8859_1).getBytes(StandardCharsets.ISO_8859_1);
+                infoHashes.add(decodedHash);
+            }
+        }
+
+        return infoHashes;
+    }
+
     @GetMapping("/announce")
     @ResponseBody
     @Transactional
     @Lock(LockModeType.WRITE)
     public byte[] announce() {
+        if (req.getQueryString() == null
+                || req.getHeader("User-Agent").contains("Mozilla")
+                || req.getHeader("User-Agent").contains("Chrome")
+                || req.getHeader("User-Agent").contains("Firefox")
+                || req.getHeader("User-Agent").contains("Safari")
+                || req.getHeader("User-Agent").contains("Edge")
+                || req.getHeader("User-Agent").contains("Opera")) {
+            return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
+        }
         var infoHashes = extractInfoHashes(req.getQueryString());
         Validate.isTrue(infoHashes.size() == 1);
         byte[] infoHash = infoHashes.getFirst();
@@ -159,54 +208,17 @@ public class TrackerController extends SparkleController {
         return found;
     }
 
-    public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
-        ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
-        for (TrackerService.Peer peer : peers) {
-            String ip = peer.ip();
-            try {
-                for (byte address : InetAddress.getByName(ip).getAddress()) {
-                    buffer.put(address);
-                }
-                int in = peer.port();
-                buffer.put((byte) ((in >>> 8) & 0xFF));
-                buffer.put((byte) (in & 0xFF));
-            } catch (UnknownHostException e) {
-                throw new IllegalStateException("incorrect ip format encountered when compact peer ip");
-            }
-        }
-        return new String(buffer.array(), StandardCharsets.ISO_8859_1);
-    }
-
-    /**
-     * 套他猴子的 BitTorrent 总给我整花活
-     * @param queryString 查询字符串
-     * @return 使用 ISO_8859_1 进行 URL 解码的 Info Hash 集合
-     */
-    public static List<byte[]> extractInfoHashes(String queryString) {
-        List<byte[]> infoHashes = new ArrayList<>();
-        String[] params = queryString.split("&");
-        for (String param : params) {
-            if (param.startsWith("info_hash=")) {
-                String encodedHash = param.substring("info_hash=".length());
-                byte[] decodedHash = URLDecoder.decode(encodedHash, StandardCharsets.ISO_8859_1).getBytes(StandardCharsets.ISO_8859_1);
-                infoHashes.add(decodedHash);
-            }
-        }
-
-        return infoHashes;
-    }
-
     private record SparkleTrackerMetricsMessage(
             long seeders,
             long leechers,
             long finishes,
             List<InetAddress> ips
-    ){
+    ) {
         @Override
         public String toString() {
-            StringJoiner joiner = new StringJoiner(", ","[","]");
-            ips.stream().filter(inet->inet instanceof Inet4Address).forEach(net->joiner.add(net.getHostAddress()));
-            ips.stream().filter(inet->inet instanceof Inet6Address).forEach(net->joiner.add(net.getHostAddress()));
+            StringJoiner joiner = new StringJoiner(", ", "[", "]");
+            ips.stream().filter(inet -> inet instanceof Inet4Address).forEach(net -> joiner.add(net.getHostAddress()));
+            ips.stream().filter(inet -> inet instanceof Inet6Address).forEach(net -> joiner.add(net.getHostAddress()));
             return "[Sparkle] S:%s L:%s F:%s, Announce IPs: %s"
                     .formatted(
                             seeders,
