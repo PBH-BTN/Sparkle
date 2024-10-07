@@ -21,10 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,8 +60,10 @@ public class AnalyseService {
                 .generateUntrustedIPAddresses(new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), new Timestamp(System.currentTimeMillis()), untrustedIpAddressGenerateThreshold)
                 .stream()
                 .map(IPUtil::toString)
-                .collect(Collectors.toList()));
-        var untrustedIps = list.stream().map(ip -> new AnalysedRule(null, ip, UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+                        .collect(Collectors.toList()))
+                .stream().map(IPUtil::toIPAddress)
+                .toList();
+        var untrustedIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         analysedRuleRepository.saveAll(untrustedIps);
     }
@@ -98,7 +97,7 @@ public class AnalyseService {
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
                 .toList());
-        var highRiskIps = list.stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+        var highRiskIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
         analysedRuleRepository.saveAll(highRiskIps);
     }
@@ -133,7 +132,7 @@ public class AnalyseService {
                 .distinct()
                 .sorted()
                 .forEach(list::add);
-        var ips = list.stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+        var ips = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
         analysedRuleRepository.saveAll(ips);
     }
@@ -198,7 +197,7 @@ public class AnalyseService {
         List<AnalysedRule> rules = new ArrayList<>();
         for (String ip : ips) {
             try {
-                if (new IPAddressString(ip).getAddress().isLocal()) {
+                if (new IPAddressString(ip).getAddress().isAnyLocal()) {
                     continue;
                 }
                 rules.add(new AnalysedRule(
@@ -215,6 +214,10 @@ public class AnalyseService {
         analysedRuleRepository.saveAll(rules);
     }
 
+    public Collection<IPAddress> filterIP(Collection<IPAddress> ips) {
+        ips.removeIf(IPAddress::isAnyLocal);
+        return ips;
+    }
 
     private Timestamp nowTimestamp() {
         return new Timestamp(System.currentTimeMillis());
