@@ -118,7 +118,7 @@ public class GithubUpdateService {
     private String generate123pan() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "%offline-download (devel) (anacrolix/torrent unknown)%",
+                        "offline-download (devel) (anacrolix/torrent unknown)%",
                         pastTimestamp(),
                         nowTimestamp()
                 )
