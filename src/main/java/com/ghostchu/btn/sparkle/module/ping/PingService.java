@@ -161,6 +161,22 @@ public class PingService {
                 0L,
                 0L
         )).toList());
+        entities.addAll(analyseService.getHighRiskIps().stream().map(a -> new RuleDto(
+                null,
+                a.getModule(),
+                a.getIp(),
+                "ip",
+                0L,
+                0L
+        )).toList());
+        entities.addAll(analyseService.getHighRiskIPV6Identity().stream().map(a -> new RuleDto(
+                null,
+                a.getModule(),
+                a.getIp(),
+                "ip",
+                0L,
+                0L
+        )).toList());
         return new BtnRule(entities);
     }
 }
