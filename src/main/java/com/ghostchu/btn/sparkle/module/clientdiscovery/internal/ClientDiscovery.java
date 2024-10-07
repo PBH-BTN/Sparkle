@@ -8,8 +8,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "clientdiscovery",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"foundAt", "hash"}))
+@Table(name = "clientdiscovery")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

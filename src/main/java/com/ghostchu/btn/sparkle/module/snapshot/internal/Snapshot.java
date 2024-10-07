@@ -16,8 +16,7 @@ import java.time.OffsetDateTime;
                 , @Index(columnList = "peerClientName")
                 , @Index(columnList = "torrent")
                 , @Index(columnList = "peerIp")
-                , @Index(columnList = "torrent, peerIp, userApplication, insertTime DESC")},
-        uniqueConstraints = @UniqueConstraint(columnNames = {"insertTime", "userApplication", "peerId", "peerClientName", "torrent", "peerIp", "submitId"}))
+                , @Index(columnList = "torrent, peerIp, userApplication, insertTime DESC")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
