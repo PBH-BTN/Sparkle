@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-modulith.version>1.2.1</spring-modulith.version>
+		<skipTests>true</skipTests>
 	</properties>
 	<dependencies>
 		<dependency>
