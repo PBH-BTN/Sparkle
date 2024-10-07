@@ -16,7 +16,7 @@ import java.util.Map;
 @Entity
 @Table(name = "audit",
         indexes = {@Index(columnList = "action"), @Index(columnList = "ip")},
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"timestamp", "id"})}
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"timestamp", "ip", "action", "success"})}
 )
 @AllArgsConstructor
 @NoArgsConstructor

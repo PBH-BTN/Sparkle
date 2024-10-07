@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
         , @Index(columnList = "peerIp")
         , @Index(columnList = "module")
         , @Index(columnList = "btnBan")},
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"insertTime", "id"})})
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"insertTime", "userApplication", "peerId", "peerClientName", "torrent", "peerIp", "module", "banUniqueId"})})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
