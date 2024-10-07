@@ -215,7 +215,7 @@ public class AnalyseService {
     }
 
     public Collection<IPAddress> filterIP(Collection<IPAddress> ips) {
-        ips.removeIf(IPAddress::isAnyLocal);
+        new ArrayList<>(ips).removeIf(IPAddress::isAnyLocal);
         return ips;
     }
 
