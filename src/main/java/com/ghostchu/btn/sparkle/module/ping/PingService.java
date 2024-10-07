@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
+import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
@@ -16,12 +17,14 @@ import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
+import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.PeerUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Data
@@ -43,6 +47,8 @@ public class PingService {
     private final AnalyseService analyseService;
     private final UserService userService;
     private final GeoIPManager geoIPManager;
+    @Autowired
+    private IPMerger iPMerger;
     @Value("${service.ping.protocol.min-version}")
     private int minProtocolVersion;
     @Value("${service.ping.protocol.max-version}")
@@ -143,40 +149,16 @@ public class PingService {
 
     @Cacheable({"btnRule#60000"})
     public BtnRule generateBtnRule() {
-        List<RuleDto> entities = new ArrayList<>(ruleService.getUnexpiredRules());
-        // 不要全选规则，有的规则可能不是 IP 类型的
-        entities.addAll(analyseService.getUntrustedIPAddresses().stream().map(a -> new RuleDto(
-                null,
-                a.getModule(),
-                a.getIp(),
-                "ip",
-                0L,
-                0L
-        )).toList());
-        entities.addAll(analyseService.getOverDownloadIPAddresses().stream().map(a -> new RuleDto(
-                null,
-                a.getModule(),
-                a.getIp(),
-                "ip",
-                0L,
-                0L
-        )).toList());
-        entities.addAll(analyseService.getHighRiskIps().stream().map(a -> new RuleDto(
-                null,
-                a.getModule(),
-                a.getIp(),
-                "ip",
-                0L,
-                0L
-        )).toList());
-        entities.addAll(analyseService.getHighRiskIPV6Identity().stream().map(a -> new RuleDto(
-                null,
-                a.getModule(),
-                a.getIp(),
-                "ip",
-                0L,
-                0L
-        )).toList());
-        return new BtnRule(entities);
+        List<String> analysedRules = new ArrayList<>();
+        analysedRules.addAll(analyseService.getUntrustedIPAddresses().stream()
+                .map(AnalysedRule::getIp).toList());
+        analysedRules.addAll(analyseService.getOverDownloadIPAddresses().stream()
+                .map(AnalysedRule::getIp).toList());
+        analysedRules.addAll(analyseService.getHighRiskIps().stream()
+                .map(AnalysedRule::getIp).toList());
+        analysedRules.addAll(analyseService.getHighRiskIPV6Identity().stream()
+                .map(AnalysedRule::getIp).toList());
+        var ipsMerged = iPMerger.merge(analysedRules.stream().distinct().sorted().collect(Collectors.toList()));
+        return new BtnRule(ipsMerged.stream().map(ip -> new RuleDto(null, "合并规则", ip, "ip", 0L, 0L)).toList());
     }
 }

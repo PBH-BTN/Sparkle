@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Data
 public class RuleDto implements Serializable {
     private Long id;
     private String category;
