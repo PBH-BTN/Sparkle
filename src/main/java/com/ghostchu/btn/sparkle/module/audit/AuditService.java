@@ -4,11 +4,7 @@ import com.ghostchu.btn.sparkle.module.audit.impl.Audit;
 import com.ghostchu.btn.sparkle.module.audit.impl.AuditRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
-import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 
@@ -25,9 +21,6 @@ public class AuditService {
         this.auditRepository = auditRepository;
     }
 
-    @Async
-    @Transactional
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     public void log(HttpServletRequest req, String action, boolean success, Map<String, Object> node) {
         var audit = new Audit(null, OffsetDateTime.now(), IPUtil.toInet(ServletUtil.getIP(req)), action, success, getHeaders(req), node);
         auditRepository.save(audit);
