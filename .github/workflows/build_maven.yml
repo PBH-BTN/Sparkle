@@ -2,9 +2,6 @@ name: Maven Build
 
 on:
   workflow_call:
-    secrets:
-      INSTALL4J_LICENSE:
-        required: true
 jobs:
   Maven:
     runs-on: ubuntu-latest
