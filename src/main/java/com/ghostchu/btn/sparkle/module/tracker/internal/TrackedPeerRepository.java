@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 @Repository
@@ -28,7 +28,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHash(InetAddress peerIp, String peerId, String torrentInfoHash);
 
-    long deleteByLastTimeSeenLessThanEqual(Timestamp deleteAllEntireBeforeThisTime);
+    long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 
     long countByTorrentInfoHashAndLeft(String torrentInfoHash, Long left);
 

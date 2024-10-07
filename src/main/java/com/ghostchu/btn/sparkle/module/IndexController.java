@@ -15,7 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Controller
 public class IndexController extends SparkleController {
@@ -62,7 +62,7 @@ public class IndexController extends SparkleController {
         return "index";
     }
 
-    public IndexBtnMetrics btnMetrics(Timestamp from, Timestamp to) {
+    public IndexBtnMetrics btnMetrics(OffsetDateTime from, OffsetDateTime to) {
         var banHistory = banHistoryService.getMetrics(from, to);
         var snapshot = snapshotService.getMetrics(from, to);
         var clientDiscovery = clientDiscoveryService.getMetrics(from, to);

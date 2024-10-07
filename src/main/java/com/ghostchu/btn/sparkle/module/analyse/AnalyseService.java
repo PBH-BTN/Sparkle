@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.EntityManager;
@@ -21,6 +22,8 @@ import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,7 +60,7 @@ public class AnalyseService {
     @Scheduled(fixedDelayString = "${analyse.overdownload.interval}")
     public void cronUntrustedIPAddresses() {
         var list = ipMerger.merge(banHistoryRepository
-                .generateUntrustedIPAddresses(new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), new Timestamp(System.currentTimeMillis()), untrustedIpAddressGenerateThreshold)
+                        .generateUntrustedIPAddresses(TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), new Timestamp(System.currentTimeMillis()), untrustedIpAddressGenerateThreshold)
                 .stream()
                 .map(IPUtil::toString)
                         .collect(Collectors.toList()))
@@ -220,11 +223,11 @@ public class AnalyseService {
         return list;
     }
 
-    private Timestamp nowTimestamp() {
-        return new Timestamp(System.currentTimeMillis());
+    private OffsetDateTime nowTimestamp() {
+        return OffsetDateTime.now();
     }
 
-    private Timestamp pastTimestamp(long offset) {
-        return new Timestamp(System.currentTimeMillis() - offset);
+    private OffsetDateTime pastTimestamp(long offset) {
+        return OffsetDateTime.now().minus(offset, ChronoUnit.MILLIS);
     }
 }

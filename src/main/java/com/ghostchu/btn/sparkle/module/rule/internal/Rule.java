@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "rule",
@@ -27,7 +27,7 @@ public class Rule {
     @Column(nullable = false)
     private String type;
     @Column(nullable = false)
-    private Timestamp createdAt;
+    private OffsetDateTime createdAt;
     @Column(nullable = false)
-    private Timestamp expiredAt;
+    private OffsetDateTime expiredAt;
 }

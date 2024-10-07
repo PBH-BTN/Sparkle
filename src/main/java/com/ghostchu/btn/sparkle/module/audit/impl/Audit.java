@@ -9,7 +9,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Type;
 
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +27,7 @@ public class Audit {
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)
-    private Timestamp timestamp;
+    private OffsetDateTime timestamp;
     @Column
     private InetAddress ip;
     @Column(nullable = false)

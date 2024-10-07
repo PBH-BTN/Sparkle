@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Repository
@@ -22,9 +22,9 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                 HAVING COUNT (DISTINCT ban.userApplication.appId) >= ?3
             """)
     @Transactional
-    List<InetAddress> generateUntrustedIPAddresses(Timestamp from, Timestamp to, int threshold);
+    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold);
 
-    Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(Timestamp from, Timestamp to, Pageable pageable);
+    Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, Pageable pageable);
 
     @Query("""
                 SELECT DISTINCT ban.peerIp FROM BanHistory ban
@@ -35,19 +35,19 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                 GROUP BY ban.peerIp
             """)
     @Transactional
-    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(Timestamp from, Timestamp to, int family);
+    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(OffsetDateTime from, OffsetDateTime to, int family);
 
-    List<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(Timestamp from, Timestamp to);
+    List<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to);
 
-    Page<BanHistory> findByInsertTimeBetweenAndPeerIdLikeIgnoreCaseOrderByInsertTimeDesc(Timestamp from, Timestamp to, String peerId, Pageable pageable);
+    Page<BanHistory> findByInsertTimeBetweenAndPeerIdLikeIgnoreCaseOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, String peerId, Pageable pageable);
 
-    Page<BanHistory> findByInsertTimeBetweenAndPeerClientNameLikeIgnoreCaseOrderByInsertTimeDesc(Timestamp from, Timestamp to, String peerClientName, Pageable pageable);
+    Page<BanHistory> findByInsertTimeBetweenAndPeerClientNameLikeIgnoreCaseOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, String peerClientName, Pageable pageable);
 
-    Page<BanHistory> findByInsertTimeBetweenAndPeerIpEqualsOrderByInsertTimeDesc(Timestamp from, Timestamp to, InetAddress peerIp, Pageable pageable);
+    Page<BanHistory> findByInsertTimeBetweenAndPeerIpEqualsOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, InetAddress peerIp, Pageable pageable);
 
     Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
 
-    long countByInsertTimeBetween(Timestamp insertTimeStart, Timestamp insertTimeEnd);
+    long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
     @Query("""
                 SELECT DISTINCT ban FROM BanHistory ban
@@ -56,15 +56,15 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                     AND ban.insertTime >= ?3 AND ban.insertTime <= ?4
             """)
     @Transactional
-    List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(String peerId, String peerClientName, Timestamp from, Timestamp to);
+    List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(String peerId, String peerClientName, OffsetDateTime from, OffsetDateTime to);
 
-    List<BanHistory> findDistinctByPeerIdLikeAndInsertTimeBetween(String peerId, Timestamp from, Timestamp to);
+    List<BanHistory> findDistinctByPeerIdLikeAndInsertTimeBetween(String peerId, OffsetDateTime from, OffsetDateTime to);
 
     @Query(nativeQuery = true, value = "SELECT * from banhistory ban WHERE ban.insert_time >= ?2 AND ban.insert_time <= ?3 AND host(ban.peer_ip) LIKE ?1")
     @Transactional
-    List<BanHistory> findByPeerIp(String peerIp,Timestamp insertTimeStart, Timestamp insertTimeEnd);
+    List<BanHistory> findByPeerIp(String peerIp, OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
-    List<BanHistory> findDistinctByPeerClientNameLikeAndInsertTimeBetween(String peerClientName, Timestamp from, Timestamp to);
+    List<BanHistory> findDistinctByPeerClientNameLikeAndInsertTimeBetween(String peerClientName, OffsetDateTime from, OffsetDateTime to);
 
-    List<BanHistory> findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween(String peerClientName, String module, Timestamp from, Timestamp to);
+    List<BanHistory> findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween(String peerClientName, String module, OffsetDateTime from, OffsetDateTime to);
 }

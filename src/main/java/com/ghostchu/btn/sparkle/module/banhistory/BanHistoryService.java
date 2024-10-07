@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -47,7 +47,7 @@ public class BanHistoryService {
     }
 
     @Cacheable(value = "banHistoryMetrics#1800000", key = "#from+'-'+#to")
-    public BanHistoryMetrics getMetrics(Timestamp from, Timestamp to) {
+    public BanHistoryMetrics getMetrics(OffsetDateTime from, OffsetDateTime to) {
         return new BanHistoryMetrics(
                 banHistoryRepository.count(),
                 banHistoryRepository.countByInsertTimeBetween(from, to)

@@ -16,7 +16,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -34,7 +35,7 @@ public class ClientDiscoveryService {
     @Transactional
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Async
-    public void handleIdentities(User user, Timestamp timeForFoundAt, Timestamp timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
+    public void handleIdentities(User user, OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
         clientDiscoveryRepository.updateLastSeen(clientIdentities.stream().map(ClientIdentity::hash).toList(), timeForLastSeenAt, user);
         var found = clientDiscoveryRepository.findAllById(clientIdentities.stream().map(ClientIdentity::hash).toList());
         List<Long> hashInDatabase = new ArrayList<>();
@@ -50,7 +51,7 @@ public class ClientDiscoveryService {
     }
 
     @Cacheable(value = "clientDiscoveryMetrics#1800000", key = "#from+'-'+#to")
-    public ClientDiscoveryMetrics getMetrics(Timestamp from, Timestamp to){
+    public ClientDiscoveryMetrics getMetrics(OffsetDateTime from, OffsetDateTime to) {
         return new ClientDiscoveryMetrics(
                 clientDiscoveryRepository.count(),
                 clientDiscoveryRepository.countByFoundAtBetween(from,to)
@@ -62,9 +63,9 @@ public class ClientDiscoveryService {
                 .hash(clientDiscovery.getHash())
                 .clientName(clientDiscovery.getClientName())
                 .peerId(clientDiscovery.getPeerId())
-                .foundAt(clientDiscovery.getFoundAt().getTime())
+                .foundAt(clientDiscovery.getFoundAt().getLong(ChronoField.MILLI_OF_DAY))
                 .foundBy(userService.toDto(clientDiscovery.getFoundBy()))
-                .lastSeenAt(clientDiscovery.getLastSeenAt().getTime())
+                .lastSeenAt(clientDiscovery.getLastSeenAt().getLong(ChronoField.MILLI_OF_DAY))
                 .lastSeenBy(userService.toDto(clientDiscovery.getLastSeenBy()))
                 .build();
     }

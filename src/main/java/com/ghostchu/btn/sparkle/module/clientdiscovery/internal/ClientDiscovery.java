@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "clientdiscovery")
@@ -24,12 +24,12 @@ public class ClientDiscovery {
     @Column(nullable = false)
     private String peerId;
     @Column(nullable = false)
-    private Timestamp foundAt;
+    private OffsetDateTime foundAt;
     @JoinColumn(name = "foundBy")
     @ManyToOne(fetch = FetchType.LAZY)
     private User foundBy;
     @Column(nullable = false)
-    private Timestamp lastSeenAt;
+    private OffsetDateTime lastSeenAt;
     @JoinColumn(name = "lastSeenBy")
     @ManyToOne(fetch = FetchType.LAZY)
     private User lastSeenBy;

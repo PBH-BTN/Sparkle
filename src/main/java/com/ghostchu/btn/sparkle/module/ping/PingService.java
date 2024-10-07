@@ -16,10 +16,7 @@ import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
-import com.ghostchu.btn.sparkle.util.ByteUtil;
-import com.ghostchu.btn.sparkle.util.IPMerger;
-import com.ghostchu.btn.sparkle.util.IPUtil;
-import com.ghostchu.btn.sparkle.util.PeerUtil;
+import com.ghostchu.btn.sparkle.util.*;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -31,7 +28,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,7 +54,7 @@ public class PingService {
     @Modifying
     @Transactional
     public long handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
-        Timestamp now = new Timestamp(System.currentTimeMillis());
+        OffsetDateTime now = OffsetDateTime.now();
         var usr = userApplication.getUser();
         usr.setLastAccessAt(now);
         userService.saveUser(usr);
@@ -68,7 +65,7 @@ public class PingService {
                     try {
                         return Snapshot.builder()
                                 .insertTime(now)
-                                .populateTime(new Timestamp(ping.getPopulateTime()))
+                                .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
                                 .userApplication(userApplication)
                                 .submitId(UUID.randomUUID().toString())
                                 .peerIp(IPUtil.toInet(peer.getIpAddress()))
@@ -101,7 +98,7 @@ public class PingService {
     @Modifying
     @Transactional
     public long handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
-        Timestamp now = new Timestamp(System.currentTimeMillis());
+        OffsetDateTime now = OffsetDateTime.now();
         var usr = userApplication.getUser();
         usr.setLastAccessAt(now);
         userService.saveUser(usr);
@@ -113,7 +110,7 @@ public class PingService {
                     try {
                         return BanHistory.builder()
                                 .insertTime(now)
-                                .populateTime(new Timestamp(ping.getPopulateTime()))
+                                .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
                                 .userApplication(userApplication)
                                 .submitId(UUID.randomUUID().toString())
                                 .peerIp(IPUtil.toInet(peer.getIpAddress()))

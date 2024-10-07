@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.ghostchu.btn.sparkle.module.tracker.internal.*;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +15,6 @@ import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class TrackerService {
     @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
     @Transactional
     public void cleanup() {
-        var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(new Timestamp(System.currentTimeMillis() - inactiveInterval));
+        var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
@@ -66,8 +66,8 @@ public class TrackerService {
                 announce.left(),
                 announce.peerEvent(),
                 announce.userAgent(),
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis())
+                TimeUtil.toUTC(System.currentTimeMillis()),
+                TimeUtil.toUTC(System.currentTimeMillis())
         ));
         if (trackedPeer.getDownloadedOffset() > announce.downloaded()
             || trackedPeer.getUploadedOffset() > announce.uploaded()) {
@@ -82,7 +82,7 @@ public class TrackerService {
         trackedPeer.setDownloadedOffset(announce.downloaded());
         trackedPeer.setUploadedOffset(announce.uploaded());
         trackedPeer.setUserAgent(announce.userAgent());
-        trackedPeer.setLastTimeSeen(new Timestamp(System.currentTimeMillis()));
+        trackedPeer.setLastTimeSeen(TimeUtil.toUTC(System.currentTimeMillis()));
         trackedPeer.setLeft(announce.left());
         trackedPeer.setPeerPort(announce.peerPort());
         trackedPeer.setPeerIp(announce.peerIp());
@@ -90,8 +90,8 @@ public class TrackerService {
         var trackedTask = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(announce.infoHash())).orElse(new TrackedTask(
                 null,
                 ByteUtil.bytesToHex(announce.infoHash()),
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
+                TimeUtil.toUTC(System.currentTimeMillis()),
+                TimeUtil.toUTC(System.currentTimeMillis()),
                 0L, 0L
         ));
         // 检查 task 属性

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -65,7 +65,7 @@ public class SnapshotService {
 
 
     @Cacheable(value = "snapshotMetrics#1800000", key = "#from+'-'+#to")
-    public SnapshotMetrics getMetrics(Timestamp from, Timestamp to) {
+    public SnapshotMetrics getMetrics(OffsetDateTime from, OffsetDateTime to) {
         return new SnapshotMetrics(snapshotRepository.count(), snapshotRepository.countByInsertTimeBetween(from, to));
     }
 

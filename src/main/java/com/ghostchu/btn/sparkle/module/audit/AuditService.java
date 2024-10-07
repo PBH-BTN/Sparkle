@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class AuditService {
     }
 
     public Audit log(HttpServletRequest req, String action, boolean success, Map<String, Object> node) {
-        var audit = new Audit(null, new Timestamp(System.currentTimeMillis()), IPUtil.toInet(ServletUtil.getIP(req)), action, success, getHeaders(req), node);
+        var audit = new Audit(null, OffsetDateTime.now(), IPUtil.toInet(ServletUtil.getIP(req)), action, success, getHeaders(req), node);
         return auditRepository.save(audit);
     }
 

@@ -17,7 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.StringJoiner;
@@ -226,11 +227,11 @@ public class GithubUpdateService {
         return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(AnalysedRule::getIp).toList());
     }
 
-    private Timestamp nowTimestamp() {
-        return new Timestamp(System.currentTimeMillis());
+    private OffsetDateTime nowTimestamp() {
+        return OffsetDateTime.now();
     }
 
-    private Timestamp pastTimestamp() {
-        return new Timestamp(System.currentTimeMillis() - pastInterval);
+    private OffsetDateTime pastTimestamp() {
+        return OffsetDateTime.now().minus(pastInterval, ChronoUnit.MILLIS);
     }
 }

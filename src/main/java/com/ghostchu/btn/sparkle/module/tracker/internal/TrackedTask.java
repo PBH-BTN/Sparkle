@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tracker_tasks",
@@ -26,9 +26,9 @@ public class TrackedTask {
     @Column(nullable = false)
     private String torrentInfoHash;
     @Column(nullable = false)
-    private Timestamp firstTimeSeen;
+    private OffsetDateTime firstTimeSeen;
     @Column(nullable = false)
-    private Timestamp lastTimeSeen;
+    private OffsetDateTime lastTimeSeen;
     @Column(nullable = false)
     private Long leechCount;
     @Column(nullable = false)

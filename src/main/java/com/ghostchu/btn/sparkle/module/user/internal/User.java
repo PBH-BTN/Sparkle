@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "user",
@@ -30,11 +30,11 @@ public class User {
     @Column(nullable = false)
     private String nickname;
     @Column(nullable = false)
-    private Timestamp registerAt;
+    private OffsetDateTime registerAt;
     @Column(nullable = false)
-    private Timestamp lastSeenAt;
+    private OffsetDateTime lastSeenAt;
     @Column(nullable = false)
-    private Timestamp lastAccessAt;
+    private OffsetDateTime lastAccessAt;
     @Column(nullable = false)
     private String githubLogin;
     @Column(nullable = true)

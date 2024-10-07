@@ -9,7 +9,7 @@ import lombok.*;
 import org.hibernate.annotations.Type;
 
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "banhistory", indexes = {
@@ -32,9 +32,9 @@ public class BanHistory {
     @Column(nullable = false, unique = true)
     private Long id;
     @Column(nullable = false)
-    private Timestamp insertTime;
+    private OffsetDateTime insertTime;
     @Column(nullable = false)
-    private Timestamp populateTime;
+    private OffsetDateTime populateTime;
     @JoinColumn(name = "userApplication")
     @ManyToOne(fetch = FetchType.LAZY)
     private UserApplication userApplication;

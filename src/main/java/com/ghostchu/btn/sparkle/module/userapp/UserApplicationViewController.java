@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.exception.TooManyUserApplicationException;
 import com.ghostchu.btn.sparkle.exception.UserApplicationNotFoundException;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.module.user.UserService;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -68,7 +69,7 @@ public class UserApplicationViewController {
     @PostMapping("/create")
     public String createUserApplication(Model model, @RequestParam String comment) throws UserNotFoundException, TooManyUserApplicationException {
         var user = userService.getUser(StpUtil.getLoginIdAsLong()).orElseThrow();
-        var usrApp = userApplicationService.generateUserApplicationForUser(user, comment, new Timestamp(System.currentTimeMillis()));
+        var usrApp = userApplicationService.generateUserApplicationForUser(user, comment, TimeUtil.toUTC(System.currentTimeMillis()));
         model.addAttribute("userapp", usrApp);
         return "modules/userapp/created";
     }

@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "userapp", uniqueConstraints = {@UniqueConstraint(columnNames = "appId")},
@@ -28,7 +28,7 @@ public class UserApplication {
     @Column(nullable = false)
     private String comment;
     @Column(nullable = false)
-    private Timestamp createdAt;
+    private OffsetDateTime createdAt;
     @JoinColumn(nullable = false, name = "user")
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;

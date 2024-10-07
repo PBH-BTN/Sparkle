@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.RequestPageSizeTooLargeException;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.compare.NumberCompareMethod;
 import com.ghostchu.btn.sparkle.util.compare.StringCompareMethod;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
@@ -20,7 +21,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,10 +45,10 @@ public class SnapshotController extends SparkleController {
         Specification<Snapshot> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if(q.getTimeFrom() != null){
-                predicates.add(cb.greaterThanOrEqualTo(root.get("insertTime"), new Timestamp(q.getTimeFrom())));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("insertTime"), TimeUtil.toUTC(q.getTimeFrom())));
             }
             if(q.getTimeTo() != null){
-                predicates.add(cb.lessThanOrEqualTo(root.get("insertTime"), new Timestamp(q.getTimeTo())));
+                predicates.add(cb.lessThanOrEqualTo(root.get("insertTime"), TimeUtil.toUTC(q.getTimeTo())));
             }
             if (StringUtils.isNotBlank(q.getPeerId())) {
                 predicates.add(q.getPeerIdCompareMethod().criteriaBuilder(cb, root.get("peerId"), q.getPeerId()));

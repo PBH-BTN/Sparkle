@@ -9,6 +9,7 @@ import com.ghostchu.btn.sparkle.exception.UserApplicationNotFoundException;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.user.UserService;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
@@ -107,7 +108,7 @@ public class UserApplicationController extends SparkleController {
     @PutMapping("/userapp")
     public StdResp<UserApplicationVerboseDto> createUserApplication(@RequestBody UserApplicationCreateRequest req) throws UserNotFoundException, TooManyUserApplicationException {
         var user = userService.getUser(StpUtil.getLoginIdAsLong()).orElseThrow();
-        var usrApp = userApplicationService.generateUserApplicationForUser(user, req.getComment(), new Timestamp(System.currentTimeMillis()));
+        var usrApp = userApplicationService.generateUserApplicationForUser(user, req.getComment(), TimeUtil.toUTC(System.currentTimeMillis()));
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", usrApp.getAppId());
         audit.put("userAppId", usrApp.getAppId());

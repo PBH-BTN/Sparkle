@@ -2,10 +2,12 @@ package com.ghostchu.btn.sparkle.module.rule;
 
 import com.ghostchu.btn.sparkle.module.rule.internal.Rule;
 import com.ghostchu.btn.sparkle.module.rule.internal.RuleRepository;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,8 +26,7 @@ public class RuleService {
      */
     @Cacheable({"unexpiredRules#600000"})
     public List<RuleDto> getUnexpiredRules() {
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        return ruleRepository.findByExpiredAtGreaterThan(timestamp).stream().map(this::toDto).toList();
+        return ruleRepository.findByExpiredAtGreaterThan(OffsetDateTime.now()).stream().map(this::toDto).toList();
     }
 
     /**
@@ -61,8 +62,8 @@ public class RuleService {
         rule.setCategory(ruleDto.getCategory());
         rule.setType(ruleDto.getType());
         rule.setContent(ruleDto.getContent());
-        rule.setCreatedAt(new Timestamp(ruleDto.getCreatedAt()));
-        rule.setExpiredAt(new Timestamp(ruleDto.getExpiredAt()));
+        rule.setCreatedAt(TimeUtil.toUTC(ruleDto.getCreatedAt()));
+        rule.setExpiredAt(TimeUtil.toUTC(ruleDto.getExpiredAt()));
         return toDto(ruleRepository.save(rule));
     }
 
@@ -72,8 +73,8 @@ public class RuleService {
                 .category(rule.getCategory())
                 .content(rule.getContent())
                 .type(rule.getType())
-                .createdAt(rule.getCreatedAt().getTime())
-                .expiredAt(rule.getExpiredAt().getTime())
+                .createdAt(rule.getCreatedAt().getLong(ChronoField.MILLI_OF_DAY))
+                .expiredAt(rule.getExpiredAt().getLong(ChronoField.MILLI_OF_DAY))
                 .build();
     }
 }

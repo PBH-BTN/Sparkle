@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.net.InetAddress;
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tracker_peers",
@@ -53,7 +53,7 @@ public class TrackedPeer {
     @Column(nullable = false)
     private String userAgent;
     @Column(nullable = false)
-    private Timestamp firstTimeSeen;
+    private OffsetDateTime firstTimeSeen;
     @Column(nullable = false)
-    private Timestamp lastTimeSeen;
+    private OffsetDateTime lastTimeSeen;
 }
