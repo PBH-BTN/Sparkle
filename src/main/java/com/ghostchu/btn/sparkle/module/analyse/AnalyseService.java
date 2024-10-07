@@ -197,7 +197,7 @@ public class AnalyseService {
         List<AnalysedRule> rules = new ArrayList<>();
         for (String ip : ips) {
             try {
-                if (new IPAddressString(ip).getAddress().isAnyLocal()) {
+                if (new IPAddressString(ip).getAddress().isLocal()) {
                     continue;
                 }
                 rules.add(new AnalysedRule(
@@ -216,7 +216,7 @@ public class AnalyseService {
 
     public Collection<IPAddress> filterIP(Collection<IPAddress> ips) {
         var list = new ArrayList<>(ips);
-        list.removeIf(IPAddress::isAnyLocal);
+        list.removeIf(IPAddress::isLocal);
         return list;
     }
 
