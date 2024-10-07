@@ -5,7 +5,6 @@ import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
-import inet.ipaddr.IPAddressString;
 import jakarta.transaction.Transactional;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +18,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.StringJoiner;
 
 @Service
 @Slf4j
@@ -64,81 +64,39 @@ public class GithubUpdateService {
         updateFile(repository, "0xde-0xad-0xbe-0xef.txt", generateDeadBeef().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "123pan.txt", generate123pan().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "random-peerid.txt", generateGopeedDev().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "dot1_v6_tagging.txt", generateDot1IPV6().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "high-risk-ips.txt", generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "ipv6-dhcp-address.txt", generateDhcpAddress().getBytes(StandardCharsets.UTF_8));
     }
 
-    private String generateDhcpAddress() {
+    private String generateUntrustedIps() {
         var strJoiner = new StringJoiner("\n");
-        Set<String> ipSet = new HashSet<>();
-        var result = banHistoryRepository.findByInsertTimeBetweenOrderByInsertTimeDescIPVx(pastTimestamp(), nowTimestamp(), 6);
-        result
-                .stream()
-                .map(ban -> new IPAddressString(ban.getHostAddress()).getAddress())
-                .filter(Objects::nonNull)
-                .filter(ip -> ip.isIPv6() && ip.toFullString().contains(":0000:0000:0000:"))
-                .forEach(ip -> ipSet.add(ip.toString()));
-        ipSet.stream().sorted().forEach(strJoiner::add);
+        analyseService.getUntrustedIPAddresses().forEach(r -> strJoiner.add(r.getIp()));
         return strJoiner.toString();
     }
 
+//    private String generateDhcpAddress() {
+//        var strJoiner = new StringJoiner("\n");
+//        Set<String> ipSet = new HashSet<>();
+//        var result = banHistoryRepository.findByInsertTimeBetweenOrderByInsertTimeDescIPVx(pastTimestamp(), nowTimestamp(), 6);
+//        result
+//                .stream()
+//                .map(ban -> new IPAddressString(ban.getHostAddress()).getAddress())
+//                .filter(Objects::nonNull)
+//                .filter(ip -> ip.isIPv6() && ip.toFullString().contains(":0000:0000:0000:"))
+//                .forEach(ip -> ipSet.add(ip.toString()));
+//        ipSet.stream().sorted().forEach(strJoiner::add);
+//        return strJoiner.toString();
+//    }
+
     private String generateHighRiskIps() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(), nowTimestamp())
-                .stream()
-                .map(ban -> IPUtil.toString(ban.getPeerIp()))
-                .distinct()
-                .sorted()
-                .forEach(strJoiner::add);
-        banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(), nowTimestamp())
-                .stream()
-                .map(ban -> IPUtil.toString(ban.getPeerIp()))
-                .distinct()
-                .sorted()
-                .forEach(strJoiner::add);
+        analyseService.getHighRiskIps().forEach(r -> strJoiner.add(r.getIp()));
         return strJoiner.toString();
     }
 
     private String generateStrangeIPV6() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findByPeerIp(
-                        "%2e0:61ff:fe%",
-                        pastTimestamp(),
-                        nowTimestamp()
-                )
-                .stream()
-                .map(ban -> IPUtil.toString(ban.getPeerIp()))
-                .distinct()
-                .sorted()
-                .forEach(strJoiner::add);
-        return strJoiner.toString();
-    }
-
-
-    private String generateDot1IPV6() {
-        var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findByPeerIp(
-                        "%::1",
-                        pastTimestamp(),
-                        nowTimestamp()
-                )
-                .stream()
-                .map(ban -> IPUtil.toString(ban.getPeerIp()))
-                .distinct()
-                .sorted()
-                .forEach(strJoiner::add);
-        banHistoryRepository.findByPeerIp(
-                        "%::2",
-                        pastTimestamp(),
-                        nowTimestamp()
-                )
-                .stream()
-                .map(ban -> IPUtil.toString(ban.getPeerIp()))
-                .distinct()
-                .sorted()
-                .forEach(strJoiner::add);
+        analyseService.getHighRiskIPV6Identity().forEach(r -> strJoiner.add(r.getIp()));
         return strJoiner.toString();
     }
 
@@ -263,11 +221,6 @@ public class GithubUpdateService {
         }
     }
 
-    private String generateUntrustedIps() {
-        var list = analyseService.getUntrustedIPAddresses().stream().map(AnalysedRule::getIp).collect(Collectors.toList());
-        list.addAll(banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween("aria2/1.34.0", pastTimestamp(), nowTimestamp()).stream().map(h -> h.getPeerIp().getHostAddress()).toList());
-        return String.join("\n", analyseService.getUntrustedIPAddresses().stream().map(AnalysedRule::getIp).toList());
-    }
 
     private String generateOverDownloadIps() {
         return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(AnalysedRule::getIp).toList());

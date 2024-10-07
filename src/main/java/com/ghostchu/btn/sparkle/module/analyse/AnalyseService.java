@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
+import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -21,13 +22,17 @@ import org.springframework.stereotype.Service;
 import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class AnalyseService {
     private static final String UNTRUSTED_IP = "不受信任 IP 地址";
     private static final String OVER_DOWNLOAD = "BTN 网络 IP 下载量分析";
+    private static final String HIGH_RISK_IP = "高风险 IP 地址";
+    private static final String HIGH_RISK_IPV6_IDENTITY = "高风险 IPV6 特征";
     @Autowired
     private BanHistoryRepository banHistoryRepository;
     @Autowired
@@ -40,6 +45,10 @@ public class AnalyseService {
     private long overDownloadGenerateOffset;
     @Value("${analyse.overdownload.threshold}")
     private double overDownloadGenerateThreshold;
+    @Value("${analyse.highriskips.offset}")
+    private long highRiskIpsOffset;
+    @Value("${analyse.highriskipv6identity.offset}")
+    private long highRiskIpv6IdentityOffset;
     @Autowired
     private AnalysedRuleRepository analysedRuleRepository;
     @PersistenceContext
@@ -61,7 +70,7 @@ public class AnalyseService {
     }
 
     @Transactional
-    public List<AnalysedRule> getAnalysedRules(){
+    public List<AnalysedRule> getAnalysedRules() {
         return analysedRuleRepository.findAll();
     }
 
@@ -71,6 +80,66 @@ public class AnalyseService {
 
     public List<AnalysedRule> getOverDownloadIPAddresses() {
         return analysedRuleRepository.findByModule(OVER_DOWNLOAD);
+    }
+
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.READ)
+    @Scheduled(fixedDelayString = "${analyse.highriskips.interval}")
+    public void cronHighRiskIps() {
+        Set<IPAddress> list =
+                new HashSet<>(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                        .stream()
+                        .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                        .distinct()
+                        .toList());
+        list.addAll(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                .stream()
+                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                .distinct()
+                .toList());
+        var highRiskIps = list.stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+        analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
+        analysedRuleRepository.saveAll(highRiskIps);
+    }
+
+    public List<AnalysedRule> getHighRiskIps() {
+        return analysedRuleRepository.findByModule(HIGH_RISK_IP);
+    }
+
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.READ)
+    @Scheduled(fixedDelayString = "${analyse.highriskipv6identity.interval}")
+    public void cronHighRiskIPV6Identity() {
+        Set<IPAddress> list = new HashSet<>();
+        banHistoryRepository.findByPeerIp(
+                        "%::1",
+                        pastTimestamp(highRiskIpv6IdentityOffset),
+                        nowTimestamp()
+                )
+                .stream()
+                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                .distinct()
+                .sorted()
+                .forEach(list::add);
+        banHistoryRepository.findByPeerIp(
+                        "%::2",
+                        pastTimestamp(highRiskIpv6IdentityOffset),
+                        nowTimestamp()
+                )
+                .stream()
+                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                .distinct()
+                .sorted()
+                .forEach(list::add);
+        var ips = list.stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+        analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
+        analysedRuleRepository.saveAll(ips);
+    }
+
+    public List<AnalysedRule> getHighRiskIPV6Identity() {
+        return analysedRuleRepository.findByModule(HIGH_RISK_IPV6_IDENTITY);
     }
 
     @Transactional
@@ -144,5 +213,14 @@ public class AnalyseService {
         }
         analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
         analysedRuleRepository.saveAll(rules);
+    }
+
+
+    private Timestamp nowTimestamp() {
+        return new Timestamp(System.currentTimeMillis());
+    }
+
+    private Timestamp pastTimestamp(long offset) {
+        return new Timestamp(System.currentTimeMillis() - offset);
     }
 }

@@ -1,10 +1,21 @@
 package com.ghostchu.btn.sparkle.util;
 
+import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 
 import java.net.InetAddress;
 
 public class IPUtil {
+
+    public static IPAddress toIPAddress(String ip) {
+        var address = new IPAddressString(ip).getAddress();
+        if (address == null) {
+            System.err.println("Unable convert " + ip + " to IPAddressString");
+            return new IPAddressString("127.0.0.128").getAddress();
+        }
+        return address;
+    }
+
     public static InetAddress toInet(String ip) {
         var address = new IPAddressString(ip).getAddress();
         if (address == null) {
