@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -125,7 +126,8 @@ public class TrackerController extends SparkleController {
         Validate.isTrue(StringUtils.isNumeric(req.getParameter("downloaded")));
         long downloaded = Long.parseLong(req.getParameter("downloaded"));
         Validate.isTrue(StringUtils.isNumeric(req.getParameter("left")));
-        long left = Long.parseLong(req.getParameter("left"));
+        var leftBi = new BigInteger(req.getParameter("left"));
+        long left = leftBi.longValue();
         PeerEvent peerEvent = PeerEvent.EMPTY;
         String event = req.getParameter("event");
         if (event != null) {
