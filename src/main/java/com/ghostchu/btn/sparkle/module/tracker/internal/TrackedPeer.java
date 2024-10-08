@@ -15,9 +15,8 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tracker_peers",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"peerIp","peerId","torrentInfoHash"})},
-        indexes = {@Index(columnList = "peerId"),@Index(columnList = "peerIp"), @Index(columnList = "torrentInfoHash"),
-        @Index(columnList = "left"), @Index(columnList = "lastEvent")}
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"peerIp", "peerId", "peerPort", "torrentInfoHash"})},
+        indexes = {@Index(columnList = "peerId"), @Index(columnList = "peerIp"), @Index(columnList = "torrentInfoHash")}
 )
 @AllArgsConstructor
 @NoArgsConstructor
@@ -67,4 +66,7 @@ public class TrackedPeer {
     @Column(columnDefinition = "jsonb")
     @Type(JsonType.class)
     private IPGeoData requestGeoIP;
+    @Column(nullable = false)
+    @Version
+    private Integer version;
 }

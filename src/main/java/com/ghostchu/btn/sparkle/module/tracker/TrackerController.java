@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
+import com.ghostchu.btn.sparkle.util.IPUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -142,12 +143,13 @@ public class TrackerController extends SparkleController {
         List<InetAddress> peerIps = getPossiblePeerIps(req)
                 .stream()
                 .distinct()
-                .map(ip -> new IPAddressString(ip).getAddress())
+                .map(IPUtil::toIPAddress)
                 .filter(Objects::nonNull)
                 .map(IPAddress::toInetAddress).toList();
+        List<TrackerService.PeerAnnounce> announces = new ArrayList<>();
         for (InetAddress ip : peerIps) {
             try {
-                trackerService.executeAnnounce(new TrackerService.PeerAnnounce(
+                announces.add(new TrackerService.PeerAnnounce(
                         infoHash,
                         peerId,
                         reqIpInetAddress,
@@ -163,6 +165,7 @@ public class TrackerController extends SparkleController {
                 log.error("Unable to handle Torrent announce", e);
             }
         }
+        trackerService.executeAnnounce(announces);
         var peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
         tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
@@ -234,7 +237,6 @@ public class TrackerController extends SparkleController {
         }
         return found;
     }
-
 
     private void tickMetrics(String service, double increment) {
         meterRegistry.counter("sparkle_tracker_" + service).increment(increment);

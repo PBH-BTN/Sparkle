@@ -1,17 +1,17 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
-import com.ghostchu.btn.sparkle.module.tracker.internal.*;
+import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
+import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
+import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -30,7 +30,6 @@ import java.util.List;
 public class TrackerService {
 
     private final TrackedPeerRepository trackedPeerRepository;
-    private final TrackedTaskRepository trackedTaskRepository;
 
     private final long inactiveInterval;
     private final int maxPeersReturn;
@@ -41,12 +40,10 @@ public class TrackerService {
     private final MeterRegistry meterRegistry;
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
-                          TrackedTaskRepository trackedTaskRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
                           @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager,
                           MeterRegistry meterRegistry) {
         this.trackedPeerRepository = trackedPeerRepository;
-        this.trackedTaskRepository = trackedTaskRepository;
         this.inactiveInterval = inactiveInterval;
         this.maxPeersReturn = maxPeersReturn;
         this.geoIPManager = geoIPManager;
@@ -63,8 +60,7 @@ public class TrackerService {
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
         var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", trackedPeerRepository.countDistinctPeerIpBy());
         var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_active_tasks", trackedPeerRepository.countDistinctTorrentInfoHashBy());
-        var totalTasks = meterRegistry.gauge("sparkle_tracker_tracking_total_tasks", trackedTaskRepository.count());
-        log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}, 种子总数: {}", totalPeers, uniquePeers, uniqueIps, activeTasks, totalTasks);
+        log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
     @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
@@ -77,74 +73,59 @@ public class TrackerService {
     @Async
     @Transactional
     @Modifying
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    public void executeAnnounce(PeerAnnounce announce) {
-        announceCounter.increment();
-        var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
-                announce.peerIp(),
-                ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
-                ByteUtil.bytesToHex(announce.infoHash())
-        ).orElse(new TrackedPeer(
-                null,
-                announce.reqIp(),
-                ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
-                ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
-                announce.peerIp(),
-                announce.peerPort(),
-                ByteUtil.bytesToHex(announce.infoHash()),
-                announce.uploaded(),
-                announce.uploaded(),
-                announce.downloaded(),
-                announce.downloaded(),
-                announce.left(),
-                announce.peerEvent(),
-                announce.userAgent(),
-                TimeUtil.toUTC(System.currentTimeMillis()),
-                TimeUtil.toUTC(System.currentTimeMillis()),
-                geoIPManager.geoData(announce.peerIp()),
-                geoIPManager.geoData(announce.reqIp())
-        ));
-        if (trackedPeer.getDownloadedOffset() > announce.downloaded()
-                || trackedPeer.getUploadedOffset() > announce.uploaded()) {
-            trackedPeer.setDownloaded(trackedPeer.getDownloaded() + announce.downloaded());
-            trackedPeer.setUploaded(trackedPeer.getUploaded() + announce.uploaded());
-        } else {
-            var downloadIncrease = announce.downloaded() - trackedPeer.getDownloaded();
-            var uploadedIncrease = announce.uploaded() - trackedPeer.getUploaded();
-            trackedPeer.setDownloaded(trackedPeer.getDownloaded() + downloadIncrease);
-            trackedPeer.setUploaded(trackedPeer.getUploaded() + uploadedIncrease);
-        }
-        trackedPeer.setDownloadedOffset(announce.downloaded());
-        trackedPeer.setUploadedOffset(announce.uploaded());
-        trackedPeer.setUserAgent(announce.userAgent());
-        trackedPeer.setLastTimeSeen(TimeUtil.toUTC(System.currentTimeMillis()));
-        trackedPeer.setLeft(announce.left());
-        trackedPeer.setPeerPort(announce.peerPort());
-        trackedPeer.setPeerIp(announce.peerIp());
-        trackedPeer.setReqIp(announce.reqIp());
-        var trackedTask = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(announce.infoHash())).orElse(new TrackedTask(
-                null,
-                ByteUtil.bytesToHex(announce.infoHash()),
-                TimeUtil.toUTC(System.currentTimeMillis()),
-                TimeUtil.toUTC(System.currentTimeMillis()),
-                0L, 0L
-        ));
-        // 检查 task 属性
-        if (announce.peerEvent() == PeerEvent.STARTED) {
-            // 新 task
-            trackedTask.setLeechCount(trackedTask.getLeechCount() + 1);
-        }
-        if (announce.peerEvent() == PeerEvent.COMPLETED) {
-            trackedTask.setDownloadedCount(trackedTask.getDownloadedCount() + 1);
-        }
-        trackedTaskRepository.save(trackedTask);
-        if (announce.peerEvent() == PeerEvent.STOPPED) {
-            if (trackedPeer.getId() != null) {
-                trackedPeerRepository.delete(trackedPeer);
+    public void executeAnnounce(List<PeerAnnounce> announces) {
+        announceCounter.increment(announces.size());
+        List<TrackedPeer> trackedPeersToSave = new ArrayList<>();
+        List<TrackedPeer> trackedPeersToDelete = new ArrayList<>();
+        for (PeerAnnounce announce : announces) {
+            var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
+                    announce.peerIp(),
+                    ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
+                    ByteUtil.bytesToHex(announce.infoHash())
+            ).orElse(new TrackedPeer(
+                    null,
+                    announce.reqIp(),
+                    ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
+                    ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
+                    announce.peerIp(),
+                    announce.peerPort(),
+                    ByteUtil.bytesToHex(announce.infoHash()),
+                    announce.uploaded(),
+                    announce.uploaded(),
+                    announce.downloaded(),
+                    announce.downloaded(),
+                    announce.left(),
+                    announce.peerEvent(),
+                    announce.userAgent(),
+                    TimeUtil.toUTC(System.currentTimeMillis()),
+                    TimeUtil.toUTC(System.currentTimeMillis()),
+                    geoIPManager.geoData(announce.peerIp()),
+                    geoIPManager.geoData(announce.reqIp()),
+                    0
+            ));
+            if (trackedPeer.getVersion() == null) {
+                trackedPeer.setVersion(0);
             }
-        } else {
-            trackedPeerRepository.save(trackedPeer);
+            trackedPeer.setDownloaded(announce.downloaded());
+            trackedPeer.setUploaded(trackedPeer.getUploaded());
+            trackedPeer.setDownloadedOffset(announce.downloaded());
+            trackedPeer.setUploadedOffset(announce.uploaded());
+            trackedPeer.setUserAgent(announce.userAgent());
+            trackedPeer.setLastTimeSeen(TimeUtil.toUTC(System.currentTimeMillis()));
+            trackedPeer.setLeft(announce.left());
+            trackedPeer.setPeerPort(announce.peerPort());
+            trackedPeer.setPeerIp(announce.peerIp());
+            trackedPeer.setReqIp(announce.reqIp());
+            if (announce.peerEvent() == PeerEvent.STOPPED) {
+                if (trackedPeer.getId() != null) {
+                    trackedPeersToSave.add(trackedPeer);
+                }
+            } else {
+                trackedPeersToDelete.add(trackedPeer);
+            }
         }
+        trackedPeerRepository.deleteAll(trackedPeersToDelete);
+        trackedPeerRepository.saveAll(trackedPeersToSave);
     }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
@@ -168,10 +149,6 @@ public class TrackerService {
                 leechers++;
             }
         }
-        var trackedTask = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(torrentInfoHash));
-        if (trackedTask.isPresent()) {
-            downloaded = trackedTask.get().getDownloadedCount();
-        }
         return new TrackedPeerList(v4, v6, seeders, leechers, downloaded);
     }
 
@@ -182,24 +159,20 @@ public class TrackerService {
         var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
         var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
         var downloaded = 0L;
-        var optional = trackedTaskRepository.findByTorrentInfoHash(ByteUtil.bytesToHex(torrentInfoHash));
-        if (optional.isPresent()) {
-            downloaded = optional.get().getDownloadedCount();
-        }
         return new ScrapeResponse(seeders, leechers, downloaded);
     }
 
-    public record TrackerMetrics(
-            long activeTorrents,
-            long totalTorrents,
-            long peers,
-            long seeders,
-            long leechers,
-            long peersHaveUpload,
-            long peersNoUpload
-    ) {
-
-    }
+//    public record TrackerMetrics(
+//            long activeTorrents,
+//            long totalTorrents,
+//            long peers,
+//            long seeders,
+//            long leechers,
+//            long peersHaveUpload,
+//            long peersNoUpload
+//    ) {
+//
+//    }
 
     public record ScrapeResponse(
             long seeders,

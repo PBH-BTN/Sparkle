@@ -1,6 +1,8 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -26,6 +28,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
 
+    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHash(InetAddress peerIp, String peerId, String torrentInfoHash);
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
