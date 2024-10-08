@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -77,11 +76,10 @@ public class TrackerService {
         List<TrackedPeer> trackedPeersToSave = new ArrayList<>();
         List<TrackedPeer> trackedPeersToDelete = new ArrayList<>();
         for (PeerAnnounce announce : announces) {
-            var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHashAndPeerPort(
+            var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
                     announce.peerIp(),
                     ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
-                    ByteUtil.bytesToHex(announce.infoHash()),
-                    announce.peerPort()
+                    ByteUtil.bytesToHex(announce.infoHash())
             ).orElse(new TrackedPeer(
                     null,
                     announce.reqIp(),
@@ -121,16 +119,8 @@ public class TrackerService {
                 trackedPeersToSave.add(trackedPeer);
             }
         }
-        try {
-            trackedPeerRepository.saveAll(trackedPeersToSave);
-        } catch (ObjectOptimisticLockingFailureException e) {
-            log.warn("乐观锁锁定失败[save]: {}", e.getMessage());
-        }
-        try {
-            trackedPeerRepository.deleteAll(trackedPeersToDelete);
-        } catch (ObjectOptimisticLockingFailureException e) {
-            log.warn("乐观锁锁定失败[delete]: {}", e.getMessage());
-        }
+        trackedPeerRepository.saveAll(trackedPeersToSave);
+        trackedPeerRepository.deleteAll(trackedPeersToDelete);
     }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")

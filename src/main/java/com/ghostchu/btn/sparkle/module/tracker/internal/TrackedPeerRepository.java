@@ -28,8 +28,8 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
 
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHashAndPeerPort(InetAddress peerIp, String peerId, String torrentInfoHash, int peerPort);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHash(InetAddress peerIp, String peerId, String torrentInfoHash);
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 
