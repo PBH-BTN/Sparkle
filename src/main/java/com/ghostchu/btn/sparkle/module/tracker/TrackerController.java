@@ -169,7 +169,11 @@ public class TrackerController extends SparkleController {
         tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
         // 合成响应
         var map = new HashMap<>() {{
-            put("interval", (announceInterval + random.nextLong(announceRandomOffset)) / 1000);
+            var offset = random.nextLong(announceRandomOffset);
+            if (random.nextBoolean()) {
+                offset = -offset;
+            }
+            put("interval", (announceInterval + offset) / 1000);
             put("complete", peers.seeders());
             put("incomplete", peers.leechers());
             put("downloaded", peers.downloaded());
