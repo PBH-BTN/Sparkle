@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -124,8 +125,18 @@ public class TrackerService {
                 trackedPeersToDelete.add(trackedPeer);
             }
         }
-        trackedPeerRepository.deleteAll(trackedPeersToDelete);
-        trackedPeerRepository.saveAll(trackedPeersToSave);
+        try {
+            trackedPeerRepository.saveAll(trackedPeersToSave);
+        } catch (OptimisticLockingFailureException e) {
+            log.warn("乐观锁锁定失败[save]: {}", e.getMessage());
+        }
+        try {
+            trackedPeerRepository.deleteAll(trackedPeersToDelete);
+        } catch (OptimisticLockingFailureException e) {
+            log.warn("乐观锁锁定失败[delete]: {}", e.getMessage());
+        }
+
+
     }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
