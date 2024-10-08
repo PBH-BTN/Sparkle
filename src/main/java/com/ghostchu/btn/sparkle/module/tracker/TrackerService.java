@@ -104,9 +104,6 @@ public class TrackerService {
                     geoIPManager.geoData(announce.reqIp()),
                     0
             ));
-            if (trackedPeer.getVersion() == null) {
-                trackedPeer.setVersion(0);
-            }
             trackedPeer.setDownloaded(announce.downloaded());
             trackedPeer.setUploaded(trackedPeer.getUploaded());
             trackedPeer.setDownloadedOffset(announce.downloaded());
