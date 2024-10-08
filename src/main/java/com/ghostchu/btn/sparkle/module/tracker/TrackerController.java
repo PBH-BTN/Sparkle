@@ -45,7 +45,7 @@ public class TrackerController extends SparkleController {
     private ObjectMapper jacksonObjectMapper;
     @Autowired
     private AuditService auditService;
-
+    @Autowired
     private MeterRegistry meterRegistry;
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
