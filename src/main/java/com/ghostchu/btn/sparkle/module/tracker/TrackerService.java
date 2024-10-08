@@ -88,7 +88,7 @@ public class TrackerService {
                 null,
                 announce.reqIp(),
                 ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
-                new String(announce.peerId, StandardCharsets.ISO_8859_1),
+                ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
                 announce.peerIp(),
                 announce.peerPort(),
                 ByteUtil.bytesToHex(announce.infoHash()),
