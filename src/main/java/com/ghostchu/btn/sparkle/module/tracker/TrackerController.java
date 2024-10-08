@@ -22,7 +22,6 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigInteger;
@@ -32,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Controller
-@RequestMapping("/tracker")
 @Slf4j
 public class TrackerController extends SparkleController {
     private final Random random = new Random();
@@ -91,6 +89,14 @@ public class TrackerController extends SparkleController {
         }
 
         return infoHashes;
+    }
+
+    @GetMapping("/tracker/announce")
+    @ResponseBody
+    @Transactional
+    @Lock(LockModeType.WRITE)
+    public byte[] announceForward() {
+        return announce();
     }
 
     @GetMapping("/announce")
@@ -201,6 +207,12 @@ public class TrackerController extends SparkleController {
         tickMetrics("announce_req_success", 1);
         auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
         return BencodeUtil.INSTANCE.encode(map);
+    }
+
+    @GetMapping("/tracker/scrape")
+    @ResponseBody
+    public ResponseEntity<byte[]> scrapeForward() {
+        return scrape();
     }
 
     @GetMapping("/scrape")
