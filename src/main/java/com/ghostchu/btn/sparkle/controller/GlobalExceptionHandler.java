@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 @Slf4j
@@ -24,6 +25,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public ResponseEntity<StdResp<Void>> businessExceptionHandler(NotLoginException e){
         return ResponseEntity.status(403).body(new StdResp<>(false,"未登录或会话已过期，请转到首页登录", null));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<StdResp<Void>> noResourceFoundException(Exception e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new StdResp<>(false, "404 Not Found - 资源未找到", null));
     }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<StdResp<Void>> jvmExceptionHandler(Exception e){
