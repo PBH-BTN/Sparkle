@@ -6,10 +6,13 @@ import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -72,6 +75,9 @@ public class TrackerService {
     }
 
     @Async
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     public void executeAnnounce(PeerAnnounce announce) {
         announceCounter.increment();
         var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
