@@ -34,6 +34,8 @@ public class TrackedPeer {
     @Column(nullable = false)
     private String peerId;
     @Column(nullable = false)
+    private String peerIdHumanReadable;
+    @Column(nullable = false)
     private InetAddress peerIp;
     @Column(nullable = false)
     private Integer peerPort;

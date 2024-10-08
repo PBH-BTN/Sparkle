@@ -16,6 +16,7 @@ import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +60,7 @@ public class TrackerService {
                 null,
                 announce.reqIp(),
                 ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
+                new String(announce.peerId, StandardCharsets.ISO_8859_1),
                 announce.peerIp(),
                 announce.peerPort(),
                 ByteUtil.bytesToHex(announce.infoHash()),
