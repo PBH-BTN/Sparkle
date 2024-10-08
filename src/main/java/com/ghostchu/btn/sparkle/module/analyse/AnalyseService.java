@@ -9,6 +9,7 @@ import com.ghostchu.btn.sparkle.util.MsgUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -53,6 +54,8 @@ public class AnalyseService {
     private AnalysedRuleRepository analysedRuleRepository;
     @PersistenceContext
     private EntityManager entityManager;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     @Transactional
     @Modifying
@@ -68,6 +71,7 @@ public class AnalyseService {
                 .toList();
         var untrustedIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
+        meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
         analysedRuleRepository.saveAll(untrustedIps);
     }
 
@@ -102,6 +106,7 @@ public class AnalyseService {
                 .toList());
         var highRiskIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
+        meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
         analysedRuleRepository.saveAll(highRiskIps);
     }
 
@@ -137,6 +142,7 @@ public class AnalyseService {
                 .forEach(list::add);
         var ips = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
+        meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
         analysedRuleRepository.saveAll(ips);
     }
 
@@ -148,7 +154,7 @@ public class AnalyseService {
     @Modifying
     @Lock(LockModeType.READ)
     @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
-    public void cronUpdateUnTrustIps() {
+    public void cronUpdateOverDownload() {
         var query = entityManager.createNativeQuery("""
                 WITH LatestSnapshots AS (
                     SELECT
@@ -214,6 +220,7 @@ public class AnalyseService {
             }
         }
         analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
+        meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
         analysedRuleRepository.saveAll(rules);
     }
 

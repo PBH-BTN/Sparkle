@@ -6,8 +6,10 @@ import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +28,8 @@ import java.util.Set;
 public class ClientDiscoveryService {
     private final ClientDiscoveryRepository clientDiscoveryRepository;
     private final UserService userService;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository, UserService userService) {
         this.clientDiscoveryRepository = clientDiscoveryRepository;
@@ -36,6 +40,7 @@ public class ClientDiscoveryService {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Async
     public void handleIdentities(User user, OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
+        meterRegistry.counter("sparkle_client_discovery_processed").increment();
         clientDiscoveryRepository.updateLastSeen(clientIdentities.stream().map(ClientIdentity::hash).toList(), timeForLastSeenAt, user);
         var found = clientDiscoveryRepository.findAllById(clientIdentities.stream().map(ClientIdentity::hash).toList());
         List<Long> hashInDatabase = new ArrayList<>();
@@ -47,6 +52,7 @@ public class ClientDiscoveryService {
                         ByteUtil.filterUTF8(ci.getClientName()),
                         ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, user, timeForLastSeenAt, user))
                 .toList();
+        meterRegistry.counter("sparkle_client_discovery_created").increment(notInDatabase.size());
         clientDiscoveryRepository.saveAll(notInDatabase);
     }
 

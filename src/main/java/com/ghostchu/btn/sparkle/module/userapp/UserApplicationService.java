@@ -2,19 +2,17 @@ package com.ghostchu.btn.sparkle.module.userapp;
 
 import com.ghostchu.btn.sparkle.exception.TooManyUserApplicationException;
 import com.ghostchu.btn.sparkle.exception.UserApplicationNotFoundException;
-import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplicationRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoField;
 import java.util.List;
@@ -26,6 +24,8 @@ public class UserApplicationService {
     private final UserApplicationRepository userApplicationRepository;
     private final UserService userService;
     private final long userMaxApps;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     public UserApplicationService(UserApplicationRepository userApplicationRepository
             , UserService userService

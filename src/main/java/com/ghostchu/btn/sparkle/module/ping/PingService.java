@@ -18,6 +18,7 @@ import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.*;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -50,10 +51,13 @@ public class PingService {
     private int minProtocolVersion;
     @Value("${service.ping.protocol.max-version}")
     private int maxProtocolVersion;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     @Modifying
     @Transactional
     public long handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
+        meterRegistry.counter("sparkle_ping_peers").increment();
         OffsetDateTime now = OffsetDateTime.now();
         var usr = userApplication.getUser();
         usr.setLastAccessAt(now);
@@ -92,12 +96,14 @@ public class PingService {
                 .toList();
         snapshotService.saveSnapshots(snapshotList);
         clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+        meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
         return snapshotList.size();
     }
 
     @Modifying
     @Transactional
     public long handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
+        meterRegistry.counter("sparkle_ping_bans").increment();
         OffsetDateTime now = OffsetDateTime.now();
         var usr = userApplication.getUser();
         usr.setLastAccessAt(now);
@@ -140,6 +146,7 @@ public class PingService {
                 .filter(Objects::nonNull)
                 .toList();
         banHistoryService.saveBanHistories(banHistoryList);
+        meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
         clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
         return banHistoryList.size();
     }
@@ -156,6 +163,7 @@ public class PingService {
         analysedRules.addAll(analyseService.getHighRiskIPV6Identity().stream()
                 .map(AnalysedRule::getIp).toList());
         var ipsMerged = iPMerger.merge(analysedRules.stream().distinct().sorted().collect(Collectors.toList()));
+        meterRegistry.gauge("sparkle_ping_rules", ipsMerged.size());
         return new BtnRule(ipsMerged.stream().map(ip -> new RuleDto(null, "合并规则", ip, "ip", 0L, 0L)).toList());
     }
 }

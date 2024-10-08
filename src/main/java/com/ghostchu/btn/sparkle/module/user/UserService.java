@@ -3,10 +3,14 @@ package com.ghostchu.btn.sparkle.module.user;
 import com.ghostchu.btn.sparkle.exception.UserNotFoundException;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.module.user.internal.UserRepository;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.temporal.ChronoField;
@@ -16,6 +20,8 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -25,6 +31,13 @@ public class UserService {
 //    public UserDto me() {
 //        return (UserDto) StpUtil.getLoginId();
 //    }
+
+    @Scheduled(fixedDelayString = "${service.user.metrics-interval}")
+    @Transactional
+    public void updateUserMetrics() {
+        meterRegistry.gauge("sparkle_user_total", userRepository.count());
+        meterRegistry.gauge("sparkle_user_active", userRepository.countUserByLastSeenAtAfter(TimeUtil.toUTC(System.currentTimeMillis() - 86400000)));
+    }
 
 
     public Optional<User> getUser(long id) {
