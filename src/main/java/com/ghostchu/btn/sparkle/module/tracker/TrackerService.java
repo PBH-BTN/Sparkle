@@ -116,10 +116,10 @@ public class TrackerService {
             trackedPeer.setReqIp(announce.reqIp());
             if (announce.peerEvent() == PeerEvent.STOPPED) {
                 if (trackedPeer.getId() != null) {
-                    trackedPeersToSave.add(trackedPeer);
+                    trackedPeersToDelete.add(trackedPeer);
                 }
             } else {
-                trackedPeersToDelete.add(trackedPeer);
+                trackedPeersToSave.add(trackedPeer);
             }
         }
         try {
