@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -71,7 +70,6 @@ public class TrackerService {
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
-    @Async
     @Transactional
     @Modifying
     public void executeAnnounce(List<PeerAnnounce> announces) {
@@ -133,8 +131,6 @@ public class TrackerService {
         } catch (ObjectOptimisticLockingFailureException e) {
             log.warn("乐观锁锁定失败[delete]: {}", e.getMessage());
         }
-
-
     }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
