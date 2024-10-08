@@ -33,6 +33,7 @@ import java.util.*;
 @RequestMapping("/tracker")
 @Slf4j
 public class TrackerController extends SparkleController {
+    private final Random random = new Random();
     @Autowired
     private HttpServletRequest req;
     @Autowired
@@ -41,6 +42,8 @@ public class TrackerController extends SparkleController {
     private HttpServletResponse resp;
     @Value("${service.tracker.announce-interval}")
     private long announceInterval;
+    @Value("${service.tracker.announce-random}")
+    private long announceRandomOffset;
     @Autowired
     private ObjectMapper jacksonObjectMapper;
     @Autowired
@@ -164,7 +167,7 @@ public class TrackerController extends SparkleController {
         tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
         // 合成响应
         var map = new HashMap<>() {{
-            put("interval", announceInterval / 1000);
+            put("interval", (announceInterval + random.nextLong(announceRandomOffset)) / 1000);
             put("complete", peers.seeders());
             put("incomplete", peers.leechers());
             put("downloaded", peers.downloaded());
