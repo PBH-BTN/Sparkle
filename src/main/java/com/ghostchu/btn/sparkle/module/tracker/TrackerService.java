@@ -12,8 +12,8 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -125,12 +125,12 @@ public class TrackerService {
         }
         try {
             trackedPeerRepository.saveAll(trackedPeersToSave);
-        } catch (OptimisticLockingFailureException e) {
+        } catch (ObjectOptimisticLockingFailureException e) {
             log.warn("乐观锁锁定失败[save]: {}", e.getMessage());
         }
         try {
             trackedPeerRepository.deleteAll(trackedPeersToDelete);
-        } catch (OptimisticLockingFailureException e) {
+        } catch (ObjectOptimisticLockingFailureException e) {
             log.warn("乐观锁锁定失败[delete]: {}", e.getMessage());
         }
 
