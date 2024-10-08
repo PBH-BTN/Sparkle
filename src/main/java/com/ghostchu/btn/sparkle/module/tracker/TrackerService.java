@@ -57,9 +57,9 @@ public class TrackerService {
     @Transactional
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
-        var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctByPeerId());
-        var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", trackedPeerRepository.countDistinctByPeerIp());
-        var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_tasks", trackedPeerRepository.countDistinctByTorrentInfoHash());
+        var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
+        var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", trackedPeerRepository.countDistinctPeerIpBy());
+        var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_tasks", trackedPeerRepository.countDistinctTorrentInfoHashBy());
         var totalTasks = meterRegistry.gauge("sparkle_tracker_tracking_tasks", trackedTaskRepository.count());
         log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}, 种子总数: {}", totalPeers, uniquePeers, uniqueIps, activeTasks, totalTasks);
     }

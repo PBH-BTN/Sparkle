@@ -41,11 +41,11 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long countByLeftNot(Long left);
 
-    long countDistinctByPeerId();
+    long countDistinctPeerIdBy();
 
-    long countDistinctByPeerIp();
+    long countDistinctPeerIpBy();
 
-    long countDistinctByTorrentInfoHash();
+    long countDistinctTorrentInfoHashBy();
 
     @Query("select count(*) from TrackedPeer t where t.uploaded = 0")
     long countUsersWhoDidntUploadAnyData();
