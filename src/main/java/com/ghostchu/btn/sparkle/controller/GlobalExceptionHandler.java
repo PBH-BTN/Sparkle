@@ -15,16 +15,18 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<StdResp<Void>> businessExceptionHandler(BusinessException e){
+    public ResponseEntity<StdResp<Void>> businessExceptionHandler(BusinessException e) {
         return ResponseEntity.status(e.getStatusCode()).body(new StdResp<>(false, e.getMessage(), null));
     }
+
     @ExceptionHandler(UserBannedException.class)
-    public ResponseEntity<StdResp<Void>> userBannedException(UserBannedException e){
-        return ResponseEntity.status(403).body(new StdResp<>(false,"此用户已被管理员停用，请与系统管理员联系以获取更多信息。", null));
+    public ResponseEntity<StdResp<Void>> userBannedException(UserBannedException e) {
+        return ResponseEntity.status(403).body(new StdResp<>(false, "此用户已被管理员停用，请与系统管理员联系以获取更多信息。", null));
     }
+
     @ExceptionHandler(NotLoginException.class)
-    public ResponseEntity<StdResp<Void>> businessExceptionHandler(NotLoginException e){
-        return ResponseEntity.status(403).body(new StdResp<>(false,"未登录或会话已过期，请转到首页登录", null));
+    public ResponseEntity<StdResp<Void>> businessExceptionHandler(NotLoginException e) {
+        return ResponseEntity.status(403).body(new StdResp<>(false, "未登录或会话已过期，请转到首页登录", null));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -32,8 +34,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new StdResp<>(false, "404 Not Found - 资源未找到", null));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<StdResp<Void>> illegalArgument(IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new StdResp<>(false, "IllegalArgument: " + e.getMessage(), null));
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<StdResp<Void>> jvmExceptionHandler(Exception e){
+    public ResponseEntity<StdResp<Void>> jvmExceptionHandler(Exception e) {
         log.error("Unexpected exception", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new StdResp<>(false, "服务器内部错误，请联系服务器管理员。", null));
