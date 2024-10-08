@@ -79,10 +79,11 @@ public class TrackerService {
         List<TrackedPeer> trackedPeersToSave = new ArrayList<>();
         List<TrackedPeer> trackedPeersToDelete = new ArrayList<>();
         for (PeerAnnounce announce : announces) {
-            var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHash(
+            var trackedPeer = trackedPeerRepository.findByPeerIpAndPeerIdAndTorrentInfoHashAndPeerPort(
                     announce.peerIp(),
                     ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
-                    ByteUtil.bytesToHex(announce.infoHash())
+                    ByteUtil.bytesToHex(announce.infoHash()),
+                    announce.peerPort()
             ).orElse(new TrackedPeer(
                     null,
                     announce.reqIp(),
