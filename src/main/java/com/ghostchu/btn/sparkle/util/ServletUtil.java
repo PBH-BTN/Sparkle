@@ -6,7 +6,10 @@ import jakarta.servlet.http.HttpServletRequest;
 public class ServletUtil {
 
     public static String getIP(HttpServletRequest request) {
-        String ip = request.getHeader("CF-Connecting-IP");
+        String ip = request.getHeader("X-Rewrite-Peer-IP");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("CF-Connecting-IP");
+        }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("X-Real-IP");
         }
