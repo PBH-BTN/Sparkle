@@ -41,6 +41,12 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long countByLeftNot(Long left);
 
+    long countDistinctByPeerId();
+
+    long countDistinctByPeerIp();
+
+    long countDistinctByTorrentInfoHash();
+
     @Query("select count(*) from TrackedPeer t where t.uploaded = 0")
     long countUsersWhoDidntUploadAnyData();
     @Query("select count(*) from TrackedPeer t where t.uploaded != 0")

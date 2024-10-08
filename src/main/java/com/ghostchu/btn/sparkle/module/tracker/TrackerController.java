@@ -7,6 +7,7 @@ import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,6 +45,8 @@ public class TrackerController extends SparkleController {
     private ObjectMapper jacksonObjectMapper;
     @Autowired
     private AuditService auditService;
+
+    private MeterRegistry meterRegistry;
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
         ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
@@ -90,7 +93,9 @@ public class TrackerController extends SparkleController {
     @Transactional
     @Lock(LockModeType.WRITE)
     public byte[] announce() {
+        tickMetrics("announce_req", 1);
         if (req.getQueryString() == null) {
+            tickMetrics("announce_req_fails", 1);
             return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
         }
         if (ua(req) != null) {
@@ -100,6 +105,7 @@ public class TrackerController extends SparkleController {
                     || ua(req).contains("Safari")
                     || ua(req).contains("Edge")
                     || ua(req).contains("Opera")) {
+                tickMetrics("announce_req_fails", 1);
                 return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
             }
         }
@@ -153,7 +159,9 @@ public class TrackerController extends SparkleController {
             }
         }
         var peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
-
+        tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
+        tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
+        tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
         // 合成响应
         var map = new HashMap<>() {{
             put("interval", announceInterval / 1000);
@@ -178,6 +186,7 @@ public class TrackerController extends SparkleController {
                 }});
             }
         }};
+        tickMetrics("announce_req_success", 1);
         auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
         return BencodeUtil.INSTANCE.encode(map);
     }
@@ -191,9 +200,9 @@ public class TrackerController extends SparkleController {
         for (byte[] infoHash : infoHashes) {
             files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new TreeMap<>() {{
                 var peers = trackerService.scrape(infoHash);
-                put("complete", peers.seeders() + 15);
-                put("incomplete", peers.leechers() + 15);
-                put("downloaded", peers.downloaded() + 15);
+                put("complete", peers.seeders());
+                put("incomplete", peers.leechers());
+                put("downloaded", peers.downloaded());
             }});
         }
         map.put("files", files);
@@ -215,6 +224,11 @@ public class TrackerController extends SparkleController {
             found.addAll(List.of(req.getParameterValues("ipv6")));
         }
         return found;
+    }
+
+
+    private void tickMetrics(String service, double increment) {
+        meterRegistry.counter("sparkle_tracker_" + service).increment(increment);
     }
 
     private record SparkleTrackerMetricsMessage(
