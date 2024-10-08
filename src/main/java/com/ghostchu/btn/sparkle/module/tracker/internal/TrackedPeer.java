@@ -1,11 +1,14 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
+import com.ghostchu.btn.sparkle.util.ipdb.IPGeoData;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Type;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
@@ -56,4 +59,10 @@ public class TrackedPeer {
     private OffsetDateTime firstTimeSeen;
     @Column(nullable = false)
     private OffsetDateTime lastTimeSeen;
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonType.class)
+    private IPGeoData peerGeoIP;
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonType.class)
+    private IPGeoData requestGeoIP;
 }

@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.module.tracker.internal.*;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
+import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,16 +28,18 @@ public class TrackerService {
 
     private final long inactiveInterval;
     private final int maxPeersReturn;
+    private final GeoIPManager geoIPManager;
 
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
                           TrackedTaskRepository trackedTaskRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
-                          @Value("${service.tracker.max-peers-return}") int maxPeersReturn) {
+                          @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager) {
         this.trackedPeerRepository = trackedPeerRepository;
         this.trackedTaskRepository = trackedTaskRepository;
         this.inactiveInterval = inactiveInterval;
         this.maxPeersReturn = maxPeersReturn;
+        this.geoIPManager = geoIPManager;
     }
 
     @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
@@ -67,10 +70,12 @@ public class TrackerService {
                 announce.peerEvent(),
                 announce.userAgent(),
                 TimeUtil.toUTC(System.currentTimeMillis()),
-                TimeUtil.toUTC(System.currentTimeMillis())
+                TimeUtil.toUTC(System.currentTimeMillis()),
+                geoIPManager.geoData(announce.peerIp()),
+                geoIPManager.geoData(announce.reqIp())
         ));
         if (trackedPeer.getDownloadedOffset() > announce.downloaded()
-            || trackedPeer.getUploadedOffset() > announce.uploaded()) {
+                || trackedPeer.getUploadedOffset() > announce.uploaded()) {
             trackedPeer.setDownloaded(trackedPeer.getDownloaded() + announce.downloaded());
             trackedPeer.setUploaded(trackedPeer.getUploaded() + announce.uploaded());
         } else {
