@@ -101,13 +101,17 @@ public class TrackerService {
             log.info("Skipped this round announce flush, another task is running. ");
         }
         try {
-            while (true) {
-                var announce = announceDeque.poll();
-                if (announce == null) break;
-                try (ExecutorService flushService = Executors.newVirtualThreadPerTaskExecutor()) {
-                    flushService.submit(() -> executeAnnounce(announce));
-                } catch (Exception e) {
-                    log.warn("Unable to process the announce {}, skipping...", announce, e);
+            try (ExecutorService flushService = Executors.newVirtualThreadPerTaskExecutor()) {
+                while (true) {
+                    var announce = announceDeque.poll();
+                    if (announce == null) break;
+                    flushService.submit(() -> {
+                        try {
+                            executeAnnounce(announce);
+                        } catch (Exception e) {
+                            log.warn("Unable to process the announce {}, skipping...", announce, e);
+                        }
+                    });
                 }
             }
         } finally {
