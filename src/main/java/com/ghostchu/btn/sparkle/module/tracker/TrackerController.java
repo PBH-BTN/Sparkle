@@ -248,11 +248,11 @@ public class TrackerController extends SparkleController {
     public ResponseEntity<byte[]> scrape() {
         tickMetrics("scrape_req", 1);
         var infoHashes = extractInfoHashes(req.getQueryString());
-        var map = new LinkedHashMap<>();
-        var files = new TreeMap<>();
+        var map = new HashMap<>();
+        var files = new HashMap<>();
         tickMetrics("scrape_info_hashes", infoHashes.size());
         for (byte[] infoHash : infoHashes) {
-            files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new TreeMap<>() {{
+            files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new HashMap<>() {{
                 var peers = trackerService.scrape(infoHash);
                 put("complete", peers.seeders());
                 put("incomplete", peers.leechers());
@@ -266,7 +266,7 @@ public class TrackerController extends SparkleController {
     }
 
     public List<String> getPossiblePeerIps(HttpServletRequest req) {
-        List<String> found = new ArrayList<>();
+        List<String> found = new ArrayList<>(8);
         found.add(ip(req));
         var ips = req.getParameterValues("ip");
         if (ips != null) {
