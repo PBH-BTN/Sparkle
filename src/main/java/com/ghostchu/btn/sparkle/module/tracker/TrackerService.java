@@ -30,7 +30,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -123,8 +123,8 @@ public class TrackerService {
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
         peersFetchCounter.increment();
-        List<Peer> v4 = new ArrayList<>();
-        List<Peer> v6 = new ArrayList<>();
+        List<Peer> v4 = new LinkedList<>();
+        List<Peer> v6 = new LinkedList<>();
         int seeders = 0;
         int leechers = 0;
         long downloaded = 0;
@@ -132,8 +132,7 @@ public class TrackerService {
                 ByteUtil.bytesToHex(torrentInfoHash), ByteUtil.bytesToHex(peerId), Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
                 v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
-            }
-            if (peer.getPeerIp() instanceof Inet6Address ipv6) {
+            } else if (peer.getPeerIp() instanceof Inet6Address ipv6) {
                 v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
             }
             if (peer.getLeft() == 0) {
