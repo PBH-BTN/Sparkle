@@ -89,9 +89,11 @@ public class TrackerService {
                 var trackedPeer = new TrackedPeer(
                         new TrackedPeerId(ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())), ByteUtil.bytesToHex(announce.infoHash())),
                         announce.reqIp(),
+                        ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
                         ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
                         announce.peerIp(),
                         announce.peerPort(),
+                        ByteUtil.bytesToHex(announce.infoHash()),
                         announce.uploaded(),
                         announce.uploaded(),
                         announce.downloaded(),
@@ -122,10 +124,10 @@ public class TrackerService {
                 PeerEvent.STOPPED,
                 Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getId().getPeerId())));
+                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
             }
             if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getId().getPeerId())));
+                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
             }
             if (peer.getLeft() == 0) {
                 seeders++;
