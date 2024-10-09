@@ -53,10 +53,10 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             request_geoip = CAST(EXCLUDED.request_geoip AS jsonb), \
             version = EXCLUDED.version""",
             nativeQuery = true)
-    void upsertTrackedPeer(@Param("reqIp") String reqIp,
+    void upsertTrackedPeer(@Param("reqIp") InetAddress reqIp,
                            @Param("peerId") String peerId,
                            @Param("peerIdHumanReadable") String peerIdHumanReadable,
-                           @Param("peerIp") String peerIp,
+                           @Param("peerIp") InetAddress peerIp,
                            @Param("peerPort") Integer peerPort,
                            @Param("torrentInfoHash") String torrentInfoHash,
                            @Param("uploadedOffset") Long uploadedOffset,

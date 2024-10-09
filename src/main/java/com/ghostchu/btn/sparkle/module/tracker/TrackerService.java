@@ -91,10 +91,10 @@ public class TrackerService {
 
         } else {
             trackedPeerRepository.upsertTrackedPeer(
-                    announce.reqIp().getHostAddress(),
+                    announce.reqIp(),
                     ByteUtil.bytesToHex(announce.peerId()),
                     new String(announce.peerId(), StandardCharsets.ISO_8859_1),
-                    announce.peerIp().getHostAddress(),
+                    announce.peerIp(),
                     announce.peerPort(),
                     ByteUtil.bytesToHex(announce.infoHash()),
                     announce.uploaded(),
