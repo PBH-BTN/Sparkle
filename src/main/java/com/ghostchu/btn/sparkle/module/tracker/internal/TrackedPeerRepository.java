@@ -1,8 +1,8 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.Lock;
+import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 @Repository
 public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPeer, Long> {
 
@@ -28,9 +27,8 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHash(InetAddress peerIp, String peerId, String torrentInfoHash);
-
+    @Transactional
+    @Modifying
     @Query(value = """
             INSERT INTO tracker_peers (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, uploaded_offset, downloaded_offset, "left", last_event, user_agent, last_time_seen, peer_geoip, request_geoip, version) \
             VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, :lastTimeSeen, CAST(:peerGeoIP AS jsonb), CAST(:requestGeoIP AS jsonb), :version) \
@@ -69,7 +67,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("requestGeoIP") String requestGeoIP,
                            @Param("version") Integer version);
 
-    long deleteByPeerIdAndTorrentInfoHash(String peerId, String infoHash);
+    long deleteById_PeerIdAndId_TorrentInfoHash(String peerId, String infoHash);
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 

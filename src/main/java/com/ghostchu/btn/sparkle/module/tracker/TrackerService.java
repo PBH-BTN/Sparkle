@@ -85,7 +85,7 @@ public class TrackerService {
     public void executeAnnounce(PeerAnnounce announce) {
         announceCounter.increment();
         if (announce.peerEvent() == PeerEvent.STOPPED) {
-            trackedPeerRepository.deleteByPeerIdAndTorrentInfoHash(
+            trackedPeerRepository.deleteById_PeerIdAndId_TorrentInfoHash(
                     ByteUtil.bytesToHex(announce.peerId())
                     , ByteUtil.bytesToHex(announce.infoHash()));
 

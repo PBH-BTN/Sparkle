@@ -24,10 +24,12 @@ import java.time.OffsetDateTime;
 @Setter
 @DynamicUpdate
 public class TrackedPeer {
-    @Id
-    @GeneratedValue
-    @Column(nullable = false, unique = true)
-    private Long id;
+    @EmbeddedId
+    @AttributeOverrides({
+            @AttributeOverride(name = "peerId", column = @Column(name = "peer_id")),
+            @AttributeOverride(name = "torrentInfoHash", column = @Column(name = "torrent_info_hash"))
+    })
+    private TrackedPeerPK id;
     @Column(nullable = false)
     private InetAddress reqIp;
     @Column(nullable = false)
