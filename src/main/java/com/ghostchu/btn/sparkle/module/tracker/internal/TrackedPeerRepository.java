@@ -32,6 +32,8 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 
+    long deleteByLastEvent(PeerEvent peerEvent);
+
     long countByTorrentInfoHashAndLeft(String torrentInfoHash, Long left);
 
     long countByTorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
