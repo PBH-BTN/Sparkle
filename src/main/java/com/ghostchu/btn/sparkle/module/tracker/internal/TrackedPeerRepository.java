@@ -15,15 +15,15 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     @Query("""
             select t from TrackedPeer t
-            where t.torrentInfoHash = ?1 and t.peerId <> ?2 and t.peerIp <> ?3
+            where t.id.torrentInfoHash = ?1 and t.id.peerId <> ?2 and t.peerIp <> ?3
             order by RANDOM() limit ?4
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, InetAddress peerIp, int limit);
 
     @Query("""
-            select t from TrackedPeer t
-            where t.torrentInfoHash = ?1 and t.peerId <> ?2 and t.lastEvent <> ?3
-            order by RANDOM() limit ?4
+             select t from TrackedPeer t
+             where t.id.torrentInfoHash = ?1 and t.id.peerId <> ?2 and t.lastEvent <> ?3
+             order by RANDOM() limit ?4
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, PeerEvent excludeEvent, int limit);
 
@@ -38,7 +38,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long countByTorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
 
-    @Query("select count(distinct t.torrentInfoHash) from TrackedPeer t")
+    @Query("select count(distinct t.id.torrentInfoHash) from TrackedPeer t")
     long countTrackingTorrents();
 
     long countByLeft(Long left);
