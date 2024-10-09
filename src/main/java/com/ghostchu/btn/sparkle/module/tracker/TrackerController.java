@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
 
 @Controller
 @Slf4j
@@ -171,19 +170,7 @@ public class TrackerController extends SparkleController {
                     ua(req)
             ));
         }
-
-        var peersFuture = CompletableFuture.supplyAsync(() -> trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant), Executors.newVirtualThreadPerTaskExecutor());
-        TrackerService.TrackedPeerList peers = null;
-        try {
-            peers = peersFuture.get(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException | TimeoutException e) {
-            log.warn("Unable to retrieve peers from database", e);
-            var interval = generateRetryInterval();
-            return generateFailureResponse("Server is busy! Retry scheduling has been set up. 服务器正忙，已设置您的下载器在稍后重试。", interval);
-        }
-
+        TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
         tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
         tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
