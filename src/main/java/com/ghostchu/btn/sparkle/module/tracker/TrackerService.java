@@ -74,7 +74,6 @@ public class TrackerService {
     @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
-        count += trackedPeerRepository.deleteByLastEvent(PeerEvent.STOPPED);
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
