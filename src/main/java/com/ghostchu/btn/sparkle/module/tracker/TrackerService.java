@@ -67,7 +67,7 @@ public class TrackerService {
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
         var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", trackedPeerRepository.countDistinctPeerIpBy());
         var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_active_tasks", trackedPeerRepository.countDistinctTorrentInfoHashBy());
-        log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}, 种子总数: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
+        log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
     @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
@@ -85,7 +85,7 @@ public class TrackerService {
     public void executeAnnounce(PeerAnnounce announce) {
         announceCounter.increment();
         if (announce.peerEvent() == PeerEvent.STOPPED) {
-            trackedPeerRepository.deleteById_PeerIdAndId_TorrentInfoHash(
+            trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
                     ByteUtil.bytesToHex(announce.peerId())
                     , ByteUtil.bytesToHex(announce.infoHash()));
 
@@ -121,10 +121,10 @@ public class TrackerService {
         for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
                 ByteUtil.bytesToHex(torrentInfoHash), ByteUtil.bytesToHex(peerId), Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
+                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
             }
             if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
+                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
             }
             if (peer.getLeft() == 0) {
                 seeders++;
@@ -139,8 +139,8 @@ public class TrackerService {
     @Cacheable(value = {"scrape#60000"}, key = "#torrentInfoHash")
     public ScrapeResponse scrape(byte[] torrentInfoHash) {
         scrapeCounter.increment();
-        var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
-        var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var seeders = trackedPeerRepository.countByPk_TorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var leechers = trackedPeerRepository.countByPk_TorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
         var downloaded = 0L;
         return new ScrapeResponse(seeders, leechers, downloaded);
     }

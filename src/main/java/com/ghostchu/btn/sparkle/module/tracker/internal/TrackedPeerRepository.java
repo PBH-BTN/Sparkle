@@ -15,14 +15,14 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     @Query("""
             select t from TrackedPeer t
-            where t.torrentInfoHash = ?1 and t.peerId <> ?2 and t.peerIp <> ?3
+            where t.pk.torrentInfoHash = ?1 and t.pk.peerId <> ?2 and t.peerIp <> ?3
             order by RANDOM() limit ?4
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, InetAddress peerIp, int limit);
 
     @Query("""
             select t from TrackedPeer t
-            where t.torrentInfoHash = ?1 and t.peerId <> ?2
+            where t.pk.torrentInfoHash = ?1 and t.pk.peerId <> ?2
             order by RANDOM() limit ?3
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
@@ -67,15 +67,15 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("requestGeoIP") String requestGeoIP,
                            @Param("version") Integer version);
 
-    long deleteById_PeerIdAndId_TorrentInfoHash(String peerId, String infoHash);
+    void deleteByPk_PeerIdAndPk_TorrentInfoHash(String peerId, String infoHash);
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 
-    long countByTorrentInfoHashAndLeft(String torrentInfoHash, Long left);
+    long countByPk_TorrentInfoHashAndLeft(String torrentInfoHash, Long left);
 
-    long countByTorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
+    long countByPk_TorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
 
-    @Query("select count(distinct t.torrentInfoHash) from TrackedPeer t")
+    @Query("select count(distinct t.pk.torrentInfoHash) from TrackedPeer t")
     long countTrackingTorrents();
 
     long countByLeft(Long left);

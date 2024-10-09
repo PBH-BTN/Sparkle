@@ -25,23 +25,19 @@ import java.time.OffsetDateTime;
 @DynamicUpdate
 public class TrackedPeer {
     @EmbeddedId
-//    @AttributeOverrides({
-//            @AttributeOverride(name = "peerId", column = @Column(name = "peer_id")),
-//            @AttributeOverride(name = "torrentInfoHash", column = @Column(name = "torrent_info_hash"))
-//    })
-    private TrackedPeerPK id;
+    @AttributeOverrides({
+            @AttributeOverride(name = "peerId", column = @Column(name = "peer_id")),
+            @AttributeOverride(name = "torrentInfoHash", column = @Column(name = "torrent_info_hash"))
+    })
+    private TrackedPeerPK pk;
     @Column(nullable = false)
     private InetAddress reqIp;
-    @Column(nullable = false)
-    private String peerId;
     @Column(nullable = false)
     private String peerIdHumanReadable;
     @Column(nullable = false)
     private InetAddress peerIp;
     @Column(nullable = false)
     private Integer peerPort;
-    @Column(nullable = false)
-    private String torrentInfoHash;
 //    @Column // too complex, we just give up it until somebody want to PR it
 //    private byte[] torrentInfoHashSha1;
     @Column(nullable = false)
