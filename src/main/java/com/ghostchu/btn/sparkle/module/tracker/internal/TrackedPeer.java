@@ -60,8 +60,4 @@ public class TrackedPeer {
     @Type(JsonType.class)
     @Basic(fetch = FetchType.LAZY)
     private IPGeoData peerGeoIP;
-    @Column(columnDefinition = "jsonb")
-    @Type(JsonType.class)
-    @Basic(fetch = FetchType.LAZY)
-    private IPGeoData requestGeoIP;
 }

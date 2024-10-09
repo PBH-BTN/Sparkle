@@ -31,7 +31,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
     @Modifying
     @Query(value = """
             INSERT INTO tracker_peers (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, uploaded_offset, downloaded_offset, "left", last_event, user_agent, last_time_seen, peer_geoip, request_geoip, version) \
-            VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, :lastTimeSeen, CAST(:peerGeoIP AS jsonb), CAST(:requestGeoIP AS jsonb), :version) \
+            VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, :lastTimeSeen, CAST(:peerGeoIP AS jsonb)) \
             ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
             uploaded_offset = EXCLUDED.uploaded_offset, \
             downloaded_offset = EXCLUDED.downloaded_offset, \
@@ -54,8 +54,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("lastEvent") int lastEvent,
                            @Param("userAgent") String userAgent,
                            @Param("lastTimeSeen") OffsetDateTime lastTimeSeen,
-                           @Param("peerGeoIP") String peerGeoIP,
-                           @Param("requestGeoIP") String requestGeoIP);
+                           @Param("peerGeoIP") String peerGeoIP);
 
     void deleteByPk_PeerIdAndPk_TorrentInfoHash(String peerId, String infoHash);
 
