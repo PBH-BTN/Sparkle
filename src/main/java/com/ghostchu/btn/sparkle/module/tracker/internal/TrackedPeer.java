@@ -25,20 +25,21 @@ import java.time.OffsetDateTime;
 @DynamicUpdate
 public class TrackedPeer {
     @EmbeddedId
+    @GeneratedValue
     @Column(nullable = false, unique = true)
     private TrackedPeerId id;
     @Column(nullable = false)
     private InetAddress reqIp;
-    //    @Column(nullable = false)
-//    private String peerId;
+    @Column(nullable = false)
+    private String peerId;
     @Column(nullable = false)
     private String peerIdHumanReadable;
     @Column(nullable = false)
     private InetAddress peerIp;
     @Column(nullable = false)
     private Integer peerPort;
-    //    @Column(nullable = false)
-//    private String torrentInfoHash;
+    @Column(nullable = false)
+    private String torrentInfoHash;
 //    @Column // too complex, we just give up it until somebody want to PR it
 //    private byte[] torrentInfoHashSha1;
     @Column(nullable = false)
