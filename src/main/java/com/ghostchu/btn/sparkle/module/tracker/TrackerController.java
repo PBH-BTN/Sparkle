@@ -189,10 +189,12 @@ public class TrackerController extends SparkleController {
             put("external ip", ip(req));
             // put("warning message", new SparkleTrackerMetricsMessage(peers.seeders(),peers.leechers(), peers.downloaded(), peerIps).toString());
             if (compact) {
+                tickMetrics("announce_return_peers_format_compact", 1);
                 put("peers", compactPeers(peers.v4(), false));
                 if (!peers.v6().isEmpty())
                     put("peers6", compactPeers(peers.v6(), true));
             } else {
+                tickMetrics("announce_return_peers_format_full", 1);
                 List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4());
                 allPeers.addAll(peers.v6());
                 put("peers", new HashMap<>() {{
@@ -218,9 +220,11 @@ public class TrackerController extends SparkleController {
     @GetMapping("/scrape")
     @ResponseBody
     public ResponseEntity<byte[]> scrape() {
+        tickMetrics("scrape_req", 1);
         var infoHashes = extractInfoHashes(req.getQueryString());
         var map = new LinkedHashMap<>();
         var files = new TreeMap<>();
+        tickMetrics("scrape_info_hashes", infoHashes.size());
         for (byte[] infoHash : infoHashes) {
             files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new TreeMap<>() {{
                 var peers = trackerService.scrape(infoHash);
