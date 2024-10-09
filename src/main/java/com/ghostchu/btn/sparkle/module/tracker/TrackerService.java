@@ -91,32 +91,39 @@ public class TrackerService {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     public void executeAnnounce(PeerAnnounce announce) {
         announceCounter.increment();
-        meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
-                Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
-                Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
-        )).increment();
-        if (announce.peerEvent() == PeerEvent.STOPPED) {
-            trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
-                    ByteUtil.bytesToHex(announce.peerId())
-                    , ByteUtil.bytesToHex(announce.infoHash()));
-        } else {
-            trackedPeerRepository.upsertTrackedPeer(
-                    announce.reqIp(),
-                    ByteUtil.bytesToHex(announce.peerId()),
-                    ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
-                    announce.peerIp(),
-                    announce.peerPort(),
-                    ByteUtil.bytesToHex(announce.infoHash()),
-                    announce.uploaded(),
-                    announce.downloaded(),
-                    announce.left(),
-                    announce.peerEvent().ordinal(),
-                    ByteUtil.filterUTF8(announce.userAgent()),
-                    OffsetDateTime.now(),
-                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
-                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.reqIp())),
-                    0
-            );
+        try {
+            semaphore.acquire();
+            meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
+                    Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
+                    Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
+            )).increment();
+            if (announce.peerEvent() == PeerEvent.STOPPED) {
+                trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
+                        ByteUtil.bytesToHex(announce.peerId())
+                        , ByteUtil.bytesToHex(announce.infoHash()));
+            } else {
+                trackedPeerRepository.upsertTrackedPeer(
+                        announce.reqIp(),
+                        ByteUtil.bytesToHex(announce.peerId()),
+                        ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
+                        announce.peerIp(),
+                        announce.peerPort(),
+                        ByteUtil.bytesToHex(announce.infoHash()),
+                        announce.uploaded(),
+                        announce.downloaded(),
+                        announce.left(),
+                        announce.peerEvent().ordinal(),
+                        ByteUtil.filterUTF8(announce.userAgent()),
+                        OffsetDateTime.now(),
+                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
+                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.reqIp())),
+                        0
+                );
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            semaphore.release();
         }
     }
 
