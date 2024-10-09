@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
@@ -46,12 +47,14 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final ObjectMapper jacksonObjectMapper;
+    private final Semaphore semaphore;
 
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
                           @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager,
-                          MeterRegistry meterRegistry, ObjectMapper jacksonObjectMapper) {
+                          MeterRegistry meterRegistry, ObjectMapper jacksonObjectMapper,
+                          @Value("${service.tracker.max-parallel-announce}") int maxParallelAnnounce) {
         this.trackedPeerRepository = trackedPeerRepository;
         this.inactiveInterval = inactiveInterval;
         this.maxPeersReturn = maxPeersReturn;
@@ -61,6 +64,7 @@ public class TrackerService {
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.jacksonObjectMapper = jacksonObjectMapper;
+        this.semaphore = new Semaphore(maxParallelAnnounce);
     }
 
     @Scheduled(fixedDelayString = "${service.tracker.metrics-interval}")

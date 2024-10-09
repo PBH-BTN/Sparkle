@@ -33,15 +33,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             INSERT INTO tracker_peers (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, uploaded_offset, downloaded_offset, "left", last_event, user_agent, last_time_seen, peer_geoip, request_geoip, version) \
             VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, :lastTimeSeen, CAST(:peerGeoIP AS jsonb), CAST(:requestGeoIP AS jsonb), :version) \
             ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
-            uploaded = CASE \
-              WHEN tracker_peers.uploaded_offset > EXCLUDED.uploaded_offset THEN tracker_peers.uploaded + EXCLUDED.uploaded_offset \
-              ELSE tracker_peers.uploaded + (EXCLUDED.uploaded_offset - tracker_peers.uploaded_offset) \
-            END, \
             uploaded_offset = EXCLUDED.uploaded_offset, \
-            downloaded = CASE \
-              WHEN tracker_peers.downloaded_offset > EXCLUDED.downloaded_offset THEN tracker_peers.downloaded + EXCLUDED.downloaded_offset \
-              ELSE tracker_peers.downloaded + (EXCLUDED.downloaded_offset - tracker_peers.downloaded_offset) \
-            END, \
             downloaded_offset = EXCLUDED.downloaded_offset, \
             "left" = EXCLUDED."left", \
             last_event = EXCLUDED.last_event, \
@@ -87,10 +79,5 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
     long countDistinctPeerIpBy();
 
     long countDistinctTorrentInfoHashBy();
-
-    @Query("select count(*) from TrackedPeer t where t.uploaded = 0")
-    long countUsersWhoDidntUploadAnyData();
-    @Query("select count(*) from TrackedPeer t where t.uploaded != 0")
-    long countUsersWhoUploadedAnyData();
 
 }

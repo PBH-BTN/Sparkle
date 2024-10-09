@@ -38,14 +38,8 @@ public class TrackedPeer {
     private InetAddress peerIp;
     @Column(nullable = false)
     private Integer peerPort;
-//    @Column // too complex, we just give up it until somebody want to PR it
-//    private byte[] torrentInfoHashSha1;
-@Column
-    private Long uploaded;
     @Column(nullable = false)
     private Long uploadedOffset;
-    @Column
-    private Long downloaded;
     @Column(nullable = false)
     private Long downloadedOffset;
     @Column(nullable = false)
