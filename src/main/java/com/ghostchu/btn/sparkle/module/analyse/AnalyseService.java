@@ -60,7 +60,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedDelayString = "${analyse.overdownload.interval}")
+    @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
     public void cronUntrustedIPAddresses() {
         var list = ipMerger.merge(banHistoryRepository
                         .generateUntrustedIPAddresses(TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), OffsetDateTime.now(), untrustedIpAddressGenerateThreshold)
