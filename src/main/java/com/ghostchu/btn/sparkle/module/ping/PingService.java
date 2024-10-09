@@ -153,15 +153,14 @@ public class PingService {
 
     @Cacheable({"btnRule#60000"})
     public BtnRule generateBtnRule() {
-        List<String> analysedRules = new ArrayList<>();
-        analysedRules.addAll(analyseService.getUntrustedIPAddresses().stream()
+        List<String> analysedRules = new ArrayList<>(analyseService.getUntrustedIPAddresses().stream()
                 .map(AnalysedRule::getIp).toList());
-        analysedRules.addAll(analyseService.getOverDownloadIPAddresses().stream()
-                .map(AnalysedRule::getIp).toList());
-        analysedRules.addAll(analyseService.getHighRiskIps().stream()
-                .map(AnalysedRule::getIp).toList());
-        analysedRules.addAll(analyseService.getHighRiskIPV6Identity().stream()
-                .map(AnalysedRule::getIp).toList());
+//        analysedRules.addAll(analyseService.getOverDownloadIPAddresses().stream()
+//                .map(AnalysedRule::getIp).toList());
+//        analysedRules.addAll(analyseService.getHighRiskIps().stream()
+//                .map(AnalysedRule::getIp).toList());
+//        analysedRules.addAll(analyseService.getHighRiskIPV6Identity().stream()
+//                .map(AnalysedRule::getIp).toList());
         var ipsMerged = iPMerger.merge(analysedRules.stream().distinct().sorted().collect(Collectors.toList()));
         meterRegistry.gauge("sparkle_ping_rules", ipsMerged.size());
         return new BtnRule(ipsMerged.stream().map(ip -> new RuleDto(null, "合并规则", ip, "ip", 0L, 0L)).toList());
