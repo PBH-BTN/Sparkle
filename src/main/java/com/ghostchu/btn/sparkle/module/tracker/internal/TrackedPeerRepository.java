@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPeer, Long> {
 
+
     @Query("""
             select t from TrackedPeer t
             where t.id.torrentInfoHash = ?1 and t.id.peerId <> ?2 and t.peerIp <> ?3

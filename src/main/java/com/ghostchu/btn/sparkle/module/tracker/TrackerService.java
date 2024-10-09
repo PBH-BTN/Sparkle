@@ -12,8 +12,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.SessionFactory;
-import org.hibernate.StatelessSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -83,30 +81,28 @@ public class TrackerService {
     @Modifying
     public void executeAnnounce(List<PeerAnnounce> announces) {
         announceCounter.increment(announces.size());
-        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
-        try (StatelessSession statelessSession = sessionFactory.openStatelessSession()) {
-            for (PeerAnnounce announce : announces) {
-                var trackedPeer = new TrackedPeer(
-                        new TrackedPeerId(ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())), ByteUtil.bytesToHex(announce.infoHash())),
-                        announce.reqIp(),
-                        ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
-                        announce.peerIp(),
-                        announce.peerPort(),
-                        announce.uploaded(),
-                        announce.uploaded(),
-                        announce.downloaded(),
-                        announce.downloaded(),
-                        announce.left(),
-                        announce.peerEvent(),
-                        announce.userAgent(),
-                        OffsetDateTime.now(),
-                        geoIPManager.geoData(announce.peerIp()),
-                        geoIPManager.geoData(announce.reqIp()),
-                        0
-                );
-                statelessSession.upsert(trackedPeer);
-            }
+        List<TrackedPeer> trackedPeers = new ArrayList<>();
+        for (PeerAnnounce announce : announces) {
+            trackedPeers.add(new TrackedPeer(
+                    new TrackedPeerId(ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())), ByteUtil.bytesToHex(announce.infoHash())),
+                    announce.reqIp(),
+                    ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
+                    announce.peerIp(),
+                    announce.peerPort(),
+                    announce.uploaded(),
+                    announce.uploaded(),
+                    announce.downloaded(),
+                    announce.downloaded(),
+                    announce.left(),
+                    announce.peerEvent(),
+                    announce.userAgent(),
+                    OffsetDateTime.now(),
+                    geoIPManager.geoData(announce.peerIp()),
+                    geoIPManager.geoData(announce.reqIp()),
+                    0
+            ));
         }
+        trackedPeerRepository.saveAll(trackedPeers);
     }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
