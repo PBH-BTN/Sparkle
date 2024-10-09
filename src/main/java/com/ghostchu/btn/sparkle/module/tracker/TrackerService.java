@@ -1,5 +1,7 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
@@ -8,13 +10,13 @@ import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.SessionFactory;
-import org.hibernate.StatelessSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,6 +27,7 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +36,6 @@ import java.util.List;
 public class TrackerService {
 
     private final TrackedPeerRepository trackedPeerRepository;
-
     private final long inactiveInterval;
     private final int maxPeersReturn;
     private final GeoIPManager geoIPManager;
@@ -41,22 +43,21 @@ public class TrackerService {
     private final Counter peersFetchCounter;
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
-    private final EntityManagerFactory entityManagerFactory;
+    private final ObjectMapper jacksonObjectMapper;
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
                           @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager,
-                          MeterRegistry meterRegistry,
-                          EntityManagerFactory entityManagerFactory) {
+                          MeterRegistry meterRegistry, ObjectMapper jacksonObjectMapper) {
         this.trackedPeerRepository = trackedPeerRepository;
         this.inactiveInterval = inactiveInterval;
         this.maxPeersReturn = maxPeersReturn;
         this.geoIPManager = geoIPManager;
         this.meterRegistry = meterRegistry;
-        this.entityManagerFactory = entityManagerFactory;
         this.announceCounter = meterRegistry.counter("sparkle_tracker_announce");
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
+        this.jacksonObjectMapper = jacksonObjectMapper;
     }
 
     @Scheduled(fixedDelayString = "${service.tracker.metrics-interval}")
@@ -66,7 +67,7 @@ public class TrackerService {
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
         var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", trackedPeerRepository.countDistinctPeerIpBy());
         var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_active_tasks", trackedPeerRepository.countDistinctTorrentInfoHashBy());
-        log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
+        log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}, 种子总数: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
     @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
@@ -76,36 +77,36 @@ public class TrackerService {
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
+    @SneakyThrows(value = {JsonProcessingException.class})
     @Async
     @Transactional
     @Modifying
-    public void executeAnnounce(List<PeerAnnounce> announces) {
-        announceCounter.increment(announces.size());
-        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
-        try (StatelessSession statelessSession = sessionFactory.openStatelessSession()) {
-            for (PeerAnnounce announce : announces) {
-                var trackedPeer = new TrackedPeer(
-                        null,
-                        announce.reqIp(),
-                        ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
-                        ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
-                        announce.peerIp(),
-                        announce.peerPort(),
-                        ByteUtil.bytesToHex(announce.infoHash()),
-                        announce.uploaded(),
-                        announce.uploaded(),
-                        announce.downloaded(),
-                        announce.downloaded(),
-                        announce.left(),
-                        announce.peerEvent(),
-                        announce.userAgent(),
-                        TimeUtil.toUTC(System.currentTimeMillis()),
-                        geoIPManager.geoData(announce.peerIp()),
-                        geoIPManager.geoData(announce.reqIp()),
-                        0
-                );
-                statelessSession.upsert(trackedPeer);
-            }
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    public void executeAnnounce(PeerAnnounce announce) {
+        announceCounter.increment();
+        if (announce.peerEvent() == PeerEvent.STOPPED) {
+            trackedPeerRepository.deleteByPeerIdAndTorrentInfoHash(
+                    ByteUtil.bytesToHex(announce.peerId())
+                    , ByteUtil.bytesToHex(announce.infoHash()));
+
+        } else {
+            trackedPeerRepository.upsertTrackedPeer(
+                    announce.reqIp().getHostAddress(),
+                    ByteUtil.bytesToHex(announce.peerId()),
+                    new String(announce.peerId(), StandardCharsets.ISO_8859_1),
+                    announce.peerIp().getHostAddress(),
+                    announce.peerPort(),
+                    ByteUtil.bytesToHex(announce.infoHash()),
+                    announce.uploaded(),
+                    announce.downloaded(),
+                    announce.left(),
+                    announce.peerEvent().ordinal(),
+                    announce.userAgent(),
+                    OffsetDateTime.now(),
+                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
+                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.reqIp())),
+                    0
+            );
         }
     }
 
@@ -117,10 +118,8 @@ public class TrackerService {
         int seeders = 0;
         int leechers = 0;
         long downloaded = 0;
-        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(ByteUtil.bytesToHex(torrentInfoHash),
-                ByteUtil.bytesToHex(peerId),
-                PeerEvent.STOPPED,
-                Math.min(numWant, maxPeersReturn))) {
+        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
+                ByteUtil.bytesToHex(torrentInfoHash), ByteUtil.bytesToHex(peerId), Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
                 v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPeerId())));
             }
@@ -146,17 +145,17 @@ public class TrackerService {
         return new ScrapeResponse(seeders, leechers, downloaded);
     }
 
-//    public record TrackerMetrics(
-//            long activeTorrents,
-//            long totalTorrents,
-//            long peers,
-//            long seeders,
-//            long leechers,
-//            long peersHaveUpload,
-//            long peersNoUpload
-//    ) {
-//
-//    }
+    public record TrackerMetrics(
+            long activeTorrents,
+            long totalTorrents,
+            long peers,
+            long seeders,
+            long leechers,
+            long peersHaveUpload,
+            long peersNoUpload
+    ) {
+
+    }
 
     public record ScrapeResponse(
             long seeders,

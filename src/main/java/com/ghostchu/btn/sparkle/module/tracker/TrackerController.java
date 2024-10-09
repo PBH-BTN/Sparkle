@@ -152,10 +152,9 @@ public class TrackerController extends SparkleController {
                 .map(IPUtil::toIPAddress)
                 .filter(Objects::nonNull)
                 .map(IPAddress::toInetAddress).toList();
-        List<TrackerService.PeerAnnounce> announces = new ArrayList<>();
         for (InetAddress ip : peerIps) {
             try {
-                announces.add(new TrackerService.PeerAnnounce(
+                trackerService.executeAnnounce(new TrackerService.PeerAnnounce(
                         infoHash,
                         peerId,
                         reqIpInetAddress,
@@ -171,7 +170,7 @@ public class TrackerController extends SparkleController {
                 log.error("Unable to handle Torrent announce", e);
             }
         }
-        trackerService.executeAnnounce(announces);
+
         var peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
         tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
