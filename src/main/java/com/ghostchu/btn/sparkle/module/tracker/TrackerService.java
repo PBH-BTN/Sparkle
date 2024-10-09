@@ -100,6 +100,9 @@ public class TrackerService {
         if (!locked) {
             log.info("Skipped this round announce flush, another task is running. ");
         }
+        if (!announceDeque.isEmpty()) {
+            log.info("开始保存 Peers");
+        }
         try {
             try (ExecutorService flushService = Executors.newVirtualThreadPerTaskExecutor()) {
                 while (true) {
@@ -116,6 +119,7 @@ public class TrackerService {
             }
         } finally {
             announceFlushLock.unlock();
+            log.info("Peers 保存完毕");
         }
     }
 
