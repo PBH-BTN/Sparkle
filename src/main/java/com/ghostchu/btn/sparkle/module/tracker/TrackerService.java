@@ -140,8 +140,8 @@ public class TrackerService {
     @Cacheable(value = {"scrape#60000"}, key = "#torrentInfoHash")
     public ScrapeResponse scrape(byte[] torrentInfoHash) {
         scrapeCounter.increment();
-        var seeders = trackedPeerRepository.countById_TorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
-        var leechers = trackedPeerRepository.countById_TorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var seeders = trackedPeerRepository.countByTorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var leechers = trackedPeerRepository.countByTorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
         var downloaded = 0L;
         return new ScrapeResponse(seeders, leechers, downloaded);
     }
