@@ -1,15 +1,12 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 @Repository
 public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPeer, Long> {
 
@@ -27,16 +24,12 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, PeerEvent excludeEvent, int limit);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<TrackedPeer> findByPeerIdAndTorrentInfoHash(String peerId, String torrentInfoHash);
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 
     long deleteByLastEvent(PeerEvent peerEvent);
 
-    long countByTorrentInfoHashAndLeft(String torrentInfoHash, Long left);
-
-    long countByTorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
+    long countById_TorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
 
     @Query("select count(distinct t.id.torrentInfoHash) from TrackedPeer t")
     long countTrackingTorrents();
