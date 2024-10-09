@@ -40,8 +40,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             user_agent = EXCLUDED.user_agent, \
             last_time_seen = EXCLUDED.last_time_seen, \
             peer_geoip = CAST(EXCLUDED.peer_geoip AS jsonb), \
-            request_geoip = CAST(EXCLUDED.request_geoip AS jsonb), \
-            version = EXCLUDED.version""",
+            request_geoip = CAST(EXCLUDED.request_geoip AS jsonb)""",
             nativeQuery = true)
     void upsertTrackedPeer(@Param("reqIp") InetAddress reqIp,
                            @Param("peerId") String peerId,
@@ -56,8 +55,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("userAgent") String userAgent,
                            @Param("lastTimeSeen") OffsetDateTime lastTimeSeen,
                            @Param("peerGeoIP") String peerGeoIP,
-                           @Param("requestGeoIP") String requestGeoIP,
-                           @Param("version") Integer version);
+                           @Param("requestGeoIP") String requestGeoIP);
 
     void deleteByPk_PeerIdAndPk_TorrentInfoHash(String peerId, String infoHash);
 

@@ -64,7 +64,4 @@ public class TrackedPeer {
     @Type(JsonType.class)
     @Basic(fetch = FetchType.LAZY)
     private IPGeoData requestGeoIP;
-    @Column(nullable = false)
-    @Version
-    private Integer version;
 }

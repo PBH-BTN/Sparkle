@@ -116,8 +116,7 @@ public class TrackerService {
                         ByteUtil.filterUTF8(announce.userAgent()),
                         OffsetDateTime.now(),
                         jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
-                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.reqIp())),
-                        0
+                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.reqIp()))
                 );
             }
         } catch (InterruptedException e) {

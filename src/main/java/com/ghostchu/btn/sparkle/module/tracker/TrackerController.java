@@ -1,7 +1,6 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.ghostchu.btn.sparkle.controller.SparkleController;
-import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
@@ -41,8 +40,6 @@ public class TrackerController extends SparkleController {
     private long announceInterval;
     @Value("${service.tracker.announce-random}")
     private long announceRandomOffset;
-    @Autowired
-    private AuditService auditService;
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
