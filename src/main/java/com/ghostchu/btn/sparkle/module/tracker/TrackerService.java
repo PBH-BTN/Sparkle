@@ -93,7 +93,7 @@ public class TrackerService {
             trackedPeerRepository.upsertTrackedPeer(
                     announce.reqIp(),
                     ByteUtil.bytesToHex(announce.peerId()),
-                    new String(announce.peerId(), StandardCharsets.ISO_8859_1),
+                    ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
                     announce.peerIp(),
                     announce.peerPort(),
                     ByteUtil.bytesToHex(announce.infoHash()),
@@ -101,7 +101,7 @@ public class TrackerService {
                     announce.downloaded(),
                     announce.left(),
                     announce.peerEvent().ordinal(),
-                    announce.userAgent(),
+                    ByteUtil.filterUTF8(announce.userAgent()),
                     OffsetDateTime.now(),
                     jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
                     jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.reqIp())),

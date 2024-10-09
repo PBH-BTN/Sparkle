@@ -40,11 +40,11 @@ public class TrackedPeer {
     private Integer peerPort;
 //    @Column // too complex, we just give up it until somebody want to PR it
 //    private byte[] torrentInfoHashSha1;
-    @Column(nullable = false)
+@Column
     private Long uploaded;
     @Column(nullable = false)
     private Long uploadedOffset;
-    @Column(nullable = false)
+    @Column
     private Long downloaded;
     @Column(nullable = false)
     private Long downloadedOffset;
