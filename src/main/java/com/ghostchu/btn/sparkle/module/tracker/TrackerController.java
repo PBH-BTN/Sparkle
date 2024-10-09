@@ -158,22 +158,18 @@ public class TrackerController extends SparkleController {
 //        }
 
         for (InetAddress ip : peerIps) {
-            try {
-                trackerService.executeAnnounce(new TrackerService.PeerAnnounce(
-                        infoHash,
-                        peerId,
-                        reqIpInetAddress,
-                        ip,
-                        port,
-                        uploaded,
-                        downloaded,
-                        left,
-                        peerEvent,
-                        ua(req)
-                ));
-            } catch (Exception e) {
-                log.error("Unable to handle Torrent announce", e);
-            }
+            trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
+                    infoHash,
+                    peerId,
+                    reqIpInetAddress,
+                    ip,
+                    port,
+                    uploaded,
+                    downloaded,
+                    left,
+                    peerEvent,
+                    ua(req)
+            ));
         }
 
         var peersFuture = CompletableFuture.supplyAsync(() -> trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant), Executors.newVirtualThreadPerTaskExecutor());

@@ -12,15 +12,12 @@ import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -30,9 +27,14 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @Slf4j
@@ -48,6 +50,8 @@ public class TrackerService {
     private final MeterRegistry meterRegistry;
     private final ObjectMapper jacksonObjectMapper;
     private final Semaphore semaphore;
+    private final Deque<PeerAnnounce> announceDeque = new ConcurrentLinkedDeque<>();
+    private final ReentrantLock announceFlushLock = new ReentrantLock();
 
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
@@ -84,13 +88,35 @@ public class TrackerService {
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
-    @SneakyThrows(value = {JsonProcessingException.class})
-    @Async
-    @Transactional
+    public void scheduleAnnounce(PeerAnnounce announce) {
+        announceDeque.offer(announce);
+    }
+
     @Modifying
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Transactional
+    @Scheduled(fixedDelayString = "${service.tracker.announce-flush-interval}")
+    public void flushAnnounces() {
+        boolean locked = announceFlushLock.tryLock();
+        if (!locked) {
+            log.info("Skipped this round announce flush, another task is running. ");
+        }
+        try {
+            while (true) {
+                var announce = announceDeque.poll();
+                if (announce == null) break;
+                try (ExecutorService flushService = Executors.newVirtualThreadPerTaskExecutor()) {
+                    flushService.submit(() -> executeAnnounce(announce));
+                } catch (Exception e) {
+                    log.warn("Unable to process the announce {}, skipping...", announce, e);
+                }
+            }
+        } finally {
+            announceFlushLock.unlock();
+        }
+    }
+
+    @SneakyThrows(value = JsonProcessingException.class)
     public void executeAnnounce(PeerAnnounce announce) {
-        announceCounter.increment();
         try {
             semaphore.acquire();
             meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
@@ -120,8 +146,6 @@ public class TrackerService {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        } finally {
-            semaphore.release();
         }
     }
 
