@@ -31,30 +31,38 @@ public class TrackedPeer {
     })
     private TrackedPeerPK pk;
     @Column(nullable = false)
+    @Basic(fetch = FetchType.LAZY)
     private InetAddress reqIp;
     @Column(nullable = false)
+    @Basic(fetch = FetchType.LAZY)
     private String peerIdHumanReadable;
     @Column(nullable = false)
     private InetAddress peerIp;
     @Column(nullable = false)
     private Integer peerPort;
     @Column(nullable = false)
+    @Basic(fetch = FetchType.LAZY)
     private Long uploadedOffset;
     @Column(nullable = false)
+    @Basic(fetch = FetchType.LAZY)
     private Long downloadedOffset;
     @Column(nullable = false)
+    @Basic(fetch = FetchType.LAZY)
     private Long left;
     @Column(nullable = false)
     private PeerEvent lastEvent;
     @Column(nullable = false)
+    @Basic(fetch = FetchType.LAZY)
     private String userAgent;
     @Column(nullable = false)
     private OffsetDateTime lastTimeSeen;
     @Column(columnDefinition = "jsonb")
     @Type(JsonType.class)
+    @Basic(fetch = FetchType.LAZY)
     private IPGeoData peerGeoIP;
     @Column(columnDefinition = "jsonb")
     @Type(JsonType.class)
+    @Basic(fetch = FetchType.LAZY)
     private IPGeoData requestGeoIP;
     @Column(nullable = false)
     @Version
