@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 @DynamicUpdate
 public class TrackedPeer {
     @EmbeddedId
+    @Column(nullable = false, unique = true)
     private TrackedPeerId id;
     @Column(nullable = false)
     private InetAddress reqIp;
