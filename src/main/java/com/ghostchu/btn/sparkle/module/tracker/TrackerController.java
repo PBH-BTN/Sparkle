@@ -32,7 +32,7 @@ import java.util.*;
 @Controller
 @Slf4j
 public class TrackerController extends SparkleController {
-    private final Random random = new Random();
+    private static final Random random = new Random();
     @Autowired
     private HttpServletRequest req;
     @Autowired
