@@ -13,7 +13,6 @@ import java.util.Optional;
 @Repository
 public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPeer, Long> {
 
-
     @Query("""
             select t from TrackedPeer t
             where t.torrentInfoHash = ?1 and t.peerId <> ?2 and t.peerIp <> ?3
@@ -23,10 +22,10 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     @Query("""
             select t from TrackedPeer t
-            where t.torrentInfoHash = ?1 and t.peerId <> ?2
-            order by RANDOM() limit ?3
+            where t.torrentInfoHash = ?1 and t.peerId <> ?2 and t.lastEvent <> ?3
+            order by RANDOM() limit ?4
             """)
-    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
+    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, PeerEvent excludeEvent, int limit);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<TrackedPeer> findByPeerIpAndPeerIdAndTorrentInfoHash(InetAddress peerIp, String peerId, String torrentInfoHash);

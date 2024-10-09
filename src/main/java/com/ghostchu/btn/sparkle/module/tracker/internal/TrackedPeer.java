@@ -57,8 +57,6 @@ public class TrackedPeer {
     @Column(nullable = false)
     private String userAgent;
     @Column(nullable = false)
-    private OffsetDateTime firstTimeSeen;
-    @Column(nullable = false)
     private OffsetDateTime lastTimeSeen;
     @Column(columnDefinition = "jsonb")
     @Type(JsonType.class)
