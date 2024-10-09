@@ -25,6 +25,7 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,7 +100,7 @@ public class TrackerService {
                         announce.left(),
                         announce.peerEvent(),
                         announce.userAgent(),
-                        TimeUtil.toUTC(System.currentTimeMillis()),
+                        OffsetDateTime.now(),
                         geoIPManager.geoData(announce.peerIp()),
                         geoIPManager.geoData(announce.reqIp()),
                         0
