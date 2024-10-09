@@ -24,10 +24,10 @@ import java.time.OffsetDateTime;
 @Setter
 @DynamicUpdate
 public class TrackedPeer {
-    @Id
+    @EmbeddedId
     @GeneratedValue
     @Column(nullable = false, unique = true)
-    private Long id;
+    private TrackedPeerId id;
     @Column(nullable = false)
     private InetAddress reqIp;
     @Column(nullable = false)

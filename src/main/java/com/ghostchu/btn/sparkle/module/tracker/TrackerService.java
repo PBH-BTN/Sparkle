@@ -2,6 +2,7 @@ package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
+import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerId;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
@@ -34,7 +35,6 @@ import java.util.List;
 public class TrackerService {
 
     private final TrackedPeerRepository trackedPeerRepository;
-
     private final long inactiveInterval;
     private final int maxPeersReturn;
     private final GeoIPManager geoIPManager;
@@ -87,7 +87,7 @@ public class TrackerService {
         try (StatelessSession statelessSession = sessionFactory.openStatelessSession()) {
             for (PeerAnnounce announce : announces) {
                 var trackedPeer = new TrackedPeer(
-                        null,
+                        new TrackedPeerId(ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())), ByteUtil.bytesToHex(announce.infoHash())),
                         announce.reqIp(),
                         ByteUtil.filterUTF8(ByteUtil.bytesToHex(announce.peerId())),
                         ByteUtil.filterUTF8(new String(announce.peerId, StandardCharsets.ISO_8859_1)),
