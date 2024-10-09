@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
@@ -19,6 +20,7 @@ import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +30,7 @@ import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 
 @Controller
@@ -50,6 +53,8 @@ public class TrackerController extends SparkleController {
     private AuditService auditService;
     @Autowired
     private MeterRegistry meterRegistry;
+    @Autowired
+    private StringRedisTemplate redisStringTemplate;
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
         ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
@@ -152,6 +157,14 @@ public class TrackerController extends SparkleController {
                 .map(IPUtil::toIPAddress)
                 .filter(Objects::nonNull)
                 .map(IPAddress::toInetAddress).toList();
+
+
+//        // 检查宣告窗口
+//        var waitMillis = getWaitMillsUntilAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash));
+//        if (waitMillis > 0) {
+//            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
+//        }
+
         for (InetAddress ip : peerIps) {
             try {
                 trackerService.executeAnnounce(new TrackerService.PeerAnnounce(
@@ -175,13 +188,10 @@ public class TrackerController extends SparkleController {
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
         tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
         tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
+        long intervalMillis = generateInterval();
         // 合成响应
         var map = new HashMap<>() {{
-            var offset = random.nextLong(announceRandomOffset);
-            if (random.nextBoolean()) {
-                offset = -offset;
-            }
-            put("interval", (announceInterval + offset) / 1000);
+            put("interval", intervalMillis / 1000);
             put("complete", peers.seeders());
             put("incomplete", peers.leechers());
             put("downloaded", peers.downloaded());
@@ -205,10 +215,39 @@ public class TrackerController extends SparkleController {
                 }});
             }
         }};
+        setNextAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash), intervalMillis);
         tickMetrics("announce_req_success", 1);
         auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
         return BencodeUtil.INSTANCE.encode(map);
     }
+
+    private byte[] generateFailureResponse(String reason, long retryAfterSeconds) {
+        var map = new HashMap<>();
+        map.put("failure reason", reason);
+        map.put("retry in", retryAfterSeconds == -1 ? "never" : retryAfterSeconds);
+        return BencodeUtil.INSTANCE.encode(map);
+    }
+
+    private long getWaitMillsUntilAnnounceWindow(String peerId, String torrentInfoHash) {
+        var waitUntil = redisStringTemplate.opsForValue().get("interval-" + peerId + "-" + torrentInfoHash);
+        if (waitUntil == null) {
+            return 0;
+        }
+        return Long.parseLong(waitUntil);
+    }
+
+    private void setNextAnnounceWindow(String peerId, String torrentInfoHash, long windowLength) {
+        redisStringTemplate.opsForValue().set("interval-" + peerId + "-" + torrentInfoHash, String.valueOf(System.currentTimeMillis() + windowLength), Duration.ofMillis(System.currentTimeMillis() + windowLength));
+    }
+
+    private long generateInterval() {
+        var offset = random.nextLong(announceRandomOffset);
+        if (random.nextBoolean()) {
+            offset = -offset;
+        }
+        return announceInterval + offset;
+    }
+
 
     @GetMapping("/tracker/scrape")
     @ResponseBody

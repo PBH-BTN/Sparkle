@@ -6,10 +6,12 @@ import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
+import com.ghostchu.btn.sparkle.util.PeerUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
@@ -44,6 +46,7 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final ObjectMapper jacksonObjectMapper;
+
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
@@ -84,14 +87,14 @@ public class TrackerService {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     public void executeAnnounce(PeerAnnounce announce) {
         announceCounter.increment();
-//        meterRegistry.counter("sparkle_tracker_trends_peerid_8_" + new String(announce.peerId(), StandardCharsets.ISO_8859_1)).increment();
-//        meterRegistry.counter("sparkle_tracker_trends_peerid_3_" + new String(announce.peerId(), StandardCharsets.ISO_8859_1).substring(0, 3)).increment();
-//        meterRegistry.counter("sparkle_tracker_trends_useragent_" + announce.userAgent()).increment();
+        meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
+                Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
+                Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
+        )).increment();
         if (announce.peerEvent() == PeerEvent.STOPPED) {
             trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
                     ByteUtil.bytesToHex(announce.peerId())
                     , ByteUtil.bytesToHex(announce.infoHash()));
-
         } else {
             trackedPeerRepository.upsertTrackedPeer(
                     announce.reqIp(),
