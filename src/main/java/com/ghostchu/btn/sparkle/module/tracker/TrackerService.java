@@ -86,7 +86,7 @@ public class TrackerService {
         announceCounter.increment();
         meterRegistry.counter("sparkle_tracker_trends_peerid_8_" + new String(announce.peerId(), StandardCharsets.ISO_8859_1)).increment();
         meterRegistry.counter("sparkle_tracker_trends_peerid_3_" + new String(announce.peerId(), StandardCharsets.ISO_8859_1).substring(0, 3)).increment();
-        meterRegistry.counter("sparkle_tracker_trends_useragent", announce.userAgent()).increment();
+        meterRegistry.counter("sparkle_tracker_trends_useragent_" + announce.userAgent()).increment();
         if (announce.peerEvent() == PeerEvent.STOPPED) {
             trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
                     ByteUtil.bytesToHex(announce.peerId())
