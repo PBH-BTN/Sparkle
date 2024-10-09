@@ -205,7 +205,7 @@ public class TrackerController extends SparkleController {
         }
         //setNextAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash), intervalMillis);
         tickMetrics("announce_req_success", 1);
-        auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
+        //auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
         return BencodeUtil.INSTANCE.encode(map);
     }
 
@@ -261,7 +261,7 @@ public class TrackerController extends SparkleController {
         }
         map.put("files", files);
         map.put("external ip", ip(req));
-        auditService.log(req, "TRACKER_SCRAPE", true, Map.of("hash", infoHashes, "user-agent", ua(req)));
+        //auditService.log(req, "TRACKER_SCRAPE", true, Map.of("hash", infoHashes, "user-agent", ua(req)));
         return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
     }
 
