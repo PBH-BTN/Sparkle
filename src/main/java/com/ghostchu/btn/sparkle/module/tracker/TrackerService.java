@@ -157,6 +157,8 @@ public class TrackerService {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } finally {
+            semaphore.release();
         }
     }
 
