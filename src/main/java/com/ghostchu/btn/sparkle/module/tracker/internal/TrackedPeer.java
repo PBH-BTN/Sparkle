@@ -74,7 +74,7 @@ public class TrackedPeer {
     private String cryptoPort;
     @Column
     @Basic(fetch = FetchType.LAZY)
-    private int azudp;
+    private Integer azudp;
     @Column
     @Basic(fetch = FetchType.LAZY)
     private Boolean hide;
