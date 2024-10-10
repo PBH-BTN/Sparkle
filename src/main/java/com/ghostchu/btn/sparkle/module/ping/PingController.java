@@ -83,8 +83,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, AppSecret={}, UA={})",
-                ip(req), ping.getPeers().size(), handled, cred.getAppId(), cred.getAppSecret(), ua(req));
+        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, UA={})",
+                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
         audit.put("peers_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
@@ -97,16 +97,16 @@ public class PingController extends SparkleController {
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
-            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Bans 数据：(AppId={}, AppSecret={}, UA={})",
-                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Bans 数据：(AppId={},  UA={})",
+                    ip(req), cred.getAppId(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_BANS_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         IPAddress ip = new IPAddressString(ip(req)).getAddress();
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, AppSecret={}, UA={})",
-                ip(req), ping.getBans().size(), handled, cred.getAppId(), cred.getAppSecret(), ua(req));
+        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, UA={})",
+                ip(req), ping.getBans().size(), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
         audit.put("bans_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
@@ -119,14 +119,14 @@ public class PingController extends SparkleController {
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
-            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求配置文件：(AppId={}, AppSecret={}, UA={})",
-                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求配置文件：(AppId={}, UA={})",
+                    ip(req), cred.getAppId(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_CONFIG", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, AppSecret={}, UA={})",
-                ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
+                ip(req), cred.getAppId(), ua(req));
         Map<String, Object> rootObject = new LinkedHashMap<>();
         rootObject.put("min_protocol_version", pingService.getMinProtocolVersion());
         rootObject.put("max_protocol_version", pingService.getMaxProtocolVersion());
@@ -157,8 +157,8 @@ public class PingController extends SparkleController {
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
-            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求云端规则：(AppId={}, AppSecret={}, UA={})",
-                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求云端规则：(AppId={}, UA={})",
+                    ip(req), cred.getAppId(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_RULES_RETRIEVE", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
