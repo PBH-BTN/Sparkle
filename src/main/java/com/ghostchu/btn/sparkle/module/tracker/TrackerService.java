@@ -152,7 +152,21 @@ public class TrackerService {
                         announce.peerEvent().ordinal(),
                         ByteUtil.filterUTF8(announce.userAgent()),
                         OffsetDateTime.now(),
-                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp()))
+                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
+                        announce.supportCrypto(),
+                        announce.key(),
+                        announce.azudp(),
+                        announce.hide(),
+                        announce.azhttp(),
+                        announce.corrupt(),
+                        announce.redundant(),
+                        announce.trackerId(),
+                        announce.azq(),
+                        announce.azver(),
+                        announce.azup(),
+                        announce.azas(),
+                        announce.aznp()
+
                 );
             }
         } catch (InterruptedException e) {
@@ -225,8 +239,10 @@ public class TrackerService {
             long downloaded,
             long left,
             PeerEvent peerEvent,
-            String userAgent
-    ) implements Serializable {
+            String userAgent,
+            boolean supportCrypto, String key, long corrupt, long redundant,
+            String trackerId, int cryptoPort, boolean hide, int azudp, int azhttp,
+            boolean azq, String azver, int azup, String azas, String aznp) implements Serializable {
 
     }
 

@@ -44,6 +44,8 @@ public class TrackerController extends SparkleController {
     private long announceBusyRetryInterval;
     @Value("${service.tracker.announce-retry-random}")
     private long announceBusyRetryRandomInterval;
+    @Value("${service.tracker.id}")
+    private String trackerId;
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
@@ -141,6 +143,22 @@ public class TrackerController extends SparkleController {
             }
         }
         boolean compact = "1".equals(req.getParameter("compact"));
+        boolean requireCrypto = "1".equals(req.getParameter("requirecrypto"));
+        boolean supportCrypto = "1".equals(req.getParameter("supportcrypto"));
+        int cryptoPort = Integer.parseInt(req.getParameter("cryptoport"));
+        int azudp = parseIntIfAvailable(req.getParameter("azudp"));
+        boolean hide = "1".equals(req.getParameter("hide")); // BitComet extension for no incoming connection
+        int azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
+        long corrupt = parseIntIfAvailable(req.getParameter("corrupt"));
+        long redundant = parseIntIfAvailable("redundant");
+        String trackerId = req.getParameter("tracker_id");
+        boolean azq = "1".equals(req.getParameter("azq"));
+        boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
+        String key = req.getParameter("key");
+        String azver = req.getParameter("azver");
+        int azup = parseIntIfAvailable("azup");
+        String azas = req.getParameter("azas");
+        String aznp = req.getParameter("aznp");
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
         var reqIpInetAddress = IPUtil.toInet(ip(req));
         List<InetAddress> peerIps = getPossiblePeerIps(req)
@@ -167,7 +185,21 @@ public class TrackerController extends SparkleController {
                     downloaded,
                     left,
                     peerEvent,
-                    ua(req)
+                    ua(req),
+                    requireCrypto || supportCrypto,
+                    key,
+                    corrupt,
+                    redundant,
+                    trackerId,
+                    cryptoPort,
+                    hide,
+                    azudp,
+                    azhttp,
+                    azq,
+                    azver,
+                    azup,
+                    azas,
+                    aznp
             ));
         }
         TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
@@ -182,7 +214,8 @@ public class TrackerController extends SparkleController {
         map.put("incomplete", peers.leechers());
         map.put("downloaded", peers.downloaded());
         map.put("external ip", ip(req));
-        if (compact) {
+        map.put("tracker id", trackerId);
+        if (compact || noPeerId) {
             tickMetrics("announce_return_peers_format_compact", 1);
             map.put("peers", compactPeers(peers.v4(), false));
             if (!peers.v6().isEmpty())
@@ -222,6 +255,13 @@ public class TrackerController extends SparkleController {
 
     private void setNextAnnounceWindow(String peerId, String torrentInfoHash, long windowLength) {
         redisStringTemplate.opsForValue().set("interval-" + peerId + "-" + torrentInfoHash, String.valueOf(System.currentTimeMillis() + windowLength), Duration.ofMillis(System.currentTimeMillis() + windowLength));
+    }
+
+    private int parseIntIfAvailable(String param) {
+        if (param == null) {
+            return -1;
+        }
+        return Integer.parseInt(param);
     }
 
     private long generateInterval() {
