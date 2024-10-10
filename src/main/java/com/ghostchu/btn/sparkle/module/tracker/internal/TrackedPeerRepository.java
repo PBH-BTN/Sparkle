@@ -39,17 +39,17 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, \
                     :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, \
                     :lastTimeSeen, CAST(:peerGeoIP AS jsonb), :supportCrypto, :key, :cryptoPort, :azudp, :hide, :azhttp, \
-                    :corrupt, :redundant, :tracker_id, :azq, :azver, :azup, :azas, :aznp) \
+                    :corrupt, :redundant, :trackerId, :azq, :azver, :azup, :azas, :aznp) \
             ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
             uploaded_offset = EXCLUDED.uploaded_offset, \
-            downloaded_offset = EXCLUDED.downloaded_offset, \
+            downloaded_offset = EXCLUDED.downloadedOffset, \
             "left" = EXCLUDED."left", \
-            last_event = EXCLUDED.last_event, \
-            user_agent = EXCLUDED.user_agent, \
-            last_time_seen = EXCLUDED.last_time_seen, \
+            last_event = EXCLUDED.lastEvent, \
+            user_agent = EXCLUDED.userAgent, \
+            last_time_seen = EXCLUDED.lastTimeSeen, \
             peer_geoip = CAST(EXCLUDED.peer_geoip AS jsonb), \
-            support_crypto = EXCLUDED.support_crypto, \
-            "key" = EXCLUDED."key", \
+            support_crypto = EXCLUDED.supportCrypto, \
+            "key" = EXCLUDED.key, \
             crypto_port = EXCLUDED.cryptoPort, \
             azudp = EXCLUDED.azudp, \
             hide = EXCLUDED.hide, \
@@ -76,14 +76,15 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("userAgent") String userAgent,
                            @Param("lastTimeSeen") OffsetDateTime lastTimeSeen,
                            @Param("peerGeoIP") String peerGeoIP,
-                           @Param("supportCrypto") Boolean supportCrypto,
+                           @Param("supportCrypto") Boolean supportCrypto, // Fixed case
                            @Param("key") String key,
+                           @Param("cryptoPort") Integer cryptoPort, // Already correct
                            @Param("azudp") Integer azudp,
                            @Param("hide") Boolean hide,
                            @Param("azhttp") Integer azhttp,
                            @Param("corrupt") Long corrupt,
                            @Param("redundant") Long redundant,
-                           @Param("trackerId") String trackerId,
+                           @Param("trackerId") String trackerId, // Fixed case
                            @Param("azq") Boolean azq,
                            @Param("azver") String azver,
                            @Param("azup") Integer azup,
