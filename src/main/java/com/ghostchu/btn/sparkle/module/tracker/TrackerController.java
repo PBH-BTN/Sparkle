@@ -45,7 +45,7 @@ public class TrackerController extends SparkleController {
     @Value("${service.tracker.announce-retry-random}")
     private long announceBusyRetryRandomInterval;
     @Value("${service.tracker.id}")
-    private String trackerId;
+    private String instanceTrackerId;
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
@@ -213,7 +213,7 @@ public class TrackerController extends SparkleController {
         map.put("incomplete", peers.leechers());
         map.put("downloaded", peers.downloaded());
         map.put("external ip", ip(req));
-        map.put("tracker id", trackerId);
+        map.put("tracker id", instanceTrackerId);
         if (compact || noPeerId) {
             tickMetrics("announce_return_peers_format_compact", 1);
             map.put("peers", compactPeers(peers.v4(), false));
