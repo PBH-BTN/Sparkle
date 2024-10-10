@@ -150,7 +150,6 @@ public class TrackerController extends SparkleController {
         boolean hide = "1".equals(req.getParameter("hide")); // BitComet extension for no incoming connection
         int azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
         long corrupt = parseIntIfAvailable(req.getParameter("corrupt"));
-        long redundant = parseIntIfAvailable("redundant");
         String trackerId = req.getParameter("tracker_id");
         boolean azq = "1".equals(req.getParameter("azq"));
         boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
@@ -189,7 +188,7 @@ public class TrackerController extends SparkleController {
                     requireCrypto || supportCrypto,
                     key,
                     corrupt,
-                    redundant,
+                    -1,
                     trackerId,
                     cryptoPort,
                     hide,
