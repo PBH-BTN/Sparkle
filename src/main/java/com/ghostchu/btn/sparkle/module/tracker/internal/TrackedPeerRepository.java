@@ -42,21 +42,21 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                     :corrupt, :redundant, :trackerId, :azq, :azver, :azup, :azas, :aznp) \
             ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
             uploaded_offset = EXCLUDED.uploaded_offset, \
-            downloaded_offset = EXCLUDED.downloadedOffset, \
+            downloaded_offset = EXCLUDED.downloaded_offset, \
             "left" = EXCLUDED."left", \
-            last_event = EXCLUDED.lastEvent, \
-            user_agent = EXCLUDED.userAgent, \
-            last_time_seen = EXCLUDED.lastTimeSeen, \
+            last_event = EXCLUDED.last_event, \
+            user_agent = EXCLUDED.user_agent, \
+            last_time_seen = EXCLUDED.last_time_seen, \
             peer_geoip = CAST(EXCLUDED.peer_geoip AS jsonb), \
-            support_crypto = EXCLUDED.supportCrypto, \
+            support_crypto = EXCLUDED.support_crypto, \
             "key" = EXCLUDED.key, \
-            crypto_port = EXCLUDED.cryptoPort, \
+            crypto_port = EXCLUDED.crypto_port, \
             azudp = EXCLUDED.azudp, \
             hide = EXCLUDED.hide, \
             azhttp = EXCLUDED.azhttp, \
             corrupt = EXCLUDED.corrupt, \
             redundant = EXCLUDED.redundant, \
-            tracker_id = EXCLUDED.trackerId, \
+            tracker_id = EXCLUDED.tracker_id, \
             azq = EXCLUDED.azq, \
             azver = EXCLUDED.azver, \
             azup = EXCLUDED.azup, \
