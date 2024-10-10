@@ -38,7 +38,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                                        azver, azup, azas, aznp) \
             VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, \
                     :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, \
-                    :lastTimeSeen, CAST(:peerGeoIP AS jsonb), :support_crypto, :key, :cryptoPort, :azudp, :hide, :azhttp, \
+                    :lastTimeSeen, CAST(:peerGeoIP AS jsonb), :supportCrypto, :key, :cryptoPort, :azudp, :hide, :azhttp, \
                     :corrupt, :redundant, :tracker_id, :azq, :azver, :azup, :azas, :aznp) \
             ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
             uploaded_offset = EXCLUDED.uploaded_offset, \
