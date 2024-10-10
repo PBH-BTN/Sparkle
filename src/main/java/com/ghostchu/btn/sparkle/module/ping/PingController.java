@@ -145,7 +145,7 @@ public class PingController extends SparkleController {
         auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
         var json = objectMapper.writeValueAsString(rootObject);
         var countryIso = geoIPManager.geoData(InetAddress.getByName(ip(req))).getCountryIso();
-        if (countryIso.equalsIgnoreCase("CN")) {
+        if (countryIso != null && countryIso.equalsIgnoreCase("CN")) {
             json = json.replace(sparkleRoot, sparkleRootChina);
         }
         return ResponseEntity.ok().body(json);
