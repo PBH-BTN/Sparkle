@@ -154,6 +154,7 @@ public class TrackerService {
                         OffsetDateTime.now(),
                         jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
                         announce.supportCrypto(),
+                        announce.cryptoPort(),
                         announce.key(),
                         announce.azudp(),
                         announce.hide(),
