@@ -155,7 +155,7 @@ public class TrackerController extends SparkleController {
         boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
         String key = req.getParameter("key");
         String azver = req.getParameter("azver");
-        int azup = parseIntIfAvailable("azup");
+        int azup = parseIntIfAvailable(req.getParameter("azup"));
         String azas = req.getParameter("azas");
         String aznp = req.getParameter("aznp");
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
