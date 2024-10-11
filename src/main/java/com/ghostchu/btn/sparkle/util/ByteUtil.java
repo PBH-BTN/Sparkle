@@ -52,6 +52,7 @@ public class ByteUtil {
     }
 
     public static String filterUTF8(String in) {
+        if (in == null) return in;
         return in.replace("\u0000", "");
     }
 }
