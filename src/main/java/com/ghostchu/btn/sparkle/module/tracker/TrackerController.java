@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -153,11 +154,11 @@ public class TrackerController extends SparkleController {
         String trackerId = req.getParameter("tracker_id");
         boolean azq = "1".equals(req.getParameter("azq"));
         boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
-        String key = req.getParameter("key");
-        String azver = req.getParameter("azver");
+        String key = ByteUtil.filterUTF8(req.getParameter("key"));
+        String azver = ByteUtil.filterUTF8(req.getParameter("azver"));
         int azup = parseIntIfAvailable(req.getParameter("azup"));
-        String azas = req.getParameter("azas");
-        String aznp = req.getParameter("aznp");
+        String azas = ByteUtil.filterUTF8(req.getParameter("azas"));
+        String aznp = ByteUtil.filterUTF8(req.getParameter("aznp"));
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
         var reqIpInetAddress = IPUtil.toInet(ip(req));
         List<InetAddress> peerIps = getPossiblePeerIps(req)
