@@ -166,7 +166,8 @@ public class TrackerService {
                         announce.azver(),
                         announce.azup(),
                         announce.azas(),
-                        announce.aznp()
+                        announce.aznp(),
+                        announce.numWant()
 
                 );
             }
@@ -243,7 +244,7 @@ public class TrackerService {
             String userAgent,
             boolean supportCrypto, String key, long corrupt, long redundant,
             String trackerId, int cryptoPort, boolean hide, int azudp, int azhttp,
-            boolean azq, String azver, int azup, String azas, String aznp) implements Serializable {
+            boolean azq, String azver, int azup, String azas, String aznp, long numWant) implements Serializable {
 
     }
 

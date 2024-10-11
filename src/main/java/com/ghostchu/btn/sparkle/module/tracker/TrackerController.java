@@ -198,7 +198,8 @@ public class TrackerController extends SparkleController {
                     azver,
                     azup,
                     azas,
-                    aznp
+                    aznp,
+                    numWant
             ));
         }
         TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
