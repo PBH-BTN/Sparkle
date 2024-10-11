@@ -35,11 +35,11 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                                        torrent_info_hash, uploaded_offset, downloaded_offset, \
                                        "left", last_event, user_agent, last_time_seen, peer_geoip, support_crypto, \
                                        "key", crypto_port, azudp, hide, azhttp, corrupt, redundant, tracker_id, azq, \
-                                       azver, azup, azas, aznp) \
+                                       azver, azup, azas, aznp, num_want) \
             VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, \
                     :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, \
                     :lastTimeSeen, CAST(:peerGeoIP AS jsonb), :supportCrypto, :key, :cryptoPort, :azudp, :hide, :azhttp, \
-                    :corrupt, :redundant, :trackerId, :azq, :azver, :azup, :azas, :aznp) \
+                    :corrupt, :redundant, :trackerId, :azq, :azver, :azup, :azas, :aznp, :numWant) \
             ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
             uploaded_offset = EXCLUDED.uploaded_offset, \
             downloaded_offset = EXCLUDED.downloaded_offset, \
@@ -61,7 +61,8 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             azver = EXCLUDED.azver, \
             azup = EXCLUDED.azup, \
             azas = EXCLUDED.azas, \
-            aznp = EXCLUDED.aznp""",
+            aznp = EXCLUDED.aznp, \
+            num_want = EXCLUDED.num_want""",
             nativeQuery = true)
     void upsertTrackedPeer(@Param("reqIp") InetAddress reqIp,
                            @Param("peerId") String peerId,
@@ -89,7 +90,8 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("azver") String azver,
                            @Param("azup") Integer azup,
                            @Param("azas") String azas,
-                           @Param("aznp") String aznp);
+                           @Param("aznp") String aznp,
+                           @Param("numWant") long numWant);
 
     void deleteByPk_PeerIdAndPk_TorrentInfoHash(String peerId, String infoHash);
 
