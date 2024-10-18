@@ -99,6 +99,11 @@ public class AnalyseService {
                         .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                         .distinct()
                         .toList());
+        list.addAll(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                .stream()
+                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                .distinct()
+                .toList());
         list.addAll(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
