@@ -78,17 +78,17 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("lastTimeSeen") OffsetDateTime lastTimeSeen,
                            @Param("peerGeoIP") String peerGeoIP,
                            @Param("supportCrypto") Boolean supportCrypto, // Fixed case
-                           @Param("cryptoPort") Integer cryptoPort,
+                           @Param("cryptoPort") Long cryptoPort,
                            @Param("key") String key,
-                           @Param("azudp") Integer azudp,
+                           @Param("azudp") Long azudp,
                            @Param("hide") Boolean hide,
-                           @Param("azhttp") Integer azhttp,
+                           @Param("azhttp") Long azhttp,
                            @Param("corrupt") Long corrupt,
                            @Param("redundant") Long redundant,
                            @Param("trackerId") String trackerId, // Fixed case
                            @Param("azq") Boolean azq,
                            @Param("azver") String azver,
-                           @Param("azup") Integer azup,
+                           @Param("azup") Long azup,
                            @Param("azas") String azas,
                            @Param("aznp") String aznp,
                            @Param("numWant") long numWant);

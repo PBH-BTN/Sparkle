@@ -146,17 +146,17 @@ public class TrackerController extends SparkleController {
         boolean compact = "1".equals(req.getParameter("compact"));
         boolean requireCrypto = "1".equals(req.getParameter("requirecrypto"));
         boolean supportCrypto = "1".equals(req.getParameter("supportcrypto"));
-        int cryptoPort = parseIntIfAvailable(req.getParameter("cryptoport"));
-        int azudp = parseIntIfAvailable(req.getParameter("azudp"));
+        long cryptoPort = parseIntIfAvailable(req.getParameter("cryptoport"));
+        long azudp = parseIntIfAvailable(req.getParameter("azudp"));
         boolean hide = "1".equals(req.getParameter("hide")); // BitComet extension for no incoming connection
-        int azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
+        long azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
         long corrupt = parseIntIfAvailable(req.getParameter("corrupt"));
         String trackerId = req.getParameter("tracker_id");
         boolean azq = "1".equals(req.getParameter("azq"));
         boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
         String key = ByteUtil.filterUTF8(req.getParameter("key"));
         String azver = ByteUtil.filterUTF8(req.getParameter("azver"));
-        int azup = parseIntIfAvailable(req.getParameter("azup"));
+        long azup = parseIntIfAvailable(req.getParameter("azup"));
         String azas = ByteUtil.filterUTF8(req.getParameter("azas"));
         String aznp = ByteUtil.filterUTF8(req.getParameter("aznp"));
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
@@ -258,11 +258,11 @@ public class TrackerController extends SparkleController {
         redisStringTemplate.opsForValue().set("interval-" + peerId + "-" + torrentInfoHash, String.valueOf(System.currentTimeMillis() + windowLength), Duration.ofMillis(System.currentTimeMillis() + windowLength));
     }
 
-    private int parseIntIfAvailable(String param) {
+    private long parseIntIfAvailable(String param) {
         if (param == null) {
             return -1;
         }
-        return Integer.parseInt(param);
+        return Long.parseLong(param);
     }
 
     private long generateInterval() {
