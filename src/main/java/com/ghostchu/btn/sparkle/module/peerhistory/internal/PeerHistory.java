@@ -9,7 +9,7 @@ import java.net.InetAddress;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "snapshot_history",
+@Table(name = "peer_history",
         indexes = {@Index(columnList = "insertTime DESC")
                 , @Index(columnList = "userApplication")
                 , @Index(columnList = "peerId")
