@@ -10,6 +10,7 @@ import com.ghostchu.btn.sparkle.module.ping.ability.impl.ReconfigureAbility;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitBansAbility;
 import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitPeersAbility;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnBanPing;
+import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerHistoryPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnRule;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
@@ -91,6 +92,28 @@ public class PingController extends SparkleController {
         return ResponseEntity.status(200).build();
     }
 
+    @PostMapping("/histories/submit")
+    public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException {
+        var cred = cred();
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("appId", cred.getAppId());
+        if (isCredBanned(cred)) {
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Histories 数据：(AppId={}, AppSecret={}, UA={})",
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            audit.put("error", "UserApplication Banned");
+            auditService.log(req, "BTN_HISTORY_SUBMIT", false, audit);
+            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+        }
+        IPAddress ip = new IPAddressString(ip(req)).getAddress();
+        var handled = service.handlePeerHistories(ip.toInetAddress(), cred, ping);
+        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 PeerHistory 信息：(AppId={}, UA={})",
+                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
+        audit.put("peers_size", ping.getPeers().size());
+        audit.put("peers_handled", handled);
+        auditService.log(req, "BTN_HISTORY_SUBMIT", true, audit);
+        return ResponseEntity.status(200).build();
+    }
+
     @PostMapping("/bans/submit")
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException {
         var cred = cred();
@@ -135,6 +158,7 @@ public class PingController extends SparkleController {
         rootObject.put("ability", abilityObject);
         abilityObject.put("submit_peers", submitPeersAbility);
         abilityObject.put("submit_bans", submitBansAbility);
+        abilityObject.put("submit_histories", submitBansAbility);
         abilityObject.put("reconfigure", reconfigureAbility);
         abilityObject.put("rules", cloudRuleAbility);
         auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
