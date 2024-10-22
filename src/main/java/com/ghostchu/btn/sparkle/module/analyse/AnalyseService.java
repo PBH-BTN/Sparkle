@@ -170,7 +170,7 @@ public class AnalyseService {
                         s.to_peer_traffic,
                         ROW_NUMBER() OVER (PARTITION BY s.torrent, s.peer_ip, s.user_application ORDER BY s.insert_time DESC) AS rn
                     FROM
-                        snapshotHistory s
+                        snapshot s
                     WHERE
                         s.insert_time >= ? AND s.to_peer_traffic > 0
                 ),
