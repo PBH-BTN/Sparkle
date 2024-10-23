@@ -133,7 +133,7 @@ public class TrackerController extends SparkleController {
         Validate.isTrue(StringUtils.isNumeric(req.getParameter("downloaded")));
         long downloaded = Long.parseLong(req.getParameter("downloaded"));
         Validate.isTrue(StringUtils.isNumeric(req.getParameter("left")));
-        var leftBi = new BigInteger(req.getParameter("left"));
+        var leftBi = new BigInteger(req.getParameter("left") != null ? req.getParameter("left") : "-1");
         long left = leftBi.longValue();
         PeerEvent peerEvent = PeerEvent.EMPTY;
         String event = req.getParameter("event");

@@ -94,17 +94,20 @@ public class AnalyseService {
     @Scheduled(fixedDelayString = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() {
         Set<IPAddress> list =
-                new HashSet<>(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                new HashSet<>(banHistoryRepository
+                        .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                         .stream()
                         .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                         .distinct()
                         .toList());
-        list.addAll(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+        list.addAll(banHistoryRepository
+                .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
                 .toList());
-        list.addAll(banHistoryRepository.findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+        list.addAll(banHistoryRepository
+                .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
