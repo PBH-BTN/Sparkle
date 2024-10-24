@@ -37,7 +37,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<StdResp<Void>> illegalArgument(IllegalArgumentException e) {
-        log.warn("Request exception: Illegal argument", e);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new StdResp<>(false, "IllegalArgument: " + e.getMessage(), null));
     }
