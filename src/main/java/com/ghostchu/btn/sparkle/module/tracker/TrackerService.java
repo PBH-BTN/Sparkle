@@ -102,9 +102,7 @@ public class TrackerService {
             return;
         }
         try {
-            if (!announceDeque.isEmpty()) {
-                log.info("开始保存 Peers，异步宣告队列大小：{}", announceDeque.size());
-            } else {
+            if (announceDeque.isEmpty()) {
                 return;
             }
             try (ExecutorService flushService = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -122,7 +120,6 @@ public class TrackerService {
             }
         } finally {
             announceFlushLock.unlock();
-            log.info("Peers 保存完毕");
         }
     }
 
