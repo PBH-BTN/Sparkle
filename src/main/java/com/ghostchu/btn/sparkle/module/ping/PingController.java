@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.AccessDeniedException;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
-import com.ghostchu.btn.sparkle.module.ping.ability.impl.CloudRuleAbility;
-import com.ghostchu.btn.sparkle.module.ping.ability.impl.ReconfigureAbility;
-import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitBansAbility;
-import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitPeersAbility;
+import com.ghostchu.btn.sparkle.module.ping.ability.impl.*;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnBanPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerHistoryPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
@@ -68,6 +65,8 @@ public class PingController extends SparkleController {
     private String sparkleRootChina;
     @Autowired
     private GeoIPManager geoIPManager;
+    @Autowired
+    private SubmitHistoriesAbility submitHistoriesAbility;
 
 
     @PostMapping("/peers/submit")
@@ -158,7 +157,7 @@ public class PingController extends SparkleController {
         rootObject.put("ability", abilityObject);
         abilityObject.put("submit_peers", submitPeersAbility);
         abilityObject.put("submit_bans", submitBansAbility);
-        abilityObject.put("submit_histories", submitBansAbility);
+        abilityObject.put("submit_histories", submitHistoriesAbility);
         abilityObject.put("reconfigure", reconfigureAbility);
         abilityObject.put("rules", cloudRuleAbility);
         auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
