@@ -160,7 +160,7 @@ public class PingController extends SparkleController {
         abilityObject.put("submit_histories", submitHistoriesAbility);
         abilityObject.put("reconfigure", reconfigureAbility);
         abilityObject.put("rules", cloudRuleAbility);
-        auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
+        auditService.log(req, "BTN_CONFIG", true, audit);
         var json = objectMapper.writeValueAsString(rootObject);
         var countryIso = geoIPManager.geoData(InetAddress.getByName(ip(req))).getCountryIso();
         if (countryIso != null && countryIso.equalsIgnoreCase("CN")) {
