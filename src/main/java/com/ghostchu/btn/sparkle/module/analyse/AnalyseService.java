@@ -107,6 +107,12 @@ public class AnalyseService {
                 .distinct()
                 .toList());
         list.addAll(banHistoryRepository
+                .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 3.00", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                .stream()
+                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                .distinct()
+                .toList());
+        list.addAll(banHistoryRepository
                 .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
