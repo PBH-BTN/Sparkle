@@ -1,6 +1,6 @@
 package com.ghostchu.btn.sparkle.module.ping.dto;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,9 +11,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BtnPeerHistoryPing {
-    @SerializedName("populate_time")
+    @JsonProperty("populate_time")
     private long populateTime;
-    @SerializedName("peers")
+    @JsonProperty("peers")
     private List<BtnPeerHistory> peers;
 
 }

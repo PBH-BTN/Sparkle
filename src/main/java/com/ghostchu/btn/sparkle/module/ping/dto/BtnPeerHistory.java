@@ -1,6 +1,6 @@
 package com.ghostchu.btn.sparkle.module.ping.dto;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,29 +11,29 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BtnPeerHistory {
-    @SerializedName("ip_address")
+    @JsonProperty("ip_address")
     private String ipAddress;
-    @SerializedName("peer_id")
+    @JsonProperty("peer_id")
     private String peerId;
-    @SerializedName("client_name")
+    @JsonProperty("client_name")
     private String clientName;
-    @SerializedName("torrent_identifier")
+    @JsonProperty("torrent_identifier")
     private String torrentIdentifier;
-    @SerializedName("torrent_size")
+    @JsonProperty("torrent_size")
     private long torrentSize;
-    @SerializedName("downloaded")
+    @JsonProperty("downloaded")
     private long downloaded;
-    @SerializedName("downloaded_offset")
+    @JsonProperty("downloaded_offset")
     private long downloadedOffset;
-    @SerializedName("uploaded")
+    @JsonProperty("uploaded")
     private long uploaded;
-    @SerializedName("uploaded_offset")
+    @JsonProperty("uploaded_offset")
     private long uploadedOffset;
-    @SerializedName("first_time_seen")
+    @JsonProperty("first_time_seen")
     private Timestamp firstTimeSeen;
-    @SerializedName("last_time_seen")
+    @JsonProperty("last_time_seen")
     private Timestamp lastTimeSeen;
-    @SerializedName("peer_flag")
+    @JsonProperty("peer_flag")
     private String peerFlag;
 
 }
