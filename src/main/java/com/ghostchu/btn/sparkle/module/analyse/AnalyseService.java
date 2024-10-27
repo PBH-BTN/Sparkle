@@ -167,7 +167,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
+    @Scheduled(fixedDelayString = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() {
         var query = entityManager.createNativeQuery("""
                 WITH LatestSnapshots AS (
@@ -177,11 +177,11 @@ public class AnalyseService {
                         s.peer_ip,
                         s.user_application,
                         s.to_peer_traffic,
-                        ROW_NUMBER() OVER (PARTITION BY s.torrent, s.peer_ip, s.user_application ORDER BY s.insert_time DESC) AS rn
+                        ROW_NUMBER() OVER (PARTITION BY s.torrent, s.peer_ip, s.user_application ORDER BY s.last_time_seen DESC) AS rn
                     FROM
-                        snapshot s
+                        public.peer_history s
                     WHERE
-                        s.insert_time >= ? AND s.to_peer_traffic > 0
+                        s.last_time_seen >= ?
                 ),
                 AggregatedUploads AS (
                     SELECT
@@ -203,15 +203,15 @@ public class AnalyseService {
                     au.peer_ip,
                     au.total_uploaded,
                     t.size,
-                    (au.total_uploaded / t.size::float) AS upload_percentage
+                    (au.total_uploaded / t.size::float) * 100 AS upload_percentage
                 FROM
                     AggregatedUploads au
                 JOIN
-                    torrent t ON au.torrent = t.id
+                    public.torrent t ON au.torrent = t.id
                 WHERE
                     au.total_uploaded > t.size * ?
                 ORDER BY
-                    au.total_uploaded DESC;
+                    upload_percentage DESC;
                 """);
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
         query.setParameter(2, overDownloadGenerateThreshold);
@@ -237,6 +237,81 @@ public class AnalyseService {
         meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
         analysedRuleRepository.saveAll(rules);
     }
+
+//
+//    @Transactional
+//    @Modifying
+//    @Lock(LockModeType.READ)
+//    @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
+//    public void cronUpdateOverDownload() {
+//        var query = entityManager.createNativeQuery("""
+//                WITH LatestSnapshots AS (
+//                    SELECT
+//                        s.id,
+//                        s.torrent,
+//                        s.peer_ip,
+//                        s.user_application,
+//                        s.to_peer_traffic,
+//                        ROW_NUMBER() OVER (PARTITION BY s.torrent, s.peer_ip, s.user_application ORDER BY s.insert_time DESC) AS rn
+//                    FROM
+//                        snapshot s
+//                    WHERE
+//                        s.insert_time >= ? AND s.to_peer_traffic > 0
+//                ),
+//                AggregatedUploads AS (
+//                    SELECT
+//                        ls.torrent,
+//                        ls.peer_ip,
+//                        SUM(ls.to_peer_traffic) AS total_uploaded
+//                    FROM
+//                        LatestSnapshots ls
+//                    WHERE
+//                        ls.rn = 1
+//                    GROUP BY
+//                        ls.torrent,
+//                        ls.peer_ip
+//                    HAVING
+//                        SUM(ls.to_peer_traffic) > 0
+//                )
+//                SELECT
+//                    au.torrent,
+//                    au.peer_ip,
+//                    au.total_uploaded,
+//                    t.size,
+//                    (au.total_uploaded / t.size::float) AS upload_percentage
+//                FROM
+//                    AggregatedUploads au
+//                JOIN
+//                    torrent t ON au.torrent = t.id
+//                WHERE
+//                    au.total_uploaded > t.size * ?
+//                ORDER BY
+//                    au.total_uploaded DESC;
+//                """);
+//        query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
+//        query.setParameter(2, overDownloadGenerateThreshold);
+//        List<Object[]> queryResult = query.getResultList();
+//        var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1]))).collect(Collectors.toList()));
+//        List<AnalysedRule> rules = new ArrayList<>();
+//        for (String ip : ips) {
+//            try {
+//                if (new IPAddressString(ip).getAddress().isLocal()) {
+//                    continue;
+//                }
+//                rules.add(new AnalysedRule(
+//                        null,
+//                        ip,
+//                        OVER_DOWNLOAD,
+//                        "Generated at " + MsgUtil.getNowDateTimeString()
+//                ));
+//            } catch (Exception ignored) {
+//
+//            }
+//        }
+//        analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
+//        meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
+//        analysedRuleRepository.saveAll(rules);
+//    }
 
     public Collection<IPAddress> filterIP(Collection<IPAddress> ips) {
         var list = new ArrayList<>(ips);
