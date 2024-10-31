@@ -164,6 +164,7 @@ public class TrackerController extends SparkleController {
                 .stream()
                 .map(IPUtil::toIPAddress)
                 .filter(Objects::nonNull)
+                .filter(ip -> !ip.isLocal())
                 .distinct()
                 .map(IPAddress::toInetAddress).toList();
 
