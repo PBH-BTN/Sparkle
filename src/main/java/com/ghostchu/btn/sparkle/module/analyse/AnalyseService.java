@@ -209,7 +209,7 @@ public class AnalyseService {
                 JOIN
                     public.torrent t ON au.torrent = t.id
                 WHERE
-                    au.total_uploaded > t.size * ?
+                    au.total_uploaded > t.size * ? AND t.size::float > 0
                 ORDER BY
                     upload_percentage DESC;
                 """);
