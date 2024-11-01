@@ -14,7 +14,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -118,7 +117,7 @@ public class UserApplicationService {
                 .user(userService.toDto(userApplication.getUser()))
                 .comment(userApplication.getComment())
                 .appId(userApplication.getAppId())/**/
-                .createdAt(userApplication.getCreatedAt().getLong(ChronoField.MILLI_OF_DAY))
+                .createdAt(userApplication.getCreatedAt().toEpochSecond() * 1000)
                 .build();
     }
 
@@ -130,7 +129,7 @@ public class UserApplicationService {
                 .comment(userApplication.getComment())
                 .appId(userApplication.getAppId())
                 .appSecret(userApplication.getAppSecret())
-                .createdAt(userApplication.getCreatedAt().getLong(ChronoField.MILLI_OF_DAY))
+                .createdAt(userApplication.getCreatedAt().toEpochSecond() * 1000)
                 .build();
     }
 }
