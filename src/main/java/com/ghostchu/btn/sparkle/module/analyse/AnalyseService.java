@@ -317,6 +317,7 @@ public class AnalyseService {
                     }
                     return ip;
                 })
+                .distinct()
                 .collect(Collectors.toList());
     }
 
