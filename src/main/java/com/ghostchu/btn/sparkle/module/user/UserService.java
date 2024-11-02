@@ -13,7 +13,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.temporal.ChronoField;
 import java.util.Optional;
 
 @Service
@@ -78,8 +77,8 @@ public class UserService {
                 .id(user.getId())
                 .avatar(user.getAvatar())
                 .nickname(user.getNickname())
-                .registerAt(user.getRegisterAt().getLong(ChronoField.MILLI_OF_DAY))
-                .lastSeenAt(user.getLastSeenAt().getLong(ChronoField.MILLI_OF_DAY))
+                .registerAt(user.getRegisterAt().toEpochSecond() * 1000)
+                .lastSeenAt(user.getLastSeenAt().toEpochSecond() * 1000)
                 .banned(user.getBanned())
                 .build();
     }

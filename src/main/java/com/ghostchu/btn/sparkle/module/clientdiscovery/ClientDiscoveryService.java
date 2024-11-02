@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -69,9 +68,9 @@ public class ClientDiscoveryService {
                 .hash(clientDiscovery.getHash())
                 .clientName(clientDiscovery.getClientName())
                 .peerId(clientDiscovery.getPeerId())
-                .foundAt(clientDiscovery.getFoundAt().getLong(ChronoField.MILLI_OF_DAY))
+                .foundAt(clientDiscovery.getFoundAt().toEpochSecond() * 1000)
                 .foundBy(userService.toDto(clientDiscovery.getFoundBy()))
-                .lastSeenAt(clientDiscovery.getLastSeenAt().getLong(ChronoField.MILLI_OF_DAY))
+                .lastSeenAt(clientDiscovery.getLastSeenAt().toEpochSecond() * 1000)
                 .lastSeenBy(userService.toDto(clientDiscovery.getLastSeenBy()))
                 .build();
     }

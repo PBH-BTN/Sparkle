@@ -7,7 +7,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,8 +72,8 @@ public class RuleService {
                 .category(rule.getCategory())
                 .content(rule.getContent())
                 .type(rule.getType())
-                .createdAt(rule.getCreatedAt().getLong(ChronoField.MILLI_OF_DAY))
-                .expiredAt(rule.getExpiredAt().getLong(ChronoField.MILLI_OF_DAY))
+                .createdAt(rule.getCreatedAt().toEpochSecond() * 1000)
+                .expiredAt(rule.getExpiredAt().toEpochSecond() * 1000)
                 .build();
     }
 }
