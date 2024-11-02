@@ -50,6 +50,8 @@ public class AnalyseService {
     private long highRiskIpsOffset;
     @Value("${analyse.highriskipv6identity.offset}")
     private long highRiskIpv6IdentityOffset;
+    @Value("${analyse.ipv6.prefix-length}")
+    private int ipv6ConvertToPrefixLength;
     @Autowired
     private AnalysedRuleRepository analysedRuleRepository;
     @PersistenceContext
@@ -118,7 +120,8 @@ public class AnalyseService {
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
                 .toList());
-        var highRiskIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+        var highRiskIps = filterIP(list).stream()
+                .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
         meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
         analysedRuleRepository.saveAll(highRiskIps);
@@ -154,7 +157,9 @@ public class AnalyseService {
                 .distinct()
                 .sorted()
                 .forEach(list::add);
-        var ips = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+        var ips = filterIP(list).stream()
+                .filter(Objects::nonNull)
+                .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
         meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
         analysedRuleRepository.saveAll(ips);
@@ -216,23 +221,13 @@ public class AnalyseService {
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
         query.setParameter(2, overDownloadGenerateThreshold);
         List<Object[]> queryResult = query.getResultList();
-        var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1]))).collect(Collectors.toList()));
-        List<AnalysedRule> rules = new ArrayList<>();
-        for (String ip : ips) {
-            try {
-                if (new IPAddressString(ip).getAddress().isLocal()) {
-                    continue;
-                }
-                rules.add(new AnalysedRule(
-                        null,
-                        ip,
-                        OVER_DOWNLOAD,
-                        "Generated at " + MsgUtil.getNowDateTimeString()
-                ));
-            } catch (Exception ignored) {
-
-            }
-        }
+        var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1])))
+                        .collect(Collectors.toList())).stream().map(i -> new IPAddressString(i).getAddress())
+                .filter(Objects::nonNull)
+                .toList();
+        var rules = filterIP(ips).stream()
+                .map(ip -> new AnalysedRule(null, ip.toString(), OVER_DOWNLOAD,
+                        "Generated at " + MsgUtil.getNowDateTimeString())).toList();
         analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
         meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
         analysedRuleRepository.saveAll(rules);
@@ -315,9 +310,16 @@ public class AnalyseService {
 
     public Collection<IPAddress> filterIP(Collection<IPAddress> ips) {
         var list = new ArrayList<>(ips);
-        list.removeIf(IPAddress::isLocal);
-        return list;
+        return list.stream().filter(ip -> !ip.isLocal())
+                .map(ip -> {
+                    if (ip.isIPv6()) {
+                        ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
+                    }
+                    return ip;
+                })
+                .collect(Collectors.toList());
     }
+
 
     private OffsetDateTime nowTimestamp() {
         return OffsetDateTime.now();
