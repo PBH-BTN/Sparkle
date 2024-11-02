@@ -58,15 +58,16 @@ public class GithubUpdateService {
         }
         var repository = organization.getRepository(repoName);
         updateFile(repository, "untrusted-ips.txt", generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "high-risk-ips.txt", generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "overdownload-ips.txt", generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "random-peerid.txt", generateGopeedDev().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "hp_torrent.txt", generateHpTorrents().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "dt_torrent.txt", generateDtTorrents().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "go.torrent dev 20181121.txt", generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "0xde-0xad-0xbe-0xef.txt", generateDeadBeef().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "123pan.txt", generate123pan().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "random-peerid.txt", generateGopeedDev().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "high-risk-ips.txt", generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
+
     }
 
     private String generateUntrustedIps() {
@@ -217,7 +218,7 @@ public class GithubUpdateService {
                     .commit();
             var commit = commitResponse.getCommit();
             log.info("GitHub 同步规则 “{}” 更新结果：Sha: {}", file, commit.getSHA1());
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("无法完成数据更新操作", e);
         }
     }
