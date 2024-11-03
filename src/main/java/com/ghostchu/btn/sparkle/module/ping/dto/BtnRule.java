@@ -40,6 +40,7 @@ public class BtnRule implements Serializable {
         this.portRules = new HashMap<>();
         this.peerIdRules = new HashMap<>();
         this.clientNameRules = new HashMap<>();
+        this.scriptRules = new HashMap<>();
         for (RuleDto ruleEntityDto : list) {
             switch (ruleEntityDto.getType()) {
                 case "ip" -> {
