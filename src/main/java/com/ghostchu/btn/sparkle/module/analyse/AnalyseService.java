@@ -310,7 +310,7 @@ public class AnalyseService {
 
     public Collection<IPAddress> filterIP(Collection<IPAddress> ips) {
         var list = new ArrayList<>(ips);
-        return list.stream().filter(ip -> !ip.isLocal())
+        return list.stream().filter(ip -> !ip.isLocal() && !ip.isLoopback())
                 .map(ip -> {
                     if (ip.isIPv6()) {
                         ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
