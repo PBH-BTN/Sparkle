@@ -167,8 +167,10 @@ public class PingService {
 //        analysedRules.addAll(analyseService.getHighRiskIPV6Identity().stream()
 //                .map(AnalysedRule::getIp).toList());
         var ipsMerged = iPMerger.merge(analysedRules.stream().distinct().sorted().collect(Collectors.toList()));
-        meterRegistry.gauge("sparkle_ping_rules", ipsMerged.size());
-        return new BtnRule(ipsMerged.stream().map(ip -> new RuleDto(null, "合并规则", ip, "ip", 0L, 0L)).toList());
+        List<RuleDto> rules = new LinkedList<>(ruleService.getUnexpiredRules());
+        rules.addAll(ipsMerged.stream().map(ip -> new RuleDto(null, "合并规则", ip, "ip", 0L, 0L)).toList());
+        meterRegistry.gauge("sparkle_ping_rules", rules.size());
+        return new BtnRule(rules);
     }
 
     @Modifying
