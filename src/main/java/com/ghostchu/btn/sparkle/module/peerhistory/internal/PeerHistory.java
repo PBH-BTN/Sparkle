@@ -16,6 +16,8 @@ import java.time.OffsetDateTime;
                 , @Index(columnList = "peerClientName")
                 , @Index(columnList = "torrent")
                 , @Index(columnList = "peerIp")
+                , @Index(columnList = "peerIp, torrent")
+                , @Index(columnList = "peerIp, torrent, to_peer_traffic")
                 , @Index(columnList = "torrent, peerIp, userApplication, insertTime DESC")})
 @AllArgsConstructor
 @NoArgsConstructor
