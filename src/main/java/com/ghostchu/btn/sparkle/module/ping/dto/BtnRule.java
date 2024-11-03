@@ -30,7 +30,8 @@ public class BtnRule implements Serializable {
     private Map<String, List<String>> ipRules;
     @JsonProperty("port")
     private Map<String, List<Integer>> portRules;
-
+    @JsonProperty("script")
+    private Map<String, String> scriptRules;
 
     public BtnRule(List<RuleDto> list) {
         this.ipRules = new HashMap<>();
@@ -71,6 +72,7 @@ public class BtnRule implements Serializable {
                     cat.add(ruleEntityDto.getContent());
                     excludePeerIdRules.put(ruleEntityDto.getCategory(), cat);
                 }
+                case "script" -> scriptRules.put(ruleEntityDto.getCategory(), ruleEntityDto.getContent());
             }
         }
     }
