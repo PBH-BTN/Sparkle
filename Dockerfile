@@ -6,4 +6,4 @@ ENV TZ=UTC
 WORKDIR /app
 VOLUME /tmp
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
-ENTRYPOINT ["java","-Xmx4G","-XX:+UseZGC", "-XX:+ZGenerational","-jar","sparkle.jar"]
+ENTRYPOINT ["java","-Xmx4G","-XX:+UseG1GC","-jar","sparkle.jar"]
