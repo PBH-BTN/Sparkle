@@ -164,8 +164,8 @@ public class TrackerController extends SparkleController {
                 .stream()
                 .map(IPUtil::toIPAddress)
                 .filter(Objects::nonNull)
-                .filter(ip -> !ip.isLocal() && !ip.isLoopback())
                 .distinct()
+                .filter(ip -> !ip.isLocal() && !ip.isLoopback())
                 .map(IPAddress::toInetAddress).toList();
 
 //        // 检查宣告窗口
@@ -223,7 +223,7 @@ public class TrackerController extends SparkleController {
                 map.put("peers6", compactPeers(peers.v6(), true));
         } else {
             tickMetrics("announce_return_peers_format_full", 1);
-            List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4());
+            List<TrackerService.Peer> allPeers = new LinkedList<>(peers.v4());
             allPeers.addAll(peers.v6());
             map.put("peers", new HashMap<>() {{
                 for (TrackerService.Peer p : allPeers) {
@@ -311,7 +311,7 @@ public class TrackerController extends SparkleController {
     }
 
     public List<String> getPossiblePeerIps(HttpServletRequest req) {
-        List<String> found = new ArrayList<>(8);
+        List<String> found = new ArrayList<>(12);
         found.add(ip(req));
         var ips = req.getParameterValues("ip");
         if (ips != null) {

@@ -12,6 +12,7 @@ import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnRule;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
+import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.Hashing;
@@ -103,7 +104,7 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_HISTORY_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        IPAddress ip = new IPAddressString(ip(req)).getAddress();
+        IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handlePeerHistories(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 PeerHistory 信息：(AppId={}, UA={})",
                 ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
@@ -125,7 +126,7 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_BANS_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        IPAddress ip = new IPAddressString(ip(req)).getAddress();
+        IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
         log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, UA={})",
                 ip(req), ping.getBans().size(), handled, cred.getAppId(), ua(req));

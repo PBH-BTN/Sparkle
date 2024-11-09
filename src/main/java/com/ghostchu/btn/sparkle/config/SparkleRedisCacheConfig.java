@@ -16,7 +16,7 @@ public class SparkleRedisCacheConfig {
     @Bean
     public CacheManager cacheManager(LettuceConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1));
+                .entryTtl(Duration.ofMillis(5));
 
         return new SparkleRedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(redisConnectionFactory), defaultCacheConfig);
     }
