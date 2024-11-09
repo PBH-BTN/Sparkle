@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -40,6 +41,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new StdResp<>(false, "IllegalArgument: " + e.getMessage(), null));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public void asyncReqNotUsable(AsyncRequestNotUsableException e) {
+        log.warn("Unable to complete async request because: [{}], async request not usable.", e.getMessage());
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<StdResp<Void>> jvmExceptionHandler(Exception e) {
