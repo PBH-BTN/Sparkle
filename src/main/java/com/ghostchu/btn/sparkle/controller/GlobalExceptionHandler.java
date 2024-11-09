@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
                 .body(new StdResp<>(false, "IllegalArgument: " + e.getMessage(), null));
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void asyncReqNotUsable(AsyncRequestNotUsableException e) {
         log.warn("Unable to complete async request because: [{}], async request not usable.", e.getMessage());
     }
