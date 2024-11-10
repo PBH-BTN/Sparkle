@@ -12,4 +12,7 @@ public interface PeerHistoryRepository extends SparkleCommonRepository<PeerHisto
     Page<PeerHistory> findByOrderByInsertTimeDesc(Pageable pageable);
 
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
+
+    // 删除 N 天前的数据
+    long deleteByInsertTimeBefore(OffsetDateTime insertTime);
 }

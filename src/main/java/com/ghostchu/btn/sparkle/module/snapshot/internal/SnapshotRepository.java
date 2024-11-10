@@ -12,4 +12,6 @@ public interface SnapshotRepository extends SparkleCommonRepository<Snapshot, Lo
     Page<Snapshot> findByOrderByInsertTimeDesc(Pageable pageable);
 
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
+
+    long deleteByInsertTimeBefore(OffsetDateTime offsetDateTime);
 }
