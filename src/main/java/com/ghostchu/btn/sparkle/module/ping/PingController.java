@@ -17,7 +17,6 @@ import com.ghostchu.btn.sparkle.util.ServletUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.Hashing;
 import inet.ipaddr.IPAddress;
-import inet.ipaddr.IPAddressString;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -72,23 +71,23 @@ public class PingController extends SparkleController {
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
-        var cred = cred();
-        var audit = new LinkedHashMap<String, Object>();
-        audit.put("appId", cred.getAppId());
-        if (isCredBanned(cred)) {
-            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Peers 数据：(AppId={}, AppSecret={}, UA={})",
-                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
-            audit.put("error", "UserApplication Banned");
-            auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
-            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
-        }
-        IPAddress ip = new IPAddressString(ip(req)).getAddress();
-        var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, UA={})",
-                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
-        audit.put("peers_size", ping.getPeers().size());
-        audit.put("peers_handled", handled);
-        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
+//        var cred = cred();
+//        var audit = new LinkedHashMap<String, Object>();
+//        audit.put("appId", cred.getAppId());
+//        if (isCredBanned(cred)) {
+//            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Peers 数据：(AppId={}, AppSecret={}, UA={})",
+//                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+//            audit.put("error", "UserApplication Banned");
+//            auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
+//            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+//        }
+//        IPAddress ip = new IPAddressString(ip(req)).getAddress();
+//        var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
+//        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, UA={})",
+//                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
+//        audit.put("peers_size", ping.getPeers().size());
+//        audit.put("peers_handled", handled);
+//        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
 
@@ -156,7 +155,7 @@ public class PingController extends SparkleController {
 
         Map<String, Object> abilityObject = new LinkedHashMap<>();
         rootObject.put("ability", abilityObject);
-        abilityObject.put("submit_peers", submitPeersAbility);
+        //abilityObject.put("submit_peers", submitPeersAbility);
         abilityObject.put("submit_bans", submitBansAbility);
         abilityObject.put("submit_histories", submitHistoriesAbility);
         abilityObject.put("reconfigure", reconfigureAbility);
