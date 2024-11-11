@@ -65,9 +65,14 @@ public class AnalyseService {
     @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
     public void cronUntrustedIPAddresses() {
         var list = ipMerger.merge(banHistoryRepository
-                        .generateUntrustedIPAddresses(TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset), OffsetDateTime.now(), untrustedIpAddressGenerateThreshold)
-                .stream()
-                .map(IPUtil::toString)
+                        .generateUntrustedIPAddresses(
+                                TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
+                                OffsetDateTime.now(),
+                                untrustedIpAddressGenerateThreshold,
+                                "30 minutes"
+                        )
+                        .stream()
+                        .map(IPUtil::toString)
                         .collect(Collectors.toList()))
                 .stream().map(IPUtil::toIPAddress)
                 .toList();
