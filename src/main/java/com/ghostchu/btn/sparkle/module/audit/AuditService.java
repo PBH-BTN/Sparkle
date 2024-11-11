@@ -29,7 +29,7 @@ public class AuditService {
         auditQueue.add(new Audit(null, OffsetDateTime.now(), IPUtil.toInet(ServletUtil.getIP(req)), action, success, getHeaders(req), node));
     }
 
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
     @Transactional
     @Modifying
     public void updateTrackerMetrics() {

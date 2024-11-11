@@ -31,7 +31,7 @@ public class UserService {
 //        return (UserDto) StpUtil.getLoginId();
 //    }
 
-    @Scheduled(fixedDelayString = "${service.user.metrics-interval}")
+    @Scheduled(fixedRateString = "${service.user.metrics-interval}")
     @Transactional
     public void updateUserMetrics() {
         meterRegistry.gauge("sparkle_user_total", userRepository.count());

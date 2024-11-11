@@ -65,7 +65,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
+    @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
     public void cronUntrustedIPAddresses() {
         var list = ipMerger.merge(banHistoryRepository
                         .generateUntrustedIPAddresses(
@@ -101,7 +101,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedDelayString = "${analyse.highriskips.interval}")
+    @Scheduled(fixedRateString = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() {
         Set<IPAddress> list =
                 new HashSet<>(banHistoryRepository
@@ -145,7 +145,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedDelayString = "${analyse.highriskipv6identity.interval}")
+    @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
     public void cronHighRiskIPV6Identity() {
         Set<IPAddress> list = new HashSet<>();
         banHistoryRepository.findByPeerIp(
@@ -183,7 +183,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedDelayString = "${analyse.overdownload.interval}")
+    @Scheduled(fixedRateString = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() {
         var query = entityManager.createNativeQuery("""
                 WITH LatestSnapshots AS (
@@ -248,7 +248,7 @@ public class AnalyseService {
 //    @Transactional
 //    @Modifying
 //    @Lock(LockModeType.READ)
-//    @Scheduled(fixedDelayString = "${analyse.untrustip.interval}")
+//    @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
 //    public void cronUpdateOverDownload() {
 //        var query = entityManager.createNativeQuery("""
 //                WITH LatestSnapshots AS (

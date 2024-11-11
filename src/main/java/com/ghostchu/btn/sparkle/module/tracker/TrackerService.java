@@ -71,7 +71,7 @@ public class TrackerService {
         this.semaphore = new Semaphore(maxParallelAnnounce);
     }
 
-    @Scheduled(fixedDelayString = "${service.tracker.metrics-interval}")
+    @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
     @Transactional
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
@@ -81,7 +81,7 @@ public class TrackerService {
         log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
-    @Scheduled(fixedDelayString = "${service.tracker.cleanup-interval}")
+    @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
     @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
@@ -94,7 +94,7 @@ public class TrackerService {
 
     @Modifying
     @Transactional
-    @Scheduled(fixedDelayString = "${service.tracker.announce-flush-interval}")
+    @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
