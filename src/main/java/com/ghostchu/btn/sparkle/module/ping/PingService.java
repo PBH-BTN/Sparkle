@@ -1,7 +1,6 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
-import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
@@ -34,7 +33,6 @@ import org.springframework.stereotype.Service;
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Data
@@ -158,17 +156,12 @@ public class PingService {
 
     @Cacheable({"btnRule#60000"})
     public BtnRule generateBtnRule() {
-        List<String> analysedRules = new ArrayList<>(analyseService.getUntrustedIPAddresses().stream()
-                .map(AnalysedRule::getIp).toList());
-//        analysedRules.addAll(analyseService.getOverDownloadIPAddresses().stream()
-//                .map(AnalysedRule::getIp).toList());
-//        analysedRules.addAll(analyseService.getHighRiskIps().stream()
-//                .map(AnalysedRule::getIp).toList());
-//        analysedRules.addAll(analyseService.getHighRiskIPV6Identity().stream()
-//                .map(AnalysedRule::getIp).toList());
-        var ipsMerged = iPMerger.merge(analysedRules.stream().distinct().sorted().collect(Collectors.toList()));
-        List<RuleDto> rules = new LinkedList<>(ruleService.getUnexpiredRules());
-        rules.addAll(ipsMerged.stream().map(ip -> new RuleDto(null, "合并规则", ip, "ip", 0L, 0L)).toList());
+        List<RuleDto> rules = new LinkedList<>();
+        rules.addAll(analyseService.getAnalysedRules()
+                .stream()
+                .map(rule -> new RuleDto(null, rule.getModule(), rule.getIp(), "ip", 0L, 0L))
+                .toList());
+        rules.addAll(ruleService.getUnexpiredRules());
         meterRegistry.gauge("sparkle_ping_rules", rules.size());
         return new BtnRule(rules);
     }
