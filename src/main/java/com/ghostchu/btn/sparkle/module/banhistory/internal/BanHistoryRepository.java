@@ -14,15 +14,16 @@ import java.util.List;
 @Repository
 public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory, Long> {
     @Query("""
-                SELECT DISTINCT ban.peerIp FROM BanHistory ban
-                WHERE
-                    ban.module LIKE '%ProgressCheatBlocker%'
-                    AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
-                GROUP BY ban.peerIp
-                HAVING COUNT (DISTINCT ban.userApplication.appId) >= ?3
+                SELECT DISTINCT ban.peerIp
+                       FROM BanHistory ban
+                       WHERE
+                            ban.module LIKE '%ProgressCheatBlocker%'
+                            AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
+                       GROUP BY ban.peerIp, time_bucket(?4, ban.insertTime)
+                       HAVING COUNT(DISTINCT ban.userApplication.appId) >= ?3
             """)
     @Transactional
-    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold);
+    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold, String timeBucket);
 
     Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, Pageable pageable);
 
