@@ -52,6 +52,8 @@ public class AnalyseService {
     private long highRiskIpv6IdentityOffset;
     @Value("${analyse.ipv6.prefix-length}")
     private int ipv6ConvertToPrefixLength;
+    @Value("${analyse.highriskips.traffic-from-peer-less-than}")
+    private long trafficFromPeerLessThan;
     @Autowired
     private AnalysedRuleRepository analysedRuleRepository;
     @PersistenceContext
@@ -110,18 +112,21 @@ public class AnalyseService {
         list.addAll(banHistoryRepository
                 .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
+                .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
                 .toList());
         list.addAll(banHistoryRepository
                 .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 3.00", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
+                .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
                 .toList());
         list.addAll(banHistoryRepository
                 .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
                 .stream()
+                .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                 .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                 .distinct()
                 .toList());
