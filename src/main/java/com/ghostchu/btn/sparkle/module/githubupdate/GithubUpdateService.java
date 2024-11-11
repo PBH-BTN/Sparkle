@@ -22,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.StringJoiner;
+import java.util.function.Supplier;
 
 @Service
 @Slf4j
@@ -57,17 +58,16 @@ public class GithubUpdateService {
             throw new IllegalArgumentException("Organization " + orgName + " not found");
         }
         var repository = organization.getRepository(repoName);
-        updateFile(repository, "untrusted-ips.txt", generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "high-risk-ips.txt", generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "overdownload-ips.txt", generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "strange_ipv6_block.txt", generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
-        //updateFile(repository, "random-peerid.txt", generateGopeedDev().getBytes(StandardCharsets.UTF_8));
-        //updateFile(repository, "hp_torrent.txt", generateHpTorrents().getBytes(StandardCharsets.UTF_8));
-        //updateFile(repository, "dt_torrent.txt", generateDtTorrents().getBytes(StandardCharsets.UTF_8));
-        //updateFile(repository, "go.torrent dev 20181121.txt", generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
-        updateFile(repository, "0xde-0xad-0xbe-0xef.txt", generateDeadBeef().getBytes(StandardCharsets.UTF_8));
-        //updateFile(repository, "123pan.txt", generate123pan().getBytes(StandardCharsets.UTF_8));
-
+        updateFile(repository, "untrusted-ips.txt", () -> generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "high-risk-ips.txt", () -> generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "overdownload-ips.txt", () -> generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "strange_ipv6_block.txt", () -> generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "random-peerid.txt", () -> generateGopeedDev().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "hp_torrent.txt", () -> generateHpTorrents().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "dt_torrent.txt", () -> generateDtTorrents().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "go.torrent dev 20181121.txt", () -> generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "0xde-0xad-0xbe-0xef.txt", () -> generateDeadBeef().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "123pan.txt", () -> generate123pan().getBytes(StandardCharsets.UTF_8));
     }
 
     private String generateUntrustedIps() {
@@ -105,7 +105,7 @@ public class GithubUpdateService {
     private String generateGopeedDev() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "%Gopeed dev%",
+                        "Gopeed dev%",
                         pastTimestamp(),
                         nowTimestamp()
                 ).stream()
@@ -135,7 +135,7 @@ public class GithubUpdateService {
     private String generateDeadBeef() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "%ޭ__%",
+                        "ޭ__%",
                         pastTimestamp(),
                         nowTimestamp()
                 )
@@ -195,11 +195,11 @@ public class GithubUpdateService {
         return strJoiner.toString();
     }
 
-    private void updateFile(GHRepository repository, String file, byte[] content) {
+    private void updateFile(GHRepository repository, String file, Supplier<byte[]> contentSupplier) {
         try {
             var oldFile = repository.getFileContent(file);
             var sha = oldFile != null ? oldFile.getSha() : null;
-
+            var content = contentSupplier.get();
             if (oldFile != null) {
                 @Cleanup
                 var is = oldFile.read();
