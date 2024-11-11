@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -71,7 +72,7 @@ public class AnalyseService {
                                 TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
                                 OffsetDateTime.now(),
                                 untrustedIpAddressGenerateThreshold,
-                                "30 minutes"
+                                Duration.ofMinutes(30)
                         )
                         .stream()
                         .map(IPUtil::toString)

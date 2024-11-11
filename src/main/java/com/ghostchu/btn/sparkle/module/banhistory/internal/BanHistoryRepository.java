@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.net.InetAddress;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -23,7 +24,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                        HAVING COUNT(DISTINCT ban.userApplication.appId) >= ?3
             """)
     @Transactional
-    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold, String timeBucket);
+    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold, Duration timeBucket);
 
     Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, Pageable pageable);
 
