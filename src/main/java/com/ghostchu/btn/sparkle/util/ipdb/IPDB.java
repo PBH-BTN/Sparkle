@@ -100,6 +100,7 @@ public class IPDB implements AutoCloseable {
 
     }
 
+
     private void queryGeoCN(InetAddress address, IPGeoData geoData) {
         try {
             CNLookupResult cnLookupResult = geoCN.get(address, CNLookupResult.class);
@@ -128,6 +129,9 @@ public class IPDB implements AutoCloseable {
             geoData.setCityCnDistricts(cnLookupResult.getDistricts());
             if (cnLookupResult.getNet() != null && !cnLookupResult.getNet().isBlank()) {
                 geoData.setNetType(cnLookupResult.getNet());
+            }
+            if (cnLookupResult.getIsp() != null && !cnLookupResult.getIsp().isBlank()) {
+                geoData.setIsp(cnLookupResult.getIsp());
             }
         } catch (Exception e) {
             log.error("Unable to execute IPDB query", e);

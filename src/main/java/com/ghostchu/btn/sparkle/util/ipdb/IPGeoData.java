@@ -20,4 +20,5 @@ public class IPGeoData implements Serializable {
     private String asNetworkIpAddress;
     private Integer asNetworkPrefixLength;
     private String netType;
+    private String isp;
 }
