@@ -10,6 +10,7 @@ import com.ghostchu.btn.sparkle.module.snapshot.SnapshotService;
 import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.user.UserService;
+import com.ghostchu.btn.sparkle.module.user.internal.UserRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,9 +28,10 @@ public class IndexController extends SparkleController {
     private final SnapshotService snapshotService;
     private final ClientDiscoveryService clientDiscoveryService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     public IndexController(BanHistoryRepository banHistoryRepository, SnapshotRepository snapshotRepository,
-                           ClientDiscoveryRepository clientDiscoveryRepository, TrackedPeerRepository trackedPeerRepository, BanHistoryService banHistoryService, SnapshotService snapshotService, ClientDiscoveryService clientDiscoveryService, UserService userService) {
+                           ClientDiscoveryRepository clientDiscoveryRepository, TrackedPeerRepository trackedPeerRepository, BanHistoryService banHistoryService, SnapshotService snapshotService, ClientDiscoveryService clientDiscoveryService, UserService userService, UserRepository userRepository) {
         super();
         this.banHistoryRepository = banHistoryRepository;
         this.snapshotRepository = snapshotRepository;
@@ -39,6 +41,12 @@ public class IndexController extends SparkleController {
         this.snapshotService = snapshotService;
         this.clientDiscoveryService = clientDiscoveryService;
         this.userService = userService;
+        this.userRepository = userRepository;
+    }
+
+    @GetMapping("/healthcheck")
+    public String healthCheck() {
+        return "OK";
     }
 
     @GetMapping("/")
