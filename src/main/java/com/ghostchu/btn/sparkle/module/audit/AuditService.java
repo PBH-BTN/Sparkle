@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,17 @@ import java.util.concurrent.TimeUnit;
 public class AuditService {
     private final AuditRepository auditRepository;
     private final Deque<Audit> auditQueue = new ConcurrentLinkedDeque<>();
+    @Value("${analyse.audit.enable}")
+    private boolean useAudit;
 
     public AuditService(AuditRepository auditRepository) {
         this.auditRepository = auditRepository;
     }
 
     public void log(HttpServletRequest req, String action, boolean success, Map<String, Object> node) {
+        if (!useAudit) {
+            return;
+        }
         auditQueue.add(new Audit(null, OffsetDateTime.now(), IPUtil.toInet(ServletUtil.getIP(req)), action, success, getHeaders(req), node));
     }
 
