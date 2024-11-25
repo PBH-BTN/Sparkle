@@ -94,6 +94,11 @@ public class GzipBodyDecompressFilter implements Filter {
         private static final byte GZIP_ID2 = (byte) 0x8b;
 
         /**
+         * Maximum uncompressed size to prevent zip bomb
+         */
+        private static final long MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 200MB
+
+        /**
          * Return decompression input stream if needed.
          *
          * @param input
@@ -112,9 +117,48 @@ public class GzipBodyDecompressFilter implements Filter {
 
             if (signature[0] == GZIP_ID1 && signature[1] == GZIP_ID2)
             {
-                return new GZIPInputStream(pushbackInput);
+                return new MonitoredGZIPInputStream(pushbackInput, MAX_UNCOMPRESSED_SIZE);
             }
             return pushbackInput;
+        }
+
+        /**
+         * A GZIPInputStream that monitors the total number of bytes read
+         * and throws an exception if the size exceeds a specified limit.
+         */
+        private static class MonitoredGZIPInputStream extends GZIPInputStream {
+            private final long maxSize;
+            private long totalRead;
+
+            public MonitoredGZIPInputStream(InputStream in, long maxSize) throws IOException {
+                super(in);
+                this.maxSize = maxSize;
+                this.totalRead = 0;
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                int bytesRead = super.read(b, off, len);
+                if (bytesRead > 0) {
+                    totalRead += bytesRead;
+                    if (totalRead > maxSize) {
+                        throw new IOException("Uncompressed data exceeds the maximum allowed size of " + maxSize + " bytes.");
+                    }
+                }
+                return bytesRead;
+            }
+
+            @Override
+            public int read() throws IOException {
+                int byteRead = super.read();
+                if (byteRead != -1) {
+                    totalRead++;
+                    if (totalRead > maxSize) {
+                        throw new IOException("Uncompressed data exceeds the maximum allowed size of " + maxSize + " bytes.");
+                    }
+                }
+                return byteRead;
+            }
         }
     }
 }
