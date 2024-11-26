@@ -12,6 +12,7 @@ import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,6 +92,7 @@ public class TrackerService {
 
     @Modifying
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
+    @Transactional
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
