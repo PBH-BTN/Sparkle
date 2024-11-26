@@ -1,6 +1,5 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
-import com.ghostchu.btn.sparkle.util.ipdb.IPGeoData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +22,5 @@ public class PeerRegister {
     private PeerEvent lastEvent;
     private String userAgent;
     private long lastTimeSeen;
-    private IPGeoData geoIP;
     private short numWant;
 }

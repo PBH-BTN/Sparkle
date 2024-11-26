@@ -1,7 +1,6 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 
-import com.ghostchu.btn.sparkle.util.ipdb.IPGeoData;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,15 +18,13 @@ import java.util.stream.Collectors;
 @Service
 public class TrackerStorage {
     private final long inactiveInterval;
-    private final long peersReturn;
-    private Cache<byte[], Cache<byte[], PeerRegister>> MEMORY_TRACKER_ENGINE;
+    private final Cache<byte[], Cache<byte[], PeerRegister>> MEMORY_TRACKER_ENGINE;
 
     public TrackerStorage(
             @Value("${service.tracker.inactive-interval}") long inactiveInterval,
             @Value("${service.tracker.max-peers-return}") long maxPeersReturn
     ) {
         this.inactiveInterval = inactiveInterval;
-        this.peersReturn = maxPeersReturn;
         MEMORY_TRACKER_ENGINE = CacheBuilder.newBuilder()
                 .expireAfterAccess(inactiveInterval, TimeUnit.MILLISECONDS)
                 .build();
@@ -45,7 +42,6 @@ public class TrackerStorage {
             PeerEvent lastEvent,
             String userAgent,
             long lastTimeSeen,
-            IPGeoData geoIP,
             short numWant
     ) throws ExecutionException {
         Cache<byte[], PeerRegister> activePeers = MEMORY_TRACKER_ENGINE.getIfPresent(infoHash);
@@ -55,6 +51,14 @@ public class TrackerStorage {
                     .expireAfterWrite(inactiveInterval, TimeUnit.MILLISECONDS)
                     .build();
             MEMORY_TRACKER_ENGINE.put(infoHash, activePeers);
+        }
+        // check if same ip register more than 3 peers, if so, remove the oldest one
+        if (activePeers.asMap().values().stream().filter(peerRegister -> peerRegister.getPeerIp().equals(peerIp)).count() > 3) {
+            Cache<byte[], PeerRegister> finalActivePeers = activePeers;
+            activePeers.asMap().entrySet().stream()
+                    .filter(entry -> entry.getValue().getPeerIp().equals(peerIp))
+                    .min((entry1, entry2) -> (int) (entry1.getValue().getLastTimeSeen() - entry2.getValue().getLastTimeSeen()))
+                    .ifPresent(entry -> finalActivePeers.invalidate(entry.getKey()));
         }
         PeerRegister peerRegister = new PeerRegister(
                 reqIp,
@@ -69,7 +73,6 @@ public class TrackerStorage {
                 lastEvent,
                 userAgent,
                 lastTimeSeen,
-                geoIP,
                 numWant
         );
         PeerRegister lookup = activePeers.get(peerId, () -> peerRegister);
@@ -100,12 +103,17 @@ public class TrackerStorage {
         Cache<byte[], PeerRegister> activePeers = MEMORY_TRACKER_ENGINE.getIfPresent(infoHash);
         if (activePeers != null) {
             activePeers.invalidate(peerId);
+            if (activePeers.size() == 0) {
+                MEMORY_TRACKER_ENGINE.invalidate(infoHash);
+            }
         }
     }
 
     public void cleanup() {
         MEMORY_TRACKER_ENGINE.cleanUp();
         MEMORY_TRACKER_ENGINE.asMap().values().forEach(Cache::cleanUp);
+        // Remove all values that Cache.size == 0
+        MEMORY_TRACKER_ENGINE.asMap().entrySet().removeIf(entry -> entry.getValue().size() == 0);
     }
 
     public long torrentsCount() {

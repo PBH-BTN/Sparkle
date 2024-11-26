@@ -139,7 +139,6 @@ public class TrackerService {
                         announce.peerEvent(),
                         announce.userAgent(),
                         System.currentTimeMillis(),
-                        geoIPManager.geoData(announce.peerIp()),
                         (short) announce.numWant()
                 );
             }
