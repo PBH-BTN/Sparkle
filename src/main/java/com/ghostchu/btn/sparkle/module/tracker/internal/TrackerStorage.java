@@ -51,8 +51,8 @@ public class TrackerStorage {
                     .build();
             MEMORY_TRACKER_ENGINE.put(infoHash, activePeers);
         }
-        // check if same ip register more than 3 peers, if so, remove the oldest one
-        if (activePeers.asMap().values().stream().filter(peerRegister -> Arrays.equals(peerRegister.getPeerIp(), peerIp.getAddress())).count() > 3) {
+        // check if same ip register more than 16 peers, if so, remove the oldest one
+        if (activePeers.asMap().values().stream().filter(peerRegister -> Arrays.equals(peerRegister.getPeerIp(), peerIp.getAddress())).count() > 6) {
             Cache<byte[], PeerRegister> finalActivePeers = activePeers;
             activePeers.asMap().entrySet().stream()
                     .filter(entry -> Arrays.equals(entry.getValue().getPeerIp(), peerIp.getAddress()))

@@ -125,6 +125,9 @@ public class TrackerService {
                     Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
                     Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
             )).increment();
+            if (announce.peerIp().isSiteLocalAddress() || announce.peerIp().isLoopbackAddress() || announce.peerIp().isAnyLocalAddress()) {
+                return;
+            }
             if (announce.peerEvent() == PeerEvent.STOPPED) {
                 trackerStorage.unregisterPeer(announce.infoHash(), announce.peerId());
             } else {
