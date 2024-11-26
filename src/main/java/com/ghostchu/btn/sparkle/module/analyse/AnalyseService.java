@@ -187,17 +187,19 @@ public class AnalyseService {
     public void cronUpdateOverDownload() {
         var query = entityManager.createNativeQuery("""
                 WITH LatestSnapshots AS (
-                    SELECT
+                    SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
                         s.id,
                         s.torrent,
                         s.peer_ip,
                         s.user_application,
                         s.to_peer_traffic,
-                        ROW_NUMBER() OVER (PARTITION BY s.torrent, s.peer_ip, s.user_application ORDER BY s.last_time_seen DESC) AS rn
+                        s.last_time_seen
                     FROM
                         public.peer_history s
                     WHERE
-                        s.last_time_seen >= ?
+                        s.last_time_seen >= ? AND s.to_peer_traffic > 0
+                    ORDER BY
+                        s.torrent, s.peer_ip, s.user_application, s.last_time_seen DESC
                 ),
                 AggregatedUploads AS (
                     SELECT
@@ -206,11 +208,8 @@ public class AnalyseService {
                         SUM(ls.to_peer_traffic) AS total_uploaded
                     FROM
                         LatestSnapshots ls
-                    WHERE
-                        ls.rn = 1
                     GROUP BY
-                        ls.torrent,
-                        ls.peer_ip
+                        ls.torrent, ls.peer_ip
                     HAVING
                         SUM(ls.to_peer_traffic) > 0
                 )
@@ -225,9 +224,10 @@ public class AnalyseService {
                 JOIN
                     public.torrent t ON au.torrent = t.id
                 WHERE
-                    au.total_uploaded > t.size * ? AND t.size::float > 0
+                    t.size::float > 0 AND au.total_uploaded > t.size::float * ?
                 ORDER BY
                     upload_percentage DESC;
+                
                 """);
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
         query.setParameter(2, overDownloadGenerateThreshold);
