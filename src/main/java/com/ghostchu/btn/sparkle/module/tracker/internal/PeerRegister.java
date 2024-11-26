@@ -4,15 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.net.InetAddress;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class PeerRegister {
-    private InetAddress reqIp;
+public final class PeerRegister {
+    //    private InetAddress reqIp;
     private byte[] peerId;
-    private InetAddress peerIp;
+    private byte[] peerIp;
     private int peerPort;
     private long uploadedOffset;
     private long uploaded;
