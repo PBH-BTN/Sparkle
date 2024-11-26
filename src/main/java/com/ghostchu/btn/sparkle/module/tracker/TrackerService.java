@@ -1,6 +1,5 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerRegister;
@@ -12,7 +11,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import jakarta.transaction.Transactional;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -119,7 +117,7 @@ public class TrackerService {
         }
     }
 
-    @SneakyThrows(value = JsonProcessingException.class)
+    //@SneakyThrows(value = JsonProcessingException.class)
     public void executeAnnounce(PeerAnnounce announce) {
         try {
             semaphore.acquire();
