@@ -86,7 +86,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
         analysedRuleRepository.saveAll(untrustedIps);
-        log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps, System.currentTimeMillis() - startAt);
+        log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps.size(), System.currentTimeMillis() - startAt);
     }
 
     @Transactional
@@ -141,7 +141,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
         meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
         analysedRuleRepository.saveAll(highRiskIps);
-        log.info("High risk IPs: {}, tooked {} ms", highRiskIps, System.currentTimeMillis() - startAt);
+        log.info("High risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
     }
 
     public List<AnalysedRule> getHighRiskIps() {
@@ -181,7 +181,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
         meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
         analysedRuleRepository.saveAll(ips);
-        log.info("High risk IPV6 identity: {}, tooked {} ms", ips, System.currentTimeMillis() - startAt);
+        log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
     }
 
     public List<AnalysedRule> getHighRiskIPV6Identity() {
@@ -251,7 +251,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
         meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
         analysedRuleRepository.saveAll(rules);
-        log.info("Over download IPs: {}, tooked {} ms", rules, System.currentTimeMillis() - startAt);
+        log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
     }
 
 //
