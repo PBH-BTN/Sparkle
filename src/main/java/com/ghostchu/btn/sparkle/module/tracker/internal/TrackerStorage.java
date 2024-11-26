@@ -103,6 +103,11 @@ public class TrackerStorage {
         }
     }
 
+    public void cleanup() {
+        MEMORY_TRACKER_ENGINE.cleanUp();
+        MEMORY_TRACKER_ENGINE.asMap().values().forEach(Cache::cleanUp);
+    }
+
     public long torrentsCount() {
         return MEMORY_TRACKER_ENGINE.size();
     }

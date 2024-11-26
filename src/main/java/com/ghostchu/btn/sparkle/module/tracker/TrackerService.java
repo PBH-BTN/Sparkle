@@ -75,11 +75,10 @@ public class TrackerService {
         log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
-//    @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
-//    public void cleanup() {
-//        var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
-//        log.info("已清除 {} 个不活跃的 Peers", count);
-//    }
+    @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
+    public void cleanup() {
+        trackerStorage.cleanup();
+    }
 
     public void scheduleAnnounce(PeerAnnounce announce) {
         // announceDeque.offer(announce);
