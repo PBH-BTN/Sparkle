@@ -9,7 +9,6 @@ import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -92,7 +91,6 @@ public class TrackerController extends SparkleController {
 
     @GetMapping("/tracker/announce")
     @ResponseBody
-    @Transactional
     @Lock(LockModeType.WRITE)
     public byte[] announceForward() {
         return announce();
@@ -100,7 +98,6 @@ public class TrackerController extends SparkleController {
 
     @GetMapping("/announce")
     @ResponseBody
-    @Transactional
     @Lock(LockModeType.WRITE)
     public byte[] announce() {
         tickMetrics("announce_req", 1);

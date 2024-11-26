@@ -12,7 +12,6 @@ import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
-import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,7 +71,6 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
-    @Transactional
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
@@ -82,7 +80,6 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
-    @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
         log.info("已清除 {} 个不活跃的 Peers", count);
@@ -93,7 +90,6 @@ public class TrackerService {
     }
 
     @Modifying
-    @Transactional
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
