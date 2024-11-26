@@ -70,8 +70,8 @@ public class TrackerStorage {
                 downloadedOffset,
                 0L,
                 left,
-                lastEvent,
-                userAgent,
+                //lastEvent,
+                //userAgent,
                 lastTimeSeen,
                 numWant
         );

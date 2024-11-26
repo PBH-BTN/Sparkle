@@ -19,8 +19,8 @@ public class PeerRegister {
     private long downloadedOffset;
     private long downloaded;
     private long left;
-    private PeerEvent lastEvent;
-    private String userAgent;
+    //private PeerEvent lastEvent;
+    //private String userAgent;
     private long lastTimeSeen;
     private short numWant;
 }
