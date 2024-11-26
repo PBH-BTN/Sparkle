@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.Lock;
@@ -29,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class AnalyseService {
     private static final String UNTRUSTED_IP = "不受信任 IP 地址";
@@ -67,6 +69,7 @@ public class AnalyseService {
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
     public void cronUntrustedIPAddresses() {
+        var startAt = System.currentTimeMillis();
         var list = ipMerger.merge(banHistoryRepository
                         .generateUntrustedIPAddresses(
                                 TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
@@ -83,6 +86,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
         analysedRuleRepository.saveAll(untrustedIps);
+        log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps, System.currentTimeMillis() - startAt);
     }
 
     @Transactional
@@ -103,6 +107,7 @@ public class AnalyseService {
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() {
+        var startAt = System.currentTimeMillis();
         Set<IPAddress> list =
                 new HashSet<>(banHistoryRepository
                         .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
@@ -136,6 +141,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
         meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
         analysedRuleRepository.saveAll(highRiskIps);
+        log.info("High risk IPs: {}, tooked {} ms", highRiskIps, System.currentTimeMillis() - startAt);
     }
 
     public List<AnalysedRule> getHighRiskIps() {
@@ -147,6 +153,7 @@ public class AnalyseService {
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
     public void cronHighRiskIPV6Identity() {
+        var startAt = System.currentTimeMillis();
         Set<IPAddress> list = new HashSet<>();
         banHistoryRepository.findByPeerIp(
                         "%::1",
@@ -174,6 +181,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
         meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
         analysedRuleRepository.saveAll(ips);
+        log.info("High risk IPV6 identity: {}, tooked {} ms", ips, System.currentTimeMillis() - startAt);
     }
 
     public List<AnalysedRule> getHighRiskIPV6Identity() {
@@ -185,6 +193,7 @@ public class AnalyseService {
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() {
+        var startAt = System.currentTimeMillis();
         var query = entityManager.createNativeQuery("""
                 WITH LatestSnapshots AS (
                     SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
@@ -242,6 +251,7 @@ public class AnalyseService {
         analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
         meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
         analysedRuleRepository.saveAll(rules);
+        log.info("Over download IPs: {}, tooked {} ms", rules, System.currentTimeMillis() - startAt);
     }
 
 //
