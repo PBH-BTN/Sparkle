@@ -13,7 +13,6 @@ import io.micrometer.core.instrument.Tag;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -83,7 +82,8 @@ public class TrackerService {
 //    }
 
     public void scheduleAnnounce(PeerAnnounce announce) {
-        announceDeque.offer(announce);
+        // announceDeque.offer(announce);
+        executeAnnounce(announce);
     }
 
     @Modifying
@@ -153,7 +153,7 @@ public class TrackerService {
         }
     }
 
-    @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
+    // @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
         peersFetchCounter.increment();
         List<Peer> v4 = new LinkedList<>();
@@ -177,7 +177,7 @@ public class TrackerService {
     }
 
 
-    @Cacheable(value = {"scrape#60000"}, key = "#torrentInfoHash")
+    //  @Cacheable(value = {"scrape#60000"}, key = "#torrentInfoHash")
     public ScrapeResponse scrape(byte[] torrentInfoHash) {
         scrapeCounter.increment();
         long seeders = 0;

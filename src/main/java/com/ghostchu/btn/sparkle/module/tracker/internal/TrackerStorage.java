@@ -33,7 +33,7 @@ public class TrackerStorage {
                 .build();
     }
 
-    public Map<byte[], PeerRegister> announce(
+    public void announce(
             byte[] infoHash,
             InetAddress reqIp,
             byte[] peerId,
@@ -78,7 +78,7 @@ public class TrackerStorage {
         activePeers.put(peerId, lookup);
         //return activePeers.asMap();
         //return a map with peersReturn number of peers (random order)
-        return getRandomElements(activePeers.asMap(), Math.min(numWant, (int) peersReturn));
+        // return getRandomElements(activePeers.asMap(), Math.min(numWant, (int) peersReturn));
     }
 
     public Map<byte[], PeerRegister> getPeers(byte[] infoHash) {
