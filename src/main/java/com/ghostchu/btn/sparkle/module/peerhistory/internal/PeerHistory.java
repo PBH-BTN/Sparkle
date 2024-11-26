@@ -11,13 +11,6 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "peer_history",
         indexes = {@Index(columnList = "insertTime DESC")
-                , @Index(columnList = "userApplication")
-                , @Index(columnList = "peerId")
-                , @Index(columnList = "peerClientName")
-                , @Index(columnList = "torrent")
-                , @Index(columnList = "peerIp")
-                , @Index(columnList = "peerIp, torrent")
-                , @Index(columnList = "peerIp, torrent, to_peer_traffic")
                 , @Index(columnList = "torrent, peerIp, userApplication, insertTime DESC")
                 , @Index(columnList = "lastTimeSeen DESC, torrent, peerIp, userApplication, toPeerTraffic")})
 @AllArgsConstructor
