@@ -222,8 +222,9 @@ public class TrackerService {
             PeerEvent peerEvent,
             String userAgent,
             boolean supportCrypto, String key, long corrupt, long redundant,
-            String trackerId, long cryptoPort, boolean hide, long azudp, long azhttp,
-            boolean azq, String azver, long azup, String azas, String aznp, long numWant) implements Serializable {
+            String trackerId, long cryptoPort, boolean hide,
+            //long azudp, long azhttp, boolean azq, String azver, long azup, String azas, String aznp,
+            long numWant) implements Serializable {
 
     }
 

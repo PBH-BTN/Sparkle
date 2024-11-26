@@ -143,18 +143,18 @@ public class TrackerController extends SparkleController {
         boolean requireCrypto = "1".equals(req.getParameter("requirecrypto"));
         boolean supportCrypto = "1".equals(req.getParameter("supportcrypto"));
         long cryptoPort = parseIntIfAvailable(req.getParameter("cryptoport"));
-        long azudp = parseIntIfAvailable(req.getParameter("azudp"));
+//        long azudp = parseIntIfAvailable(req.getParameter("azudp"));
         boolean hide = "1".equals(req.getParameter("hide")); // BitComet extension for no incoming connection
-        long azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
+//       long azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
         long corrupt = parseIntIfAvailable(req.getParameter("corrupt"));
         String trackerId = req.getParameter("tracker_id");
-        boolean azq = "1".equals(req.getParameter("azq"));
+//        boolean azq = "1".equals(req.getParameter("azq"));
         boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
         String key = ByteUtil.filterUTF8(req.getParameter("key"));
-        String azver = ByteUtil.filterUTF8(req.getParameter("azver"));
-        long azup = parseIntIfAvailable(req.getParameter("azup"));
-        String azas = ByteUtil.filterUTF8(req.getParameter("azas"));
-        String aznp = ByteUtil.filterUTF8(req.getParameter("aznp"));
+//        String azver = ByteUtil.filterUTF8(req.getParameter("azver"));
+//        long azup = parseIntIfAvailable(req.getParameter("azup"));
+//        String azas = ByteUtil.filterUTF8(req.getParameter("azas"));
+//        String aznp = ByteUtil.filterUTF8(req.getParameter("aznp"));
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
         var reqIpInetAddress = IPUtil.toInet(ip(req));
         List<InetAddress> peerIps = getPossiblePeerIps(req)
@@ -172,33 +172,35 @@ public class TrackerController extends SparkleController {
 //        }
 
         for (InetAddress ip : peerIps) {
-            trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
-                    infoHash,
-                    peerId,
-                    reqIpInetAddress,
-                    ip,
-                    port,
-                    uploaded,
-                    downloaded,
-                    left,
-                    peerEvent,
-                    ua(req),
-                    requireCrypto || supportCrypto,
-                    key,
-                    corrupt,
-                    -1,
-                    trackerId,
-                    cryptoPort,
-                    hide,
-                    azudp,
-                    azhttp,
-                    azq,
-                    azver,
-                    azup,
-                    azas,
-                    aznp,
-                    numWant
-            ));
+            if (!hide) {
+                trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
+                        infoHash,
+                        peerId,
+                        reqIpInetAddress,
+                        ip,
+                        port,
+                        uploaded,
+                        downloaded,
+                        left,
+                        peerEvent,
+                        ua(req),
+                        requireCrypto || supportCrypto,
+                        key,
+                        corrupt,
+                        -1,
+                        trackerId,
+                        cryptoPort,
+                        hide,
+                        // azudp,
+                        // azhttp,
+                        //  azq,
+                        // azver,
+                        //  azup,
+                        //  azas,
+                        //  aznp,
+                        numWant
+                ));
+            }
         }
         TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
