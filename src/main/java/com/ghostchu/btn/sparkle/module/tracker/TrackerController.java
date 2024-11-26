@@ -92,14 +92,14 @@ public class TrackerController extends SparkleController {
     @GetMapping("/tracker/announce")
     @ResponseBody
     @Lock(LockModeType.WRITE)
-    public byte[] announceForward() {
+    public byte[] announceForward() throws UnknownHostException {
         return announce();
     }
 
     @GetMapping("/announce")
     @ResponseBody
     @Lock(LockModeType.WRITE)
-    public byte[] announce() {
+    public byte[] announce() throws UnknownHostException {
         tickMetrics("announce_req", 1);
         if (req.getQueryString() == null) {
             tickMetrics("announce_req_fails", 1);
