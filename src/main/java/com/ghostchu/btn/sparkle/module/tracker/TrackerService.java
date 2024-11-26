@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -152,7 +153,7 @@ public class TrackerService {
     }
 
     // @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
-    public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
+    public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) throws UnknownHostException {
         peersFetchCounter.increment();
         List<Peer> v4 = new LinkedList<>();
         List<Peer> v6 = new LinkedList<>();
@@ -160,9 +161,10 @@ public class TrackerService {
         int leechers = 0;
         long downloaded = 0;
         for (Map.Entry<byte[], PeerRegister> peer : trackerStorage.getPeers(torrentInfoHash).entrySet()) {
-            if (peer.getValue().getPeerIp() instanceof Inet4Address ipv4) {
+            var inet = InetAddress.getByAddress(peer.getValue().getPeerIp());
+            if (inet instanceof Inet4Address ipv4) {
                 v4.add(new Peer(ipv4.getHostAddress(), peer.getValue().getPeerPort(), peer.getKey()));
-            } else if (peer.getValue().getPeerIp() instanceof Inet6Address ipv6) {
+            } else if (inet instanceof Inet6Address ipv6) {
                 v6.add(new Peer(ipv6.getHostAddress(), peer.getValue().getPeerPort(), peer.getKey()));
             }
             if (peer.getValue().getLeft() == 0) {
