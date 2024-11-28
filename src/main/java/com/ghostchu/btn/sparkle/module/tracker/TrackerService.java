@@ -128,8 +128,8 @@ public class TrackerService {
     }
 
     @SneakyThrows(value = JsonProcessingException.class)
+    @Transactional
     public void executeAnnounce(PeerAnnounce announce) {
-
         meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
                 Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
                 Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))

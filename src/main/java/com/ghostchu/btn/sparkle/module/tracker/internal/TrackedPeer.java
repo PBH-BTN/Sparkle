@@ -60,49 +60,4 @@ public class TrackedPeer {
     @Type(JsonType.class)
     @Basic(fetch = FetchType.LAZY)
     private IPGeoData peerGeoIP;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String numWant;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String supportCrypto;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String key;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String cryptoPort;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Integer azudp;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Boolean hide;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Integer azhttp;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Long corrupt;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Long redundant;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String trackerId;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Boolean azq;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String azver;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private Integer azup;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String azas;
-    @Column
-    @Basic(fetch = FetchType.LAZY)
-    private String aznp;
 }
