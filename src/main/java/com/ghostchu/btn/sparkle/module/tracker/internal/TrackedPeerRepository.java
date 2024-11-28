@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +29,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, int limit);
 
     @Modifying
+    @Transactional
     @Query(value = """
             INSERT INTO tracker_peers (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, \
                                        torrent_info_hash, uploaded_offset, downloaded_offset, \
