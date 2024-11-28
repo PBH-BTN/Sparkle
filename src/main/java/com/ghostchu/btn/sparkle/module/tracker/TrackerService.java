@@ -87,6 +87,9 @@ public class TrackerService {
     }
 
     public void scheduleAnnounce(PeerAnnounce announce) {
+        if (announceDeque.size() > 500000) {
+            throw new RuntimeException("Server is busy! More than 500,000 announces are waiting to be processed.");
+        }
         announceDeque.offer(announce);
     }
 
@@ -109,9 +112,12 @@ public class TrackerService {
                     if (announce == null) break;
                     flushService.submit(() -> {
                         try {
+                            semaphore.acquire();
                             executeAnnounce(announce);
                         } catch (Exception e) {
                             log.warn("Unable to process the announce {}, skipping...", announce, e);
+                        } finally {
+                            semaphore.release();
                         }
                     });
                 }
@@ -123,53 +129,47 @@ public class TrackerService {
 
     @SneakyThrows(value = JsonProcessingException.class)
     public void executeAnnounce(PeerAnnounce announce) {
-        try {
-            semaphore.acquire();
-            meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
-                    Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
-                    Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
-            )).increment();
-            if (announce.peerEvent() == PeerEvent.STOPPED) {
-                trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
-                        ByteUtil.bytesToHex(announce.peerId())
-                        , ByteUtil.bytesToHex(announce.infoHash()));
-            } else {
-                trackedPeerRepository.upsertTrackedPeer(
-                        announce.reqIp(),
-                        ByteUtil.bytesToHex(announce.peerId()),
-                        ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
-                        announce.peerIp(),
-                        announce.peerPort(),
-                        ByteUtil.bytesToHex(announce.infoHash()),
-                        announce.uploaded(),
-                        announce.downloaded(),
-                        announce.left(),
-                        announce.peerEvent().ordinal(),
-                        ByteUtil.filterUTF8(announce.userAgent()),
-                        OffsetDateTime.now(),
-                        jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
-                        announce.supportCrypto(),
-                        announce.cryptoPort(),
-                        announce.key(),
-                        announce.azudp(),
-                        announce.hide(),
-                        announce.azhttp(),
-                        announce.corrupt(),
-                        announce.redundant(),
-                        announce.trackerId(),
-                        announce.azq(),
-                        announce.azver(),
-                        announce.azup(),
-                        announce.azas(),
-                        announce.aznp(),
-                        announce.numWant()
 
-                );
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            semaphore.release();
+        meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
+                Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
+                Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
+        )).increment();
+        if (announce.peerEvent() == PeerEvent.STOPPED) {
+            trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
+                    ByteUtil.bytesToHex(announce.peerId())
+                    , ByteUtil.bytesToHex(announce.infoHash()));
+        } else {
+            trackedPeerRepository.upsertTrackedPeer(
+                    announce.reqIp(),
+                    ByteUtil.bytesToHex(announce.peerId()),
+                    ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
+                    announce.peerIp(),
+                    announce.peerPort(),
+                    ByteUtil.bytesToHex(announce.infoHash()),
+                    announce.uploaded(),
+                    announce.downloaded(),
+                    announce.left(),
+                    announce.peerEvent().ordinal(),
+                    ByteUtil.filterUTF8(announce.userAgent()),
+                    OffsetDateTime.now(),
+                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
+                    announce.supportCrypto(),
+                    announce.cryptoPort(),
+                    announce.key(),
+                    announce.azudp(),
+                    announce.hide(),
+                    announce.azhttp(),
+                    announce.corrupt(),
+                    announce.redundant(),
+                    announce.trackerId(),
+                    announce.azq(),
+                    announce.azver(),
+                    announce.azup(),
+                    announce.azas(),
+                    announce.aznp(),
+                    announce.numWant()
+
+            );
         }
     }
 
