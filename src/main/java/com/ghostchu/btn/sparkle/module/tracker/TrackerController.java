@@ -46,6 +46,10 @@ public class TrackerController extends SparkleController {
     private long announceBusyRetryRandomInterval;
     @Value("${service.tracker.id}")
     private String instanceTrackerId;
+    @Value("${service.tracker.maintenance}")
+    private boolean trackerMaintenance;
+    @Value("${service.tracker.maintenance-message}")
+    private String trackerMaintenanceMessage;
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
@@ -100,6 +104,9 @@ public class TrackerController extends SparkleController {
     @ResponseBody
     @Lock(LockModeType.WRITE)
     public byte[] announce() {
+        if (trackerMaintenance) {
+            return generateFailureResponse(trackerMaintenanceMessage, 86400);
+        }
         tickMetrics("announce_req", 1);
         if (req.getQueryString() == null) {
             tickMetrics("announce_req_fails", 1);
@@ -288,6 +295,9 @@ public class TrackerController extends SparkleController {
     @GetMapping("/scrape")
     @ResponseBody
     public ResponseEntity<byte[]> scrape() {
+        if (trackerMaintenance) {
+            return ResponseEntity.ok(generateFailureResponse(trackerMaintenanceMessage, 86400));
+        }
         tickMetrics("scrape_req", 1);
         var infoHashes = extractInfoHashes(req.getQueryString());
         var map = new HashMap<>();
