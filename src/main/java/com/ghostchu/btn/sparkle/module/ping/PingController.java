@@ -214,8 +214,8 @@ public class PingController extends SparkleController {
         }
         var userAppOptional = userApplicationService.getUserApplication(cred.appId(), cred.appSecret());
         if (userAppOptional.isEmpty()) {
-            log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
-                    ip(req), cred.appId(), cred.appSecret());
+//            log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
+//                    ip(req), cred.appId(), cred.appSecret());
             throw new AccessDeniedException("UserApplication 鉴权失败：指定的用户应用程序不存在，这可能是因为：" +
                                             "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
         }
