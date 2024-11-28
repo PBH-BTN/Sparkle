@@ -26,6 +26,7 @@ public class TrackerStorage {
         MEMORY_TRACKER_ENGINE = CacheBuilder.newBuilder()
                 .maximumSize(maxTorrents)
                 .expireAfterAccess(inactiveInterval, TimeUnit.MILLISECONDS)
+                .softValues()
                 .build();
     }
 
@@ -48,6 +49,7 @@ public class TrackerStorage {
             activePeers = CacheBuilder.newBuilder()
                     .maximumSize(4096)
                     .expireAfterWrite(inactiveInterval, TimeUnit.MILLISECONDS)
+                    .softValues()
                     .build();
             MEMORY_TRACKER_ENGINE.put(infoHash, activePeers);
         }
