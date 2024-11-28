@@ -105,8 +105,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handlePeerHistories(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 PeerHistory 信息：(AppId={}, UA={})",
-                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
+//        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 PeerHistory 信息：(AppId={}, UA={})",
+//                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
         audit.put("peers_handled", handled);
         auditService.log(req, "BTN_HISTORY_SUBMIT", true, audit);
@@ -127,8 +127,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, UA={})",
-                ip(req), ping.getBans().size(), handled, cred.getAppId(), ua(req));
+//        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, UA={})",
+//                ip(req), ping.getBans().size(), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
         audit.put("bans_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
@@ -147,8 +147,8 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_CONFIG", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
-                ip(req), cred.getAppId(), ua(req));
+//        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
+//                ip(req), cred.getAppId(), ua(req));
         Map<String, Object> rootObject = new LinkedHashMap<>();
         rootObject.put("min_protocol_version", pingService.getMinProtocolVersion());
         rootObject.put("max_protocol_version", pingService.getMaxProtocolVersion());
@@ -185,13 +185,13 @@ public class PingController extends SparkleController {
         BtnRule btn = service.generateBtnRule();
         String rev = Hashing.goodFastHash(32).hashString(objectMapper.writeValueAsString(btn), StandardCharsets.UTF_8).toString();
         if (rev.equals(version)) {
-            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, AppSecret={}, UA={})",
-                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+//            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, AppSecret={}, UA={})",
+//                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
             return ResponseEntity.status(204).build();
         }
         btn.setVersion(rev);
-        log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, AppSecret={}, UA={})",
-                ip(req), version, rev, cred.getAppId(), cred.getAppSecret(), ua(req));
+//        log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, AppSecret={}, UA={})",
+//                ip(req), version, rev, cred.getAppId(), cred.getAppSecret(), ua(req));
         audit.put("from", version);
         audit.put("to", rev);
         auditService.log(req, "BTN_RULES_RETRIEVE", true, audit);

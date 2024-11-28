@@ -99,7 +99,7 @@ public class TrackerService {
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
-            log.info("Skipped this round announce flush, another task is running. ");
+            log.info("Skipped this round announce flush, another task is running. Remaining announces: {}", announceDeque.size());
             return;
         }
         try {
