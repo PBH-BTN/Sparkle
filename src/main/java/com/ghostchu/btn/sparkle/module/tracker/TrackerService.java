@@ -152,22 +152,7 @@ public class TrackerService {
                     announce.peerEvent().ordinal(),
                     ByteUtil.filterUTF8(announce.userAgent()),
                     OffsetDateTime.now(),
-                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())),
-                    announce.supportCrypto(),
-                    announce.cryptoPort(),
-                    announce.key(),
-                    announce.azudp(),
-                    announce.hide(),
-                    announce.azhttp(),
-                    announce.corrupt(),
-                    announce.redundant(),
-                    announce.trackerId(),
-                    announce.azq(),
-                    announce.azver(),
-                    announce.azup(),
-                    announce.azas(),
-                    announce.aznp(),
-                    announce.numWant()
+                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp()))
 
             );
         }

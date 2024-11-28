@@ -56,22 +56,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
                            @Param("lastEvent") int lastEvent,
                            @Param("userAgent") String userAgent,
                            @Param("lastTimeSeen") OffsetDateTime lastTimeSeen,
-                           @Param("peerGeoIP") String peerGeoIP,
-                           @Param("supportCrypto") Boolean supportCrypto, // Fixed case
-                           @Param("cryptoPort") Long cryptoPort,
-                           @Param("key") String key,
-                           @Param("azudp") Long azudp,
-                           @Param("hide") Boolean hide,
-                           @Param("azhttp") Long azhttp,
-                           @Param("corrupt") Long corrupt,
-                           @Param("redundant") Long redundant,
-                           @Param("trackerId") String trackerId, // Fixed case
-                           @Param("azq") Boolean azq,
-                           @Param("azver") String azver,
-                           @Param("azup") Long azup,
-                           @Param("azas") String azas,
-                           @Param("aznp") String aznp,
-                           @Param("numWant") long numWant);
+                           @Param("peerGeoIP") String peerGeoIP);
 
     void deleteByPk_PeerIdAndPk_TorrentInfoHash(String peerId, String infoHash);
 
