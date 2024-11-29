@@ -72,6 +72,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
+    @Transactional
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
@@ -81,6 +82,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
+    @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
         log.info("已清除 {} 个不活跃的 Peers", count);
