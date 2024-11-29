@@ -7,14 +7,12 @@ import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -95,14 +93,12 @@ public class TrackerController extends SparkleController {
 
     @GetMapping("/tracker/announce")
     @ResponseBody
-    @Lock(LockModeType.WRITE)
     public byte[] announceForward() {
         return announce();
     }
 
     @GetMapping("/announce")
     @ResponseBody
-    @Lock(LockModeType.WRITE)
     public byte[] announce() {
         if (trackerMaintenance) {
             return generateFailureResponse(trackerMaintenanceMessage, 86400);
