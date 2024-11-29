@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,6 +38,7 @@ public class AnalyseService {
     private static final String OVER_DOWNLOAD = "BTN 网络 IP 下载量分析";
     private static final String HIGH_RISK_IP = "高风险 IP 地址";
     private static final String HIGH_RISK_IPV6_IDENTITY = "高风险 IPV6 特征";
+    private final Semaphore generateParallel = new Semaphore(1);
     @Autowired
     private BanHistoryRepository banHistoryRepository;
     @Autowired
@@ -68,25 +70,30 @@ public class AnalyseService {
     @Modifying
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
-    public void cronUntrustedIPAddresses() {
-        var startAt = System.currentTimeMillis();
-        var list = ipMerger.merge(banHistoryRepository
-                        .generateUntrustedIPAddresses(
-                                TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
-                                OffsetDateTime.now(),
-                                untrustedIpAddressGenerateThreshold,
-                                Duration.ofMinutes(30)
-                        )
-                        .stream()
-                        .map(IPUtil::toString)
-                        .collect(Collectors.toList()))
-                .stream().map(IPUtil::toIPAddress)
-                .toList();
-        var untrustedIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
-        analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
-        meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
-        analysedRuleRepository.saveAll(untrustedIps);
-        log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps.size(), System.currentTimeMillis() - startAt);
+    public void cronUntrustedIPAddresses() throws InterruptedException {
+        try {
+            generateParallel.acquire();
+            var startAt = System.currentTimeMillis();
+            var list = ipMerger.merge(banHistoryRepository
+                            .generateUntrustedIPAddresses(
+                                    TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
+                                    OffsetDateTime.now(),
+                                    untrustedIpAddressGenerateThreshold,
+                                    Duration.ofMinutes(30)
+                            )
+                            .stream()
+                            .map(IPUtil::toString)
+                            .collect(Collectors.toList()))
+                    .stream().map(IPUtil::toIPAddress)
+                    .toList();
+            var untrustedIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+            analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
+            meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
+            analysedRuleRepository.saveAll(untrustedIps);
+            log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps.size(), System.currentTimeMillis() - startAt);
+        } finally {
+            generateParallel.release();
+        }
     }
 
     @Transactional
@@ -106,42 +113,47 @@ public class AnalyseService {
     @Modifying
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.highriskips.interval}")
-    public void cronHighRiskIps() {
-        var startAt = System.currentTimeMillis();
-        Set<IPAddress> list =
-                new HashSet<>(banHistoryRepository
-                        .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
-                        .stream()
-                        .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                        .distinct()
-                        .toList());
-        list.addAll(banHistoryRepository
-                .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
-                .stream()
-                .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
-                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                .distinct()
-                .toList());
-        list.addAll(banHistoryRepository
-                .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 3.00", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
-                .stream()
-                .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
-                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                .distinct()
-                .toList());
-        list.addAll(banHistoryRepository
-                .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
-                .stream()
-                .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
-                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                .distinct()
-                .toList());
-        var highRiskIps = filterIP(list).stream()
-                .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
-        analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
-        meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
-        analysedRuleRepository.saveAll(highRiskIps);
-        log.info("High risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
+    public void cronHighRiskIps() throws InterruptedException {
+        try {
+            generateParallel.acquire();
+            var startAt = System.currentTimeMillis();
+            Set<IPAddress> list =
+                    new HashSet<>(banHistoryRepository
+                            .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                            .stream()
+                            .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                            .distinct()
+                            .toList());
+            list.addAll(banHistoryRepository
+                    .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                    .stream()
+                    .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
+                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                    .distinct()
+                    .toList());
+            list.addAll(banHistoryRepository
+                    .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 3.00", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                    .stream()
+                    .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
+                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                    .distinct()
+                    .toList());
+            list.addAll(banHistoryRepository
+                    .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                    .stream()
+                    .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
+                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                    .distinct()
+                    .toList());
+            var highRiskIps = filterIP(list).stream()
+                    .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+            analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
+            meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
+            analysedRuleRepository.saveAll(highRiskIps);
+            log.info("High risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
+        } finally {
+            generateParallel.release();
+        }
     }
 
     public List<AnalysedRule> getHighRiskIps() {
@@ -152,36 +164,41 @@ public class AnalyseService {
     @Modifying
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
-    public void cronHighRiskIPV6Identity() {
-        var startAt = System.currentTimeMillis();
-        Set<IPAddress> list = new HashSet<>();
-        banHistoryRepository.findByPeerIp(
-                        "%::1",
-                        pastTimestamp(highRiskIpv6IdentityOffset),
-                        nowTimestamp()
-                )
-                .stream()
-                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                .distinct()
-                .sorted()
-                .forEach(list::add);
-        banHistoryRepository.findByPeerIp(
-                        "%::2",
-                        pastTimestamp(highRiskIpv6IdentityOffset),
-                        nowTimestamp()
-                )
-                .stream()
-                .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                .distinct()
-                .sorted()
-                .forEach(list::add);
-        var ips = filterIP(list).stream()
-                .filter(Objects::nonNull)
-                .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
-        analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
-        meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
-        analysedRuleRepository.saveAll(ips);
-        log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
+    public void cronHighRiskIPV6Identity() throws InterruptedException {
+        try {
+            generateParallel.acquire();
+            var startAt = System.currentTimeMillis();
+            Set<IPAddress> list = new HashSet<>();
+            banHistoryRepository.findByPeerIp(
+                            "%::1",
+                            pastTimestamp(highRiskIpv6IdentityOffset),
+                            nowTimestamp()
+                    )
+                    .stream()
+                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                    .distinct()
+                    .sorted()
+                    .forEach(list::add);
+            banHistoryRepository.findByPeerIp(
+                            "%::2",
+                            pastTimestamp(highRiskIpv6IdentityOffset),
+                            nowTimestamp()
+                    )
+                    .stream()
+                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                    .distinct()
+                    .sorted()
+                    .forEach(list::add);
+            var ips = filterIP(list).stream()
+                    .filter(Objects::nonNull)
+                    .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+            analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
+            meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
+            analysedRuleRepository.saveAll(ips);
+            log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
+        } finally {
+            generateParallel.release();
+        }
     }
 
     public List<AnalysedRule> getHighRiskIPV6Identity() {
@@ -192,66 +209,71 @@ public class AnalyseService {
     @Modifying
     @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.overdownload.interval}")
-    public void cronUpdateOverDownload() {
-        var startAt = System.currentTimeMillis();
-        var query = entityManager.createNativeQuery("""
-                WITH LatestSnapshots AS (
-                    SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
-                        s.id,
-                        s.torrent,
-                        s.peer_ip,
-                        s.user_application,
-                        s.to_peer_traffic,
-                        s.last_time_seen
-                    FROM
-                        public.peer_history s
-                    WHERE
-                        s.last_time_seen >= ? AND s.to_peer_traffic > 0
-                    ORDER BY
-                        s.torrent, s.peer_ip, s.user_application, s.last_time_seen DESC
-                ),
-                AggregatedUploads AS (
+    public void cronUpdateOverDownload() throws InterruptedException {
+        try {
+            generateParallel.acquire();
+            var startAt = System.currentTimeMillis();
+            var query = entityManager.createNativeQuery("""
+                    WITH LatestSnapshots AS (
+                        SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
+                            s.id,
+                            s.torrent,
+                            s.peer_ip,
+                            s.user_application,
+                            s.to_peer_traffic,
+                            s.last_time_seen
+                        FROM
+                            public.peer_history s
+                        WHERE
+                            s.last_time_seen >= ? AND s.to_peer_traffic > 0
+                        ORDER BY
+                            s.torrent, s.peer_ip, s.user_application, s.last_time_seen DESC
+                    ),
+                    AggregatedUploads AS (
+                        SELECT
+                            ls.torrent,
+                            ls.peer_ip,
+                            SUM(ls.to_peer_traffic) AS total_uploaded
+                        FROM
+                            LatestSnapshots ls
+                        GROUP BY
+                            ls.torrent, ls.peer_ip
+                        HAVING
+                            SUM(ls.to_peer_traffic) > 0
+                    )
                     SELECT
-                        ls.torrent,
-                        ls.peer_ip,
-                        SUM(ls.to_peer_traffic) AS total_uploaded
+                        au.torrent,
+                        au.peer_ip,
+                        au.total_uploaded,
+                        t.size,
+                        (au.total_uploaded / t.size::float) * 100 AS upload_percentage
                     FROM
-                        LatestSnapshots ls
-                    GROUP BY
-                        ls.torrent, ls.peer_ip
-                    HAVING
-                        SUM(ls.to_peer_traffic) > 0
-                )
-                SELECT
-                    au.torrent,
-                    au.peer_ip,
-                    au.total_uploaded,
-                    t.size,
-                    (au.total_uploaded / t.size::float) * 100 AS upload_percentage
-                FROM
-                    AggregatedUploads au
-                JOIN
-                    public.torrent t ON au.torrent = t.id
-                WHERE
-                    t.size::float > 0 AND au.total_uploaded > t.size::float * ?
-                ORDER BY
-                    upload_percentage DESC;
-                
-                """);
-        query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
-        query.setParameter(2, overDownloadGenerateThreshold);
-        List<Object[]> queryResult = query.getResultList();
-        var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1])))
-                        .collect(Collectors.toList())).stream().map(i -> new IPAddressString(i).getAddress())
-                .filter(Objects::nonNull)
-                .toList();
-        var rules = filterIP(ips).stream()
-                .map(ip -> new AnalysedRule(null, ip.toString(), OVER_DOWNLOAD,
-                        "Generated at " + MsgUtil.getNowDateTimeString())).toList();
-        analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
-        meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
-        analysedRuleRepository.saveAll(rules);
-        log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
+                        AggregatedUploads au
+                    JOIN
+                        public.torrent t ON au.torrent = t.id
+                    WHERE
+                        t.size::float > 0 AND au.total_uploaded > t.size::float * ?
+                    ORDER BY
+                        upload_percentage DESC;
+                    
+                    """);
+            query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
+            query.setParameter(2, overDownloadGenerateThreshold);
+            List<Object[]> queryResult = query.getResultList();
+            var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1])))
+                            .collect(Collectors.toList())).stream().map(i -> new IPAddressString(i).getAddress())
+                    .filter(Objects::nonNull)
+                    .toList();
+            var rules = filterIP(ips).stream()
+                    .map(ip -> new AnalysedRule(null, ip.toString(), OVER_DOWNLOAD,
+                            "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+            analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
+            meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
+            analysedRuleRepository.saveAll(rules);
+            log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
+        } finally {
+            generateParallel.release();
+        }
     }
 
 //
