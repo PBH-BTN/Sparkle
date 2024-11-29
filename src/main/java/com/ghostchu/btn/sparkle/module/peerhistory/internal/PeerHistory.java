@@ -10,9 +10,7 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "peer_history",
-        indexes = {@Index(columnList = "insertTime DESC")
-                , @Index(columnList = "torrent, peerIp, userApplication, insertTime DESC")
-                , @Index(columnList = "lastTimeSeen DESC, torrent, peerIp, userApplication, toPeerTraffic")})
+        indexes = {@Index(columnList = "lastTimeSeen DESC, torrent, peerIp, userApplication, toPeerTraffic")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
