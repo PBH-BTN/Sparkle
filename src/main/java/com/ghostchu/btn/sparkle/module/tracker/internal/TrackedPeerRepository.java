@@ -1,9 +1,7 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,7 +46,6 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             last_time_seen = EXCLUDED.last_time_seen, \
             peer_geoip = CAST(EXCLUDED.peer_geoip AS jsonb)""",
             nativeQuery = true)
-    @Lock(LockModeType.WRITE)
     void upsertTrackedPeer(@Param("reqIp") InetAddress reqIp,
                            @Param("peerId") String peerId,
                            @Param("peerIdHumanReadable") String peerIdHumanReadable,
