@@ -87,8 +87,8 @@ public class TrackerService {
     }
 
     public void scheduleAnnounce(PeerAnnounce announce) {
-        if (announceDeque.size() > 500000) {
-            throw new RuntimeException("Server is busy! More than 500,000 announces are waiting to be processed.");
+        if (announceDeque.size() > 20000) {
+            throw new RuntimeException("Server is busy! More than 20,000 announces are waiting to be processed.");
         }
         announceDeque.offer(announce);
     }
