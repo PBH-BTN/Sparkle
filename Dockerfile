@@ -1,4 +1,4 @@
-FROM docker.io/eclipse-temurin:23-jre-noble
+FROM docker.io/eclipse-temurin:23-noble
 LABEL maintainer="https://github.com/PBH-BTN/Sparkle"
 COPY target/sparkle-0.0.1-SNAPSHOT.jar /app/sparkle.jar
 USER 0
