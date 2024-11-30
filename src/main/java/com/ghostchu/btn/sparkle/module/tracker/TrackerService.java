@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -52,13 +53,14 @@ public class TrackerService {
     private final Semaphore semaphore;
     private final Deque<PeerAnnounce> announceDeque = new ConcurrentLinkedDeque<>();
     private final ReentrantLock announceFlushLock = new ReentrantLock();
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
                           @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager,
                           MeterRegistry meterRegistry, ObjectMapper jacksonObjectMapper,
-                          @Value("${service.tracker.max-parallel-announce}") int maxParallelAnnounce) {
+                          @Value("${service.tracker.max-parallel-announce}") int maxParallelAnnounce, NamedParameterJdbcTemplate jdbcTemplate) {
         this.trackedPeerRepository = trackedPeerRepository;
         this.inactiveInterval = inactiveInterval;
         this.maxPeersReturn = maxPeersReturn;
@@ -69,6 +71,7 @@ public class TrackerService {
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.jacksonObjectMapper = jacksonObjectMapper;
         this.semaphore = new Semaphore(maxParallelAnnounce);
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
@@ -158,6 +161,49 @@ public class TrackerService {
             );
         }
     }
+
+//    public void upsert(List<PeerAnnounce> rows){
+//        String nativeQuery = """
+//            INSERT INTO tracker_peers (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, \
+//                                       torrent_info_hash, uploaded_offset, downloaded_offset, \
+//                                       "left", last_event, user_agent, last_time_seen, peer_geoip) \
+//            VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, \
+//                    :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, \
+//                    :lastTimeSeen, CAST(:peerGeoIP AS jsonb)) \
+//            ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
+//            uploaded_offset = EXCLUDED.uploaded_offset, \
+//            downloaded_offset = EXCLUDED.downloaded_offset, \
+//            "left" = EXCLUDED."left", \
+//            last_event = EXCLUDED.last_event, \
+//            user_agent = EXCLUDED.user_agent, \
+//            last_time_seen = EXCLUDED.last_time_seen, \
+//            peer_geoip = CAST(EXCLUDED.peer_geoip AS jsonb)""";
+//
+//        MapSqlParameterSource[] params = rows.stream().map(announce -> {
+//            try {
+//                MapSqlParameterSource paramValues = new MapSqlParameterSource();
+//                paramValues.addValue("reqIp", announce.reqIp());
+//                paramValues.addValue("peerId", ByteUtil.bytesToHex(announce.peerId()));
+//                paramValues.addValue("peerIdHumanReadable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
+//                paramValues.addValue("peerIp", announce.peerIp());
+//                paramValues.addValue("peerPort", announce.peerPort());
+//                paramValues.addValue("torrentInfoHash", ByteUtil.bytesToHex(announce.infoHash()));
+//                paramValues.addValue("uploadedOffset", announce.uploaded());
+//                paramValues.addValue("downloadedOffset", announce.downloaded());
+//                paramValues.addValue("left", announce.left());
+//                paramValues.addValue("lastEvent", announce.peerEvent().ordinal());
+//                paramValues.addValue("userAgent", ByteUtil.filterUTF8(announce.userAgent()));
+//                paramValues.addValue("lastTimeSeen", OffsetDateTime.now());
+//                paramValues.addValue(":peerGeoIP", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
+//                return paramValues;
+//            }catch (JsonProcessingException e){
+//                return null;
+//            }
+//        }).filter(Objects::nonNull).toArray(MapSqlParameterSource[]::new);
+//
+//        jdbcTemplate.batchUpdate(nativeQuery, params);
+//
+//    }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
