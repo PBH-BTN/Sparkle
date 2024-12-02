@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +16,7 @@ public class JacksonConfig {
         SimpleModule module = new SimpleModule();
         module.addDeserializer(InetAddress.class, new InetAddressDeserializer());
         mapper.registerModule(module);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper;
     }
 }
