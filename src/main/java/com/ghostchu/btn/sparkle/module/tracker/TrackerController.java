@@ -242,23 +242,22 @@ public class TrackerController extends SparkleController {
         map.put("downloaded", peers.downloaded());
         map.put("external ip", ip(req));
         map.put("tracker id", instanceTrackerId);
-        if (compact || noPeerId) {
-            tickMetrics("announce_return_peers_format_compact", 1);
-            map.put("peers", compactPeers(peers.v4(), false));
-            if (!peers.v6().isEmpty())
-                map.put("peers6", compactPeers(peers.v6(), true));
-        } else {
-            tickMetrics("announce_return_peers_format_full", 1);
-            List<TrackerService.Peer> allPeers = new LinkedList<>(peers.v4());
-            allPeers.addAll(peers.v6());
-            map.put("peers", new HashMap<>() {{
-                for (TrackerService.Peer p : allPeers) {
-                    put("peer id", new String(p.peerId(), StandardCharsets.ISO_8859_1));
-                    put("ip", p.ip());
-                    put("port", p.port());
-                }
-            }});
-        }
+//        if (compact || noPeerId) {
+//            tickMetrics("announce_return_peers_format_compact", 1);
+//            map.put("peers", compactPeers(peers.v4(), false));
+//            if (!peers.v6().isEmpty())
+//                map.put("peers6", compactPeers(peers.v6(), true));
+//        } else {
+        tickMetrics("announce_return_peers_format_full", 1);
+        List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4());
+        allPeers.addAll(peers.v6());
+        map.put("peers", new HashMap<>() {{
+            for (TrackerService.Peer p : allPeers) {
+                put("ip", p.ip());
+                put("port", p.port());
+            }
+        }});
+        //}
         //setNextAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash), intervalMillis);
         tickMetrics("announce_req_success", 1);
         //auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));

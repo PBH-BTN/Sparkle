@@ -2,7 +2,7 @@ package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
-import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
+import com.ghostchu.btn.sparkle.module.tracker.internal.ThinTrackedPeer;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
@@ -199,12 +199,12 @@ public class TrackerService {
         int seeders = 0;
         int leechers = 0;
         long downloaded = 0;
-        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
+        for (ThinTrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
                 ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
+                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort()));
             } else if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
+                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort()));
             }
             if (peer.getLeft() == 0) {
                 seeders++;
@@ -260,8 +260,7 @@ public class TrackerService {
 
     public record Peer(
             String ip,
-            int port,
-            byte[] peerId
+            int port
     ) implements Serializable {
     }
 }
