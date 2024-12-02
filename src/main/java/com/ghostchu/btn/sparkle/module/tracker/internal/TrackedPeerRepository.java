@@ -23,7 +23,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     @Query(value = """
             with filtered_peers as (
-                                    select peer_ip, peer_port, left
+                                    select peer_ip, peer_port, "left"
                                     from tracker_peers t
                                     where t.torrent_info_hash = :torrentInfoHash
                                 )
