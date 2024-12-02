@@ -9,10 +9,12 @@ import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -69,6 +71,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
+    @Lock(LockModeType.READ)
     @Transactional
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
@@ -79,6 +82,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
@@ -172,7 +176,8 @@ public class TrackerService {
 
     @Modifying
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
-//    @Transactional
+    @Transactional
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
