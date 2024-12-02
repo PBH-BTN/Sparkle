@@ -25,7 +25,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             with filtered_peers as (
                 select *
                 from tracker_peers t
-                where t.torrent_info_hash = :torrentInfoHash and t.peer_id <> :peerId
+                where t.torrent_info_hash = :torrentInfoHash
             )
             select *
             from filtered_peers
@@ -34,7 +34,6 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             """, nativeQuery = true)
     List<TrackedPeer> fetchPeersFromTorrent(
             @Param("torrentInfoHash") String torrentInfoHash,
-            @Param("peerId") String peerId,
             @Param("limit") int limit);
 
 

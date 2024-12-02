@@ -10,6 +10,7 @@ import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -42,7 +43,9 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final ObjectMapper jacksonObjectMapper;
+    @Getter
     private final Semaphore parallelSave;
+    @Getter
     private final Semaphore parallelAnnounce;
     private final Queue<PeerAnnounce> announceDeque;
     private final ReentrantLock announceFlushLock = new ReentrantLock();
@@ -198,7 +201,7 @@ public class TrackerService {
         }
     }
 
-    @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
+    @Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) throws InterruptedException {
         parallelAnnounce.acquire();
         try {
@@ -209,7 +212,7 @@ public class TrackerService {
             int leechers = 0;
             long downloaded = 0;
             for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
-                    ByteUtil.bytesToHex(torrentInfoHash), ByteUtil.bytesToHex(peerId), Math.min(numWant, maxPeersReturn))) {
+                    ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
                 if (peer.getPeerIp() instanceof Inet4Address ipv4) {
                     v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
                 } else if (peer.getPeerIp() instanceof Inet6Address ipv6) {

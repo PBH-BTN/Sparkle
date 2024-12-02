@@ -52,6 +52,8 @@ public class TrackerController extends SparkleController {
     private MeterRegistry meterRegistry;
     @Autowired
     private StringRedisTemplate redisStringTemplate;
+    @Value("${service.tracker.max-parallel-announce-wait-queue-size}")
+    private long maxParallelAnnounceWaitQueueSize;
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
         ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
@@ -173,7 +175,10 @@ public class TrackerController extends SparkleController {
 //        if (waitMillis > 0) {
 //            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
 //        }
-
+        if (trackerService.getParallelAnnounce().getQueueLength() > maxParallelAnnounceWaitQueueSize) {
+            long retryAfterSeconds = generateRetryInterval() / 1000;
+            return generateFailureResponse("Tracker is busy and waiting queue is full, you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+        }
         for (InetAddress ip : peerIps) {
             if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
                     infoHash,
