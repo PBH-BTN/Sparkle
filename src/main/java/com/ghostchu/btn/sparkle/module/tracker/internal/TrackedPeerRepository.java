@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
@@ -16,17 +17,18 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     @Query("""
             select t from TrackedPeer t
-            where t.pk.torrentInfoHash = ?1 and t.pk.peerId <> ?2 and t.peerIp <> ?3
-            order by RANDOM() limit ?4
+            where t.pk.torrentInfoHash = ?1  and t.peerIp <> ?2
+            order by RANDOM() limit ?3
             """)
-    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, InetAddress peerIp, int limit);
+    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, InetAddress peerIp, int limit);
 
-    @Query(value = """
-            select peer_ip, peer_port, "left" from tracker_peers t
-            where t.torrent_info_hash = ?1
+    @Query("""
+            select t from TrackedPeer t
+            where t.pk.torrentInfoHash = ?1
             order by RANDOM() limit ?2
-            """, nativeQuery = true)
-    List<ThinTrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, int limit);
+            """)
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
+    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, int limit);
 
     @Modifying
     @Transactional

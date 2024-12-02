@@ -2,23 +2,21 @@ package com.ghostchu.btn.sparkle.module.tracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
-import com.ghostchu.btn.sparkle.module.tracker.internal.ThinTrackedPeer;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.LockModeType;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.net.Inet4Address;
@@ -49,6 +47,7 @@ public class TrackerService {
     private final int maxAnnounceProcessBatchSize;
 
 
+
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
                           @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager,
@@ -71,8 +70,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
-    @Lock(LockModeType.READ)
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
@@ -82,8 +80,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
         log.info("已清除 {} 个不活跃的 Peers", count);
@@ -177,7 +174,6 @@ public class TrackerService {
     @Modifying
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
     @Transactional
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
@@ -204,7 +200,7 @@ public class TrackerService {
         int seeders = 0;
         int leechers = 0;
         long downloaded = 0;
-        for (ThinTrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
+        for (var peer : trackedPeerRepository.fetchPeersFromTorrent(
                 ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
             if (peer.getPeerIp() instanceof Inet4Address ipv4) {
                 v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort()));
