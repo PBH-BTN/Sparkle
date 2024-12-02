@@ -19,20 +19,20 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             where t.pk.torrentInfoHash = ?1 and t.pk.peerId <> ?2 and t.peerIp <> ?3
             order by RANDOM() limit ?4
             """)
-    List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, InetAddress peerIp, int limit);
+    List<ThinTrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, InetAddress peerIp, int limit);
 
     @Query(value = """
             with filtered_peers as (
-                select *
-                from tracker_peers t
-                where t.torrent_info_hash = :torrentInfoHash
-            )
-            select *
-            from filtered_peers
-            order by random()
-            limit :limit
+                                    select peer_ip, peer_port, left
+                                    from tracker_peers t
+                                    where t.torrent_info_hash = :torrentInfoHash
+                                )
+                                select *
+                                from filtered_peers
+                                order by random()
+                                limit :limit
             """, nativeQuery = true)
-    List<TrackedPeer> fetchPeersFromTorrent(
+    List<ThinTrackedPeer> fetchPeersFromTorrent(
             @Param("torrentInfoHash") String torrentInfoHash,
             @Param("limit") int limit);
 

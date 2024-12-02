@@ -35,6 +35,7 @@ public class TrackerController extends SparkleController {
     private static final Random random = new Random();
     private final Semaphore parallelAnnounceSemaphore;
     private final WarningSender warningSender = new WarningSender(5000);
+    private final int announceRequestMaxWait;
     @Autowired
     private HttpServletRequest req;
     @Autowired
@@ -59,8 +60,11 @@ public class TrackerController extends SparkleController {
     private StringRedisTemplate redisStringTemplate;
 
     public TrackerController(@Value("${service.tracker.max-parallel-announce-service-requests}")
-                             int maxParallelAnnounceServiceRequests) {
+                             int maxParallelAnnounceServiceRequests,
+                             @Value("${service.tracker.announce-requests-max-wait}")
+                             int announceRequestMaxWait) {
         this.parallelAnnounceSemaphore = new Semaphore(maxParallelAnnounceServiceRequests);
+        this.announceRequestMaxWait = announceRequestMaxWait;
     }
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
@@ -181,7 +185,7 @@ public class TrackerController extends SparkleController {
 //        if (waitMillis > 0) {
 //            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
 //        }
-        if (!parallelAnnounceSemaphore.tryAcquire(1500, TimeUnit.MILLISECONDS)) {
+        if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
             tickMetrics("announce_req_fails", 1);
             long retryAfterSeconds = generateRetryInterval() / 1000;
             if (warningSender.sendIfPossible()) {
