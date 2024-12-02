@@ -115,7 +115,6 @@ public class TrackerController extends SparkleController {
         }
         tickMetrics("announce_req", 1);
         if (req.getQueryString() == null) {
-            tickMetrics("announce_req_fails", 1);
             return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
         }
         String userAgent = ua(req);
@@ -126,7 +125,6 @@ public class TrackerController extends SparkleController {
                 || userAgent.contains("Safari")
                 || userAgent.contains("Edge")
                 || userAgent.contains("Opera")) {
-                tickMetrics("announce_req_fails", 1);
                 return "Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8);
             }
         }
