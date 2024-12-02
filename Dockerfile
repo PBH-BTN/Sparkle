@@ -5,4 +5,4 @@ USER 0
 ENV TZ=UTC
 WORKDIR /app
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
-ENTRYPOINT ["java","-XX:+UseG1GC","-jar","sparkle.jar"]
+ENTRYPOINT ["java","-XX:+UseG1GC", "-XX:MaxRAMPercentage=90.0", "-XX:+UseContainerSupport", "-jar","sparkle.jar"]

@@ -1,19 +1,15 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
-import com.ghostchu.btn.sparkle.util.PeerUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import jakarta.transaction.Transactional;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -28,12 +24,8 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -102,9 +94,109 @@ public class TrackerService {
         announceDeque.offer(announce);
     }
 
+    public void executeAnnounce() {
+        List<PeerAnnounce> batch = new ArrayList<>(3000);
+
+        // 从队列中取出任务
+        while (!announceDeque.isEmpty() && batch.size() < 3000) {
+            PeerAnnounce announce = announceDeque.poll();
+            if (announce != null) {
+                batch.add(announce);
+            }
+        }
+
+        if (batch.isEmpty()) {
+            return; // 队列为空，直接返回
+        }
+
+        // 按 peerId 和 infoHash 分组，只保留最后一个事件
+        Map<String, PeerAnnounce> latestAnnounceMap = new HashMap<>();
+        for (PeerAnnounce announce : batch) {
+            String key = ByteUtil.bytesToHex(announce.peerId()) + "-" + ByteUtil.bytesToHex(announce.infoHash());
+            latestAnnounceMap.put(key, announce);
+        }
+
+        List<PeerAnnounce> latestAnnounces = new ArrayList<>(latestAnnounceMap.values());
+
+        // 分为 STOPPED 和其他事件
+        List<PeerAnnounce> stoppedAnnounces = new ArrayList<>();
+        List<PeerAnnounce> activeAnnounces = new ArrayList<>();
+
+        for (PeerAnnounce announce : latestAnnounces) {
+            if (announce.peerEvent() == PeerEvent.STOPPED) {
+                stoppedAnnounces.add(announce);
+            } else {
+                activeAnnounces.add(announce);
+            }
+        }
+
+        // 批量删除 STOPPED
+        if (!stoppedAnnounces.isEmpty()) {
+            List<Map<String, Object>> deleteParams = new ArrayList<>();
+            for (PeerAnnounce announce : stoppedAnnounces) {
+                Map<String, Object> params = new HashMap<>();
+                params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
+                params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+                deleteParams.add(params);
+            }
+
+            String deleteSql = "DELETE FROM tracker_peers WHERE peer_id = :peer_id AND info_hash = :info_hash";
+            jdbcTemplate.batchUpdate(deleteSql, deleteParams.toArray(new Map[0]));
+        }
+
+        // 批量插入或更新 active announces
+        if (!activeAnnounces.isEmpty()) {
+            List<Map<String, Object>> upsertParams = new ArrayList<>();
+            for (PeerAnnounce announce : activeAnnounces) {
+                try {
+                    Map<String, Object> params = new HashMap<>();
+                    params.put("req_ip", announce.reqIp().getHostAddress());
+                    params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
+                    params.put("peer_id_raw", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
+                    params.put("peer_ip", announce.peerIp().getHostAddress());
+                    params.put("peer_port", announce.peerPort());
+                    params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+                    params.put("uploaded", announce.uploaded());
+                    params.put("downloaded", announce.downloaded());
+                    params.put("left", announce.left());
+                    params.put("peer_event", announce.peerEvent().ordinal());
+                    params.put("user_agent", ByteUtil.filterUTF8(announce.userAgent()));
+                    params.put("last_update", OffsetDateTime.now());
+                    params.put("geo_data", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
+                    upsertParams.add(params);
+                } catch (Exception e) {
+                    log.warn("Failed to handle active announce", e);
+                }
+            }
+
+            String upsertSql = """
+                        INSERT INTO tracked_peer 
+                            (req_ip, peer_id, peer_id_raw, peer_ip, peer_port, info_hash, uploaded, 
+                             downloaded, left, peer_event, user_agent, last_update, geo_data)
+                        VALUES 
+                            (:req_ip, :peer_id, :peer_id_raw, :peer_ip, :peer_port, :info_hash, :uploaded, 
+                             :downloaded, :left, :peer_event, :user_agent, :last_update, :geo_data)
+                        ON CONFLICT (peer_id, info_hash)
+                        DO UPDATE SET 
+                            req_ip = EXCLUDED.req_ip,
+                            peer_ip = EXCLUDED.peer_ip,
+                            peer_port = EXCLUDED.peer_port,
+                            uploaded = EXCLUDED.uploaded,
+                            downloaded = EXCLUDED.downloaded,
+                            left = EXCLUDED.left,
+                            peer_event = EXCLUDED.peer_event,
+                            user_agent = EXCLUDED.user_agent,
+                            last_update = EXCLUDED.last_update,
+                            geo_data = EXCLUDED.geo_data
+                    """;
+            jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
+        }
+    }
+
+
     @Modifying
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
-    @Transactional
+//    @Transactional
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
@@ -115,56 +207,42 @@ public class TrackerService {
             if (announceDeque.isEmpty()) {
                 return;
             }
-            try (ExecutorService flushService = Executors.newVirtualThreadPerTaskExecutor()) {
-                while (true) {
-                    var announce = announceDeque.poll();
-                    if (announce == null) break;
-                    flushService.submit(() -> {
-                        try {
-                            parallelSave.acquire();
-                            executeAnnounce(announce);
-                        } catch (Exception e) {
-                            log.warn("Unable to process the announce {}, skipping...", announce, e);
-                        } finally {
-                            parallelSave.release();
-                        }
-                    });
-                }
+            while (!announceDeque.isEmpty()) {
+                executeAnnounce();
             }
         } finally {
             announceFlushLock.unlock();
         }
     }
 
-    @SneakyThrows(value = JsonProcessingException.class)
-    public void executeAnnounce(PeerAnnounce announce) {
-        meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
-                Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
-                Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
-        )).increment();
-        if (announce.peerEvent() == PeerEvent.STOPPED) {
-            trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
-                    ByteUtil.bytesToHex(announce.peerId())
-                    , ByteUtil.bytesToHex(announce.infoHash()));
-        } else {
-            trackedPeerRepository.upsertTrackedPeer(
-                    announce.reqIp(),
-                    ByteUtil.bytesToHex(announce.peerId()),
-                    ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
-                    announce.peerIp(),
-                    announce.peerPort(),
-                    ByteUtil.bytesToHex(announce.infoHash()),
-                    announce.uploaded(),
-                    announce.downloaded(),
-                    announce.left(),
-                    announce.peerEvent().ordinal(),
-                    ByteUtil.filterUTF8(announce.userAgent()),
-                    OffsetDateTime.now(),
-                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp()))
-
-            );
-        }
-    }
+//    @SneakyThrows(value = JsonProcessingException.class)
+//    public void executeAnnounce(PeerAnnounce announce) {
+//        meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
+//                Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
+//                Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
+//        )).increment();
+//        if (announce.peerEvent() == PeerEvent.STOPPED) {
+//            trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
+//                    ByteUtil.bytesToHex(announce.peerId())
+//                    , ByteUtil.bytesToHex(announce.infoHash()));
+//        } else {
+//            upsertTrackedPeer(
+//                    announce.reqIp(),
+//                    ByteUtil.bytesToHex(announce.peerId()),
+//                    ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
+//                    announce.peerIp(),
+//                    announce.peerPort(),
+//                    ByteUtil.bytesToHex(announce.infoHash()),
+//                    announce.uploaded(),
+//                    announce.downloaded(),
+//                    announce.left(),
+//                    announce.peerEvent().ordinal(),
+//                    ByteUtil.filterUTF8(announce.userAgent()),
+//                    OffsetDateTime.now(),
+//                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp()))
+//            );
+//        }
+//    }
 
 //    public void upsert(List<PeerAnnounce> rows){
 //        String nativeQuery = """
