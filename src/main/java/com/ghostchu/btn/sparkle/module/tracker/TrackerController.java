@@ -185,6 +185,14 @@ public class TrackerController extends SparkleController {
 //        if (waitMillis > 0) {
 //            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
 //        }
+        if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
+            tickMetrics("announce_req_fails", 1);
+            long retryAfterSeconds = generateRetryInterval() / 1000;
+            if (warningSender.sendIfPossible()) {
+                log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
+            }
+            return generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+        }
         for (InetAddress ip : peerIps) {
             if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
                     infoHash,
@@ -220,14 +228,6 @@ public class TrackerController extends SparkleController {
                 long retryAfterSeconds = generateRetryInterval() / 1000;
                 return generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
             }
-        }
-        if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
-            tickMetrics("announce_req_fails", 1);
-            long retryAfterSeconds = generateRetryInterval() / 1000;
-            if (warningSender.sendIfPossible()) {
-                log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
-            }
-            return generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
         }
         TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());

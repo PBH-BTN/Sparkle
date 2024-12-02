@@ -21,11 +21,11 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             """)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, String peerId, InetAddress peerIp, int limit);
 
-    @Query("""
-            select t from TrackedPeer t
-            where t.pk.torrentInfoHash = ?1
+    @Query(value = """
+            select peer_ip, peer_port, "left" from tracker_peers t
+            where t.torrent_info_hash = ?1
             order by RANDOM() limit ?3
-            """)
+            """, nativeQuery = true)
     List<ThinTrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, int limit);
 
     @Modifying
