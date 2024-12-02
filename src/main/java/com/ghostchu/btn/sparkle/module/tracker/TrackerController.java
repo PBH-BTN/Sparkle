@@ -93,13 +93,13 @@ public class TrackerController extends SparkleController {
 
     @GetMapping("/tracker/announce")
     @ResponseBody
-    public byte[] announceForward() {
+    public byte[] announceForward() throws InterruptedException {
         return announce();
     }
 
     @GetMapping("/announce")
     @ResponseBody
-    public byte[] announce() {
+    public byte[] announce() throws InterruptedException {
         if (trackerMaintenance) {
             return generateFailureResponse(trackerMaintenanceMessage, 86400);
         }
@@ -284,13 +284,13 @@ public class TrackerController extends SparkleController {
 
     @GetMapping("/tracker/scrape")
     @ResponseBody
-    public ResponseEntity<byte[]> scrapeForward() {
+    public ResponseEntity<byte[]> scrapeForward() throws InterruptedException {
         return scrape();
     }
 
     @GetMapping("/scrape")
     @ResponseBody
-    public ResponseEntity<byte[]> scrape() {
+    public ResponseEntity<byte[]> scrape() throws InterruptedException {
         if (trackerMaintenance) {
             return ResponseEntity.ok(generateFailureResponse(trackerMaintenanceMessage, 86400));
         }
