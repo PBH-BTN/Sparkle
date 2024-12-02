@@ -147,47 +147,50 @@ public class TrackerService {
         // 批量插入或更新 active announces
         if (!activeAnnounces.isEmpty()) {
             List<Map<String, Object>> upsertParams = new ArrayList<>();
-            for (PeerAnnounce announce : activeAnnounces) {
-                try {
+            try {
+                for (PeerAnnounce announce : activeAnnounces) {
                     Map<String, Object> params = new HashMap<>();
                     params.put("req_ip", announce.reqIp().getHostAddress());
                     params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
-                    params.put("peer_id_raw", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
+                    params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
                     params.put("peer_ip", announce.peerIp().getHostAddress());
                     params.put("peer_port", announce.peerPort());
-                    params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
-                    params.put("uploaded", announce.uploaded());
-                    params.put("downloaded", announce.downloaded());
+                    params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+                    params.put("uploaded_offset", announce.uploaded());
+                    params.put("downloaded_offset", announce.downloaded());
                     params.put("left", announce.left());
-                    params.put("peer_event", announce.peerEvent().ordinal());
+                    params.put("last_event", announce.peerEvent().ordinal());
                     params.put("user_agent", ByteUtil.filterUTF8(announce.userAgent()));
-                    params.put("last_update", OffsetDateTime.now());
-                    params.put("geo_data", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
+                    params.put("last_time_seen", OffsetDateTime.now());
+                    params.put("peer_geoip", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
                     upsertParams.add(params);
-                } catch (Exception e) {
-                    log.warn("Failed to handle active announce", e);
                 }
+
+            } catch (Exception e) {
+                log.warn("Failed to handle active announce", e);
             }
 
             String upsertSql = """
-                        INSERT INTO tracker_peers 
-                            (req_ip, peer_id, peer_id_raw, peer_ip, peer_port, info_hash, uploaded, 
-                             downloaded, "left", peer_event, user_agent, last_update, geo_data)
+                        INSERT INTO tracker_peers
+                            (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, 
+                             uploaded_offset, downloaded_offset, "left", last_event, user_agent, 
+                             last_time_seen, peer_geoip)
                         VALUES 
-                            (:req_ip, :peer_id, :peer_id_raw, :peer_ip, :peer_port, :info_hash, :uploaded, 
-                             :downloaded, :left, :peer_event, :user_agent, :last_update, :geo_data)
-                        ON CONFLICT (peer_id, info_hash)
+                            (:req_ip, :peer_id, :peer_id_human_readable, :peer_ip, :peer_port, :torrent_info_hash, 
+                             :uploaded_offset, :downloaded_offset, :left, :last_event, :user_agent, 
+                             :last_time_seen, :peer_geoip)
+                        ON CONFLICT (peer_id, torrent_info_hash)
                         DO UPDATE SET 
                             req_ip = EXCLUDED.req_ip,
                             peer_ip = EXCLUDED.peer_ip,
                             peer_port = EXCLUDED.peer_port,
-                            uploaded = EXCLUDED.uploaded,
-                            downloaded = EXCLUDED.downloaded,
+                            uploaded_offset = EXCLUDED.uploaded_offset,
+                            downloaded_offset = EXCLUDED.downloaded_offset,
                             "left" = EXCLUDED."left",
-                            peer_event = EXCLUDED.peer_event,
+                            last_event = EXCLUDED.last_event,
                             user_agent = EXCLUDED.user_agent,
-                            last_update = EXCLUDED.last_update,
-                            geo_data = EXCLUDED.geo_data
+                            last_time_seen = EXCLUDED.last_time_seen,
+                            peer_geoip = EXCLUDED.peer_geoip
                     """;
             jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
         }
