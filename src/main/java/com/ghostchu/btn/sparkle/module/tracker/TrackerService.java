@@ -150,10 +150,10 @@ public class TrackerService {
             try {
                 for (PeerAnnounce announce : activeAnnounces) {
                     Map<String, Object> params = new HashMap<>();
-                    params.put("req_ip", announce.reqIp());
+                    params.put("req_ip", announce.reqIp().getHostAddress());
                     params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
                     params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
-                    params.put("peer_ip", announce.peerIp());
+                    params.put("peer_ip", announce.peerIp().getAddress());
                     params.put("peer_port", announce.peerPort());
                     params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
                     params.put("uploaded_offset", announce.uploaded());
@@ -176,7 +176,7 @@ public class TrackerService {
                              uploaded_offset, downloaded_offset, "left", last_event, user_agent, 
                              last_time_seen, peer_geoip)
                         VALUES 
-                            (:req_ip, :peer_id, :peer_id_human_readable, :peer_ip, :peer_port, :torrent_info_hash, 
+                            (CAST(:req_ip AS inet), :peer_id, :peer_id_human_readable, CAST(:peer_ip AS inet), :peer_port, :torrent_info_hash, 
                              :uploaded_offset, :downloaded_offset, :left, :last_event, :user_agent, 
                              :last_time_seen, :peer_geoip)
                         ON CONFLICT (peer_id, torrent_info_hash)
