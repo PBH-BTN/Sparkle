@@ -115,11 +115,16 @@ public class OAuthController extends SparkleController {
         HttpResponse<String> emailResp = unirest.get("https://api.github.com/user/emails")
                 .header("Authorization", "Bearer " + callback.getAccessToken())
                 .asString();
-        List<GithubUserEmail> userEmailList = objectMapper.readValue(emailResp.getBody(), new TypeReference<>() {
-        });
-        String emailSelected = userEmailList.stream().filter(GithubUserEmail::getPrimary).findFirst().orElse(new GithubUserEmail(userProfile.getLogin() + "@github-users.com", true, true)).getEmail();
-        userLogin(userProfile, emailSelected);
-        resp.sendRedirect("/");
+        try {
+            List<GithubUserEmail> userEmailList = objectMapper.readValue(emailResp.getBody(), new TypeReference<>() {
+            });
+            String emailSelected = userEmailList.stream().filter(GithubUserEmail::getPrimary).findFirst().orElse(new GithubUserEmail(userProfile.getLogin() + "@github-users.com", true, true)).getEmail();
+            userLogin(userProfile, emailSelected);
+            resp.sendRedirect("/");
+        } catch (Exception e) {
+            log.error("Unable to parse email response: {}", emailResp.getBody(), e);
+            throw e;
+        }
     }
 
     private void userLogin(GithubUserProfile profile, String emailSelected) {
