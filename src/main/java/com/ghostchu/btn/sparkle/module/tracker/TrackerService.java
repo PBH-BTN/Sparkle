@@ -172,7 +172,7 @@ public class TrackerService {
             String upsertSql = """
                         INSERT INTO tracked_peer 
                             (req_ip, peer_id, peer_id_raw, peer_ip, peer_port, info_hash, uploaded, 
-                             downloaded, left, peer_event, user_agent, last_update, geo_data)
+                             downloaded, "left", peer_event, user_agent, last_update, geo_data)
                         VALUES 
                             (:req_ip, :peer_id, :peer_id_raw, :peer_ip, :peer_port, :info_hash, :uploaded, 
                              :downloaded, :left, :peer_event, :user_agent, :last_update, :geo_data)
@@ -183,7 +183,7 @@ public class TrackerService {
                             peer_port = EXCLUDED.peer_port,
                             uploaded = EXCLUDED.uploaded,
                             downloaded = EXCLUDED.downloaded,
-                            left = EXCLUDED.left,
+                            "left" = EXCLUDED."left",
                             peer_event = EXCLUDED.peer_event,
                             user_agent = EXCLUDED.user_agent,
                             last_update = EXCLUDED.last_update,
