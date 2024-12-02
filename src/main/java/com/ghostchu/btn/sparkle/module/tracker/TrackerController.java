@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
+import com.ghostchu.btn.sparkle.util.WarningSender;
 import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TrackerController extends SparkleController {
     private static final Random random = new Random();
+    private final Semaphore parallelAnnounceSemaphore;
+    private final WarningSender warningSender = new WarningSender(5000);
     @Autowired
     private HttpServletRequest req;
     @Autowired
@@ -54,7 +57,6 @@ public class TrackerController extends SparkleController {
     private MeterRegistry meterRegistry;
     @Autowired
     private StringRedisTemplate redisStringTemplate;
-    private final Semaphore parallelAnnounceSemaphore;
 
     public TrackerController(@Value("${service.tracker.max-parallel-announce-service-requests}")
                              int maxParallelAnnounceServiceRequests) {
@@ -182,7 +184,11 @@ public class TrackerController extends SparkleController {
 //            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
 //        }
         if (!parallelAnnounceSemaphore.tryAcquire(1500, TimeUnit.MILLISECONDS)) {
+            tickMetrics("announce_req_fails", 1);
             long retryAfterSeconds = generateRetryInterval() / 1000;
+            if (warningSender.sendIfPossible()) {
+                log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
+            }
             return generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
         }
         for (InetAddress ip : peerIps) {
@@ -213,6 +219,10 @@ public class TrackerController extends SparkleController {
                     aznp,
                     numWant
             ))) {
+                tickMetrics("announce_req_fails", 1);
+                if (warningSender.sendIfPossible()) {
+                    log.warn("[Tracker Busy] Disk flush queue is full!");
+                }
                 long retryAfterSeconds = generateRetryInterval() / 1000;
                 return generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
             }
