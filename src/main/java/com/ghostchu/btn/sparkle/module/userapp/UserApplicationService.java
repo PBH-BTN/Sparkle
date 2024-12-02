@@ -96,7 +96,9 @@ public class UserApplicationService {
         if (userApplication.isEmpty()) {
             throw new UserApplicationNotFoundException();
         }
-        userApplicationRepository.delete(userApplication.get());
+        var userApp = userApplication.get();
+        userApp.setDeletedAt(OffsetDateTime.now());
+        userApplicationRepository.save(userApp);
     }
 
     @Modifying
