@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Isolation;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
@@ -27,7 +26,7 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             where t.pk.torrentInfoHash = ?1
             order by RANDOM() limit ?2
             """)
-    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
+        //@org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
     List<TrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, int limit);
 
     @Modifying
