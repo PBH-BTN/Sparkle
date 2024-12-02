@@ -3,7 +3,6 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
-import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.WarningSender;
 import inet.ipaddr.IPAddress;
@@ -154,25 +153,11 @@ public class TrackerController extends SparkleController {
             } catch (Exception ignored) {
             }
         }
-        boolean compact = "1".equals(req.getParameter("compact"));
-        boolean requireCrypto = "1".equals(req.getParameter("requirecrypto"));
-        boolean supportCrypto = "1".equals(req.getParameter("supportcrypto"));
-        long cryptoPort = parseIntIfAvailable(req.getParameter("cryptoport"));
-        long azudp = parseIntIfAvailable(req.getParameter("azudp"));
-        boolean hide = "1".equals(req.getParameter("hide")); // BitComet extension for no incoming connection
-        long azhttp = parseIntIfAvailable(req.getParameter("azhttp"));
-        long corrupt = parseIntIfAvailable(req.getParameter("corrupt"));
-        String trackerId = req.getParameter("tracker_id");
-        boolean azq = "1".equals(req.getParameter("azq"));
-        String key = ByteUtil.filterUTF8(req.getParameter("key"));
-        String azver = ByteUtil.filterUTF8(req.getParameter("azver"));
-        long azup = parseIntIfAvailable(req.getParameter("azup"));
-        String azas = ByteUtil.filterUTF8(req.getParameter("azas"));
-        String aznp = ByteUtil.filterUTF8(req.getParameter("aznp"));
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
         var reqIpInetAddress = IPUtil.toInet(ip(req));
         List<InetAddress> peerIps = getPossiblePeerIps(req)
                 .stream()
+                .filter(s -> !s.endsWith(":0"))
                 .map(IPUtil::toIPAddress)
                 .filter(Objects::nonNull)
                 .distinct()
@@ -199,22 +184,7 @@ public class TrackerController extends SparkleController {
                         downloaded,
                         left,
                         peerEvent,
-                        ua(req),
-                        requireCrypto || supportCrypto,
-                        key,
-                        corrupt,
-                        -1,
-                        trackerId,
-                        cryptoPort,
-                        hide,
-                        azudp,
-                        azhttp,
-                        azq,
-                        azver,
-                        azup,
-                        azas,
-                        aznp,
-                        numWant
+                        ua(req)
                 ))) {
                     tickMetrics("announce_req_fails", 1);
                     if (warningSender.sendIfPossible()) {
