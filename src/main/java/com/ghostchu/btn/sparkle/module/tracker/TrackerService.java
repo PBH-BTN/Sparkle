@@ -178,7 +178,7 @@ public class TrackerService {
                         VALUES 
                             (CAST(:req_ip AS inet), :peer_id, :peer_id_human_readable, CAST(:peer_ip AS inet), :peer_port, :torrent_info_hash, 
                              :uploaded_offset, :downloaded_offset, :left, :last_event, :user_agent, 
-                             :last_time_seen, :peer_geoip)
+                             :last_time_seen, CAST(:peerGeoIP AS jsonb))
                         ON CONFLICT (peer_id, torrent_info_hash)
                         DO UPDATE SET 
                             req_ip = EXCLUDED.req_ip,
