@@ -98,7 +98,13 @@ public class OAuthController extends SparkleController {
         if (!re.isSuccess()) {
             throw new IllegalStateException("The login callback returns incorrect response: " + re.getStatus() + " - " + re.getStatusText() + " : " + re.getBody());
         }
-        GithubAccessTokenCallback callback = objectMapper.readValue(re.getBody(), GithubAccessTokenCallback.class);
+        GithubAccessTokenCallback callback;
+        try {
+            callback = objectMapper.readValue(re.getBody(), GithubAccessTokenCallback.class);
+        } catch (Exception e) {
+            log.warn("Unable parse response: {}", re.getBody(), e);
+            throw e;
+        }
         HttpResponse<String> authResp = unirest.get("https://api.github.com/user")
                 .header("Authorization", "Bearer " + callback.getAccessToken())
                 .asString();
