@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 @Slf4j
@@ -52,8 +54,12 @@ public class TrackerController extends SparkleController {
     private MeterRegistry meterRegistry;
     @Autowired
     private StringRedisTemplate redisStringTemplate;
-    @Value("${service.tracker.max-parallel-announce-wait-queue-size}")
-    private long maxParallelAnnounceWaitQueueSize;
+    private final Semaphore parallelAnnounceSemaphore;
+
+    public TrackerController(@Value("${service.tracker.max-parallel-announce-service-requests}")
+                             int maxParallelAnnounceServiceRequests) {
+        this.parallelAnnounceSemaphore = new Semaphore(maxParallelAnnounceServiceRequests);
+    }
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
         ByteBuffer buffer = ByteBuffer.allocate((isV6 ? 18 : 6) * peers.size());
@@ -175,9 +181,9 @@ public class TrackerController extends SparkleController {
 //        if (waitMillis > 0) {
 //            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
 //        }
-        if (trackerService.getParallelAnnounce().getQueueLength() > maxParallelAnnounceWaitQueueSize) {
+        if (!parallelAnnounceSemaphore.tryAcquire(1500, TimeUnit.MILLISECONDS)) {
             long retryAfterSeconds = generateRetryInterval() / 1000;
-            return generateFailureResponse("Tracker is busy and waiting queue is full, you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+            return generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
         }
         for (InetAddress ip : peerIps) {
             if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
@@ -208,7 +214,7 @@ public class TrackerController extends SparkleController {
                     numWant
             ))) {
                 long retryAfterSeconds = generateRetryInterval() / 1000;
-                return generateFailureResponse("Tracker is busy and announce queue is full, you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+                return generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
             }
         }
         TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);

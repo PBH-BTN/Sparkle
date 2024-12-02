@@ -10,7 +10,6 @@ import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -27,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
@@ -43,10 +41,6 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final ObjectMapper jacksonObjectMapper;
-    @Getter
-    private final Semaphore parallelSave;
-    @Getter
-    private final Semaphore parallelAnnounce;
     private final Queue<PeerAnnounce> announceDeque;
     private final ReentrantLock announceFlushLock = new ReentrantLock();
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -57,8 +51,6 @@ public class TrackerService {
                           @Value("${service.tracker.inactive-interval}") long inactiveInterval,
                           @Value("${service.tracker.max-peers-return}") int maxPeersReturn, GeoIPManager geoIPManager,
                           MeterRegistry meterRegistry, ObjectMapper jacksonObjectMapper,
-                          @Value("${service.tracker.max-parallel-announce}") int maxParallelAnnounce,
-                          @Value("${service.tracker.max-parallel-announce-save}") int maxParallelAnnounceSave,
                           @Value("${service.tracker.announce-queue-max-size}") int maxAnnounceQueueSize,
                           @Value("${service.tracker.announce-process-batch-size}") int maxAnnounceProcessBatchSize,
                           NamedParameterJdbcTemplate jdbcTemplate) {
@@ -73,8 +65,6 @@ public class TrackerService {
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.jacksonObjectMapper = jacksonObjectMapper;
-        this.parallelSave = new Semaphore(maxParallelAnnounceSave);
-        this.parallelAnnounce = new Semaphore(maxParallelAnnounce);
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -203,58 +193,36 @@ public class TrackerService {
 
     @Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) throws InterruptedException {
-        parallelAnnounce.acquire();
-        try {
-            peersFetchCounter.increment();
-            List<Peer> v4 = new LinkedList<>();
-            List<Peer> v6 = new LinkedList<>();
-            int seeders = 0;
-            int leechers = 0;
-            long downloaded = 0;
-            for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
-                    ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
-                if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                    v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
-                } else if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                    v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
-                }
-                if (peer.getLeft() == 0) {
-                    seeders++;
-                } else {
-                    leechers++;
-                }
+        peersFetchCounter.increment();
+        List<Peer> v4 = new LinkedList<>();
+        List<Peer> v6 = new LinkedList<>();
+        int seeders = 0;
+        int leechers = 0;
+        long downloaded = 0;
+        for (TrackedPeer peer : trackedPeerRepository.fetchPeersFromTorrent(
+                ByteUtil.bytesToHex(torrentInfoHash), Math.min(numWant, maxPeersReturn))) {
+            if (peer.getPeerIp() instanceof Inet4Address ipv4) {
+                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
+            } else if (peer.getPeerIp() instanceof Inet6Address ipv6) {
+                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort(), ByteUtil.hexToByteArray(peer.getPk().getPeerId())));
             }
-            return new TrackedPeerList(v4, v6, seeders, leechers, downloaded);
-        } finally {
-            parallelAnnounce.release();
+            if (peer.getLeft() == 0) {
+                seeders++;
+            } else {
+                leechers++;
+            }
         }
+        return new TrackedPeerList(v4, v6, seeders, leechers, downloaded);
     }
 
 
     @Cacheable(value = {"scrape#60000"}, key = "#torrentInfoHash")
-    public ScrapeResponse scrape(byte[] torrentInfoHash) throws InterruptedException {
-        parallelAnnounce.acquire();
-        try {
-            scrapeCounter.increment();
-            var seeders = trackedPeerRepository.countByPk_TorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
-            var leechers = trackedPeerRepository.countByPk_TorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
-            var downloaded = 0L;
-            return new ScrapeResponse(seeders, leechers, downloaded);
-        } finally {
-            parallelAnnounce.release();
-        }
-    }
-
-    public record TrackerMetrics(
-            long activeTorrents,
-            long totalTorrents,
-            long peers,
-            long seeders,
-            long leechers,
-            long peersHaveUpload,
-            long peersNoUpload
-    ) {
-
+    public ScrapeResponse scrape(byte[] torrentInfoHash) {
+        scrapeCounter.increment();
+        var seeders = trackedPeerRepository.countByPk_TorrentInfoHashAndLeft(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var leechers = trackedPeerRepository.countByPk_TorrentInfoHashAndLeftNot(ByteUtil.bytesToHex(torrentInfoHash), 0L);
+        var downloaded = 0L;
+        return new ScrapeResponse(seeders, leechers, downloaded);
     }
 
     public record ScrapeResponse(
