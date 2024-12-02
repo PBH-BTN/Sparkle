@@ -175,7 +175,7 @@ public class TrackerController extends SparkleController {
 //        }
 
         for (InetAddress ip : peerIps) {
-            trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
+            if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
                     infoHash,
                     peerId,
                     reqIpInetAddress,
@@ -201,7 +201,10 @@ public class TrackerController extends SparkleController {
                     azas,
                     aznp,
                     numWant
-            ));
+            ))) {
+                long retryAfterSeconds = generateRetryInterval() / 1000;
+                return generateFailureResponse("Tracker is busy and announce queue is full, you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+            }
         }
         TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
         tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());

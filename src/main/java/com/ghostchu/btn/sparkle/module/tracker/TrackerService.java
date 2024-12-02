@@ -25,7 +25,7 @@ import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,9 +44,10 @@ public class TrackerService {
     private final ObjectMapper jacksonObjectMapper;
     private final Semaphore parallelSave;
     private final Semaphore parallelAnnounce;
-    private final Deque<PeerAnnounce> announceDeque = new ConcurrentLinkedDeque<>();
+    private final Queue<PeerAnnounce> announceDeque;
     private final ReentrantLock announceFlushLock = new ReentrantLock();
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final int maxAnnounceProcessBatchSize;
 
 
     public TrackerService(TrackedPeerRepository trackedPeerRepository,
@@ -55,9 +56,13 @@ public class TrackerService {
                           MeterRegistry meterRegistry, ObjectMapper jacksonObjectMapper,
                           @Value("${service.tracker.max-parallel-announce}") int maxParallelAnnounce,
                           @Value("${service.tracker.max-parallel-announce-save}") int maxParallelAnnounceSave,
+                          @Value("${service.tracker.announce-queue-max-size}") int maxAnnounceQueueSize,
+                          @Value("${service.tracker.announce-process-batch-size}") int maxAnnounceProcessBatchSize,
                           NamedParameterJdbcTemplate jdbcTemplate) {
         this.trackedPeerRepository = trackedPeerRepository;
         this.inactiveInterval = inactiveInterval;
+        this.maxAnnounceProcessBatchSize = maxAnnounceProcessBatchSize;
+        this.announceDeque = new LinkedBlockingQueue<>(maxAnnounceQueueSize);
         this.maxPeersReturn = maxPeersReturn;
         this.geoIPManager = geoIPManager;
         this.meterRegistry = meterRegistry;
@@ -87,108 +92,88 @@ public class TrackerService {
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
-    public void scheduleAnnounce(PeerAnnounce announce) {
-        if (announceDeque.size() > 20000) {
-            throw new RuntimeException("Server is busy! More than 20,000 announces are waiting to be processed.");
-        }
-        announceDeque.offer(announce);
+    public boolean scheduleAnnounce(PeerAnnounce announce) {
+        return announceDeque.offer(announce);
     }
 
     public void executeAnnounce() {
-        List<PeerAnnounce> batch = new ArrayList<>(3000);
-
+        List<PeerAnnounce> batch = new ArrayList<>(maxAnnounceProcessBatchSize);
         // 从队列中取出任务
-        while (!announceDeque.isEmpty() && batch.size() < 3000) {
+        while (!announceDeque.isEmpty() && batch.size() < maxAnnounceProcessBatchSize) {
             PeerAnnounce announce = announceDeque.poll();
             if (announce != null) {
                 batch.add(announce);
             }
         }
-
         if (batch.isEmpty()) {
             return; // 队列为空，直接返回
         }
-
         // 按 peerId 和 infoHash 分组，只保留最后一个事件
-        Map<String, PeerAnnounce> latestAnnounceMap = new HashMap<>();
+        Map<byte[], PeerAnnounce> latestAnnounceMap = new HashMap<>();
         for (PeerAnnounce announce : batch) {
-            String key = ByteUtil.bytesToHex(announce.peerId()) + "-" + ByteUtil.bytesToHex(announce.infoHash());
+            byte[] key = new byte[announce.peerId().length + announce.infoHash().length];
+            System.arraycopy(announce.peerId(), 0, key, 0, announce.peerId().length);
+            System.arraycopy(announce.infoHash(), 0, key, announce.peerId().length, announce.infoHash().length);
             latestAnnounceMap.put(key, announce);
         }
 
-        List<PeerAnnounce> latestAnnounces = new ArrayList<>(latestAnnounceMap.values());
-
-        // 分为 STOPPED 和其他事件
-        List<PeerAnnounce> stoppedAnnounces = new ArrayList<>();
-        List<PeerAnnounce> activeAnnounces = new ArrayList<>();
-
-        for (PeerAnnounce announce : latestAnnounces) {
-            if (announce.peerEvent() == PeerEvent.STOPPED) {
-                stoppedAnnounces.add(announce);
-            } else {
-                activeAnnounces.add(announce);
-            }
-        }
-
         // 批量删除 STOPPED
-        if (!stoppedAnnounces.isEmpty()) {
-            List<Map<String, Object>> deleteParams = new ArrayList<>();
-            for (PeerAnnounce announce : stoppedAnnounces) {
-                Map<String, Object> params = new HashMap<>();
-                params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
-                params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
-                deleteParams.add(params);
-            }
-
+        List<Map<String, Object>> deleteParams = new ArrayList<>();
+        for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() == PeerEvent.STOPPED).toList()) {
+            Map<String, Object> params = new HashMap<>(2);
+            params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
+            params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+            deleteParams.add(params);
+        }
+        if (!deleteParams.isEmpty()) {
             String deleteSql = "DELETE FROM tracker_peers WHERE peer_id = :peer_id AND info_hash = :info_hash";
             jdbcTemplate.batchUpdate(deleteSql, deleteParams.toArray(new Map[0]));
+            deleteParams.clear();
         }
 
         // 批量插入或更新 active announces
-        if (!activeAnnounces.isEmpty()) {
-            List<Map<String, Object>> upsertParams = new ArrayList<>();
-            try {
-                for (PeerAnnounce announce : activeAnnounces) {
-                    Map<String, Object> params = new HashMap<>();
-                    params.put("req_ip", announce.reqIp().getHostAddress());
-                    params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
-                    params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
-                    params.put("peer_ip", announce.peerIp().getHostAddress());
-                    params.put("peer_port", announce.peerPort());
-                    params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
-                    params.put("uploaded_offset", announce.uploaded());
-                    params.put("downloaded_offset", announce.downloaded());
-                    params.put("left", announce.left());
-                    params.put("last_event", announce.peerEvent().ordinal());
-                    params.put("user_agent", ByteUtil.filterUTF8(announce.userAgent()));
-                    params.put("last_time_seen", OffsetDateTime.now());
-                    params.put("peer_geoip", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
-                    upsertParams.add(params);
-                }
-
-            } catch (Exception e) {
-                log.warn("Failed to handle active announce", e);
+        List<Map<String, Object>> upsertParams = new ArrayList<>();
+        try {
+            for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() != PeerEvent.STOPPED).toList()) {
+                Map<String, Object> params = new HashMap<>(13);
+                params.put("req_ip", announce.reqIp().getHostAddress());
+                params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
+                params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
+                params.put("peer_ip", announce.peerIp().getHostAddress());
+                params.put("peer_port", announce.peerPort());
+                params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+                params.put("uploaded_offset", announce.uploaded());
+                params.put("downloaded_offset", announce.downloaded());
+                params.put("left", announce.left());
+                params.put("last_event", announce.peerEvent().ordinal());
+                params.put("user_agent", ByteUtil.filterUTF8(announce.userAgent()));
+                params.put("last_time_seen", OffsetDateTime.now());
+                params.put("peer_geoip", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
+                upsertParams.add(params);
             }
 
-            String upsertSql = """
-                        INSERT INTO tracker_peers
-                            (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, 
-                             uploaded_offset, downloaded_offset, "left", last_event, user_agent, 
-                             last_time_seen, peer_geoip)
-                        VALUES 
-                            (CAST(:req_ip AS inet), :peer_id, :peer_id_human_readable, CAST(:peer_ip AS inet), :peer_port, :torrent_info_hash, 
-                             :uploaded_offset, :downloaded_offset, :left, :last_event, :user_agent, 
-                             :last_time_seen, CAST(:peer_geoip AS jsonb))
-                        ON CONFLICT (peer_id, torrent_info_hash)
-                        DO UPDATE SET 
-                            uploaded_offset = EXCLUDED.uploaded_offset,
-                            downloaded_offset = EXCLUDED.downloaded_offset,
-                            "left" = EXCLUDED."left",
-                            last_event = EXCLUDED.last_event,
-                            last_time_seen = EXCLUDED.last_time_seen
-                    """;
-            jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
+        } catch (Exception e) {
+            log.warn("Failed to handle active announce", e);
         }
+
+        String upsertSql = """
+                    INSERT INTO tracker_peers
+                        (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, 
+                         uploaded_offset, downloaded_offset, "left", last_event, user_agent, 
+                         last_time_seen, peer_geoip)
+                    VALUES 
+                        (CAST(:req_ip AS inet), :peer_id, :peer_id_human_readable, CAST(:peer_ip AS inet), :peer_port, :torrent_info_hash, 
+                         :uploaded_offset, :downloaded_offset, :left, :last_event, :user_agent, 
+                         :last_time_seen, CAST(:peer_geoip AS jsonb))
+                    ON CONFLICT (peer_id, torrent_info_hash)
+                    DO UPDATE SET 
+                        uploaded_offset = EXCLUDED.uploaded_offset,
+                        downloaded_offset = EXCLUDED.downloaded_offset,
+                        "left" = EXCLUDED."left",
+                        last_event = EXCLUDED.last_event,
+                        last_time_seen = EXCLUDED.last_time_seen
+                """;
+        jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
     }
 
 
@@ -212,78 +197,6 @@ public class TrackerService {
             announceFlushLock.unlock();
         }
     }
-
-//    @SneakyThrows(value = JsonProcessingException.class)
-//    public void executeAnnounce(PeerAnnounce announce) {
-//        meterRegistry.counter("sparkle_tracker_trends_peers", List.of(
-//                Tag.of("peer_id", PeerUtil.cutPeerId(new String(announce.peerId(), StandardCharsets.ISO_8859_1))),
-//                Tag.of("peer_client_name", PeerUtil.cutClientName(announce.userAgent()))
-//        )).increment();
-//        if (announce.peerEvent() == PeerEvent.STOPPED) {
-//            trackedPeerRepository.deleteByPk_PeerIdAndPk_TorrentInfoHash(
-//                    ByteUtil.bytesToHex(announce.peerId())
-//                    , ByteUtil.bytesToHex(announce.infoHash()));
-//        } else {
-//            upsertTrackedPeer(
-//                    announce.reqIp(),
-//                    ByteUtil.bytesToHex(announce.peerId()),
-//                    ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)),
-//                    announce.peerIp(),
-//                    announce.peerPort(),
-//                    ByteUtil.bytesToHex(announce.infoHash()),
-//                    announce.uploaded(),
-//                    announce.downloaded(),
-//                    announce.left(),
-//                    announce.peerEvent().ordinal(),
-//                    ByteUtil.filterUTF8(announce.userAgent()),
-//                    OffsetDateTime.now(),
-//                    jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp()))
-//            );
-//        }
-//    }
-
-//    public void upsert(List<PeerAnnounce> rows){
-//        String nativeQuery = """
-//            INSERT INTO tracker_peers (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, \
-//                                       torrent_info_hash, uploaded_offset, downloaded_offset, \
-//                                       "left", last_event, user_agent, last_time_seen, peer_geoip) \
-//            VALUES (:reqIp, :peerId, :peerIdHumanReadable, :peerIp, :peerPort, :torrentInfoHash, \
-//                    :uploadedOffset, :downloadedOffset, :left, :lastEvent, :userAgent, \
-//                    :lastTimeSeen, CAST(:peerGeoIP AS jsonb)) \
-//            ON CONFLICT (peer_id, torrent_info_hash) DO UPDATE SET \
-//            uploaded_offset = EXCLUDED.uploaded_offset, \
-//            downloaded_offset = EXCLUDED.downloaded_offset, \
-//            "left" = EXCLUDED."left", \
-//            last_event = EXCLUDED.last_event, \
-//            user_agent = EXCLUDED.user_agent, \
-//            last_time_seen = EXCLUDED.last_time_seen, \
-//            peer_geoip = CAST(EXCLUDED.peer_geoip AS jsonb)""";
-//
-//        MapSqlParameterSource[] params = rows.stream().map(announce -> {
-//            try {
-//                MapSqlParameterSource paramValues = new MapSqlParameterSource();
-//                paramValues.addValue("reqIp", announce.reqIp());
-//                paramValues.addValue("peerId", ByteUtil.bytesToHex(announce.peerId()));
-//                paramValues.addValue("peerIdHumanReadable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
-//                paramValues.addValue("peerIp", announce.peerIp());
-//                paramValues.addValue("peerPort", announce.peerPort());
-//                paramValues.addValue("torrentInfoHash", ByteUtil.bytesToHex(announce.infoHash()));
-//                paramValues.addValue("uploadedOffset", announce.uploaded());
-//                paramValues.addValue("downloadedOffset", announce.downloaded());
-//                paramValues.addValue("left", announce.left());
-//                paramValues.addValue("lastEvent", announce.peerEvent().ordinal());
-//                paramValues.addValue("userAgent", ByteUtil.filterUTF8(announce.userAgent()));
-//                paramValues.addValue("lastTimeSeen", OffsetDateTime.now());
-//                paramValues.addValue(":peerGeoIP", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
-//                return paramValues;
-//            }catch (JsonProcessingException e){
-//                return null;
-//            }
-//        }).filter(Objects::nonNull).toArray(MapSqlParameterSource[]::new);
-//
-//        jdbcTemplate.batchUpdate(nativeQuery, params);
-//
-//    }
 
     @Cacheable(value = {"peers#3000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) throws InterruptedException {
