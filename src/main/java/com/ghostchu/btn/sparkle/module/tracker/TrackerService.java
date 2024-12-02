@@ -194,8 +194,8 @@ public class TrackerService {
     @Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) throws InterruptedException {
         peersFetchCounter.increment();
-        List<Peer> v4 = new LinkedList<>();
-        List<Peer> v6 = new LinkedList<>();
+        List<Peer> v4 = new ArrayList<>();
+        List<Peer> v6 = new ArrayList<>();
         int seeders = 0;
         int leechers = 0;
         long downloaded = 0;
