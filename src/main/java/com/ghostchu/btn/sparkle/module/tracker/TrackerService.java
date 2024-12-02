@@ -181,16 +181,11 @@ public class TrackerService {
                              :last_time_seen, CAST(:peer_geoip AS jsonb))
                         ON CONFLICT (peer_id, torrent_info_hash)
                         DO UPDATE SET 
-                            req_ip = EXCLUDED.req_ip,
-                            peer_ip = EXCLUDED.peer_ip,
-                            peer_port = EXCLUDED.peer_port,
                             uploaded_offset = EXCLUDED.uploaded_offset,
                             downloaded_offset = EXCLUDED.downloaded_offset,
                             "left" = EXCLUDED."left",
                             last_event = EXCLUDED.last_event,
-                            user_agent = EXCLUDED.user_agent,
-                            last_time_seen = EXCLUDED.last_time_seen,
-                            peer_geoip = EXCLUDED.peer_geoip
+                            last_time_seen = EXCLUDED.last_time_seen
                     """;
             jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
         }
