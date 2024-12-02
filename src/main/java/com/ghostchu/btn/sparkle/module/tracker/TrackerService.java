@@ -153,7 +153,7 @@ public class TrackerService {
                     params.put("req_ip", announce.reqIp().getHostAddress());
                     params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
                     params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
-                    params.put("peer_ip", announce.peerIp().getAddress());
+                    params.put("peer_ip", announce.peerIp().getHostAddress());
                     params.put("peer_port", announce.peerPort());
                     params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
                     params.put("uploaded_offset", announce.uploaded());
