@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.exception.BusinessException;
 import com.ghostchu.btn.sparkle.exception.UserBannedException;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +35,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<StdResp<Void>> noResourceFoundException(Exception e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new StdResp<>(false, "404 Not Found - 资源未找到", null));
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    public void clientAbort(Exception e) {
+        log.warn("Client abort a connection: {}", e.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
