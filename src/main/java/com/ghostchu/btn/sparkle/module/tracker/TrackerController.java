@@ -164,7 +164,6 @@ public class TrackerController extends SparkleController {
         long corrupt = parseIntIfAvailable(req.getParameter("corrupt"));
         String trackerId = req.getParameter("tracker_id");
         boolean azq = "1".equals(req.getParameter("azq"));
-        boolean noPeerId = "1".equals(req.getParameter("no_peer_id"));
         String key = ByteUtil.filterUTF8(req.getParameter("key"));
         String azver = ByteUtil.filterUTF8(req.getParameter("azver"));
         long azup = parseIntIfAvailable(req.getParameter("azup"));
@@ -179,74 +178,70 @@ public class TrackerController extends SparkleController {
                 .distinct()
                 .filter(ip -> !ip.isLocal() && !ip.isLoopback())
                 .map(IPAddress::toInetAddress).toList();
-
-//        // 检查宣告窗口
-//        var waitMillis = getWaitMillsUntilAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash));
-//        if (waitMillis > 0) {
-//            return generateFailureResponse("Re-announce too quickly! Please wait " + (waitMillis / 1000) + " seconds and try again.", waitMillis / 1000);
-//        }
-        if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
-            tickMetrics("announce_req_fails", 1);
-            long retryAfterSeconds = generateRetryInterval() / 1000;
-            if (warningSender.sendIfPossible()) {
-                log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
-            }
-            return generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
-        }
-        for (InetAddress ip : peerIps) {
-            if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
-                    infoHash,
-                    peerId,
-                    reqIpInetAddress,
-                    ip,
-                    port,
-                    uploaded,
-                    downloaded,
-                    left,
-                    peerEvent,
-                    ua(req),
-                    requireCrypto || supportCrypto,
-                    key,
-                    corrupt,
-                    -1,
-                    trackerId,
-                    cryptoPort,
-                    hide,
-                    azudp,
-                    azhttp,
-                    azq,
-                    azver,
-                    azup,
-                    azas,
-                    aznp,
-                    numWant
-            ))) {
+        try {
+            if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
                 tickMetrics("announce_req_fails", 1);
-                if (warningSender.sendIfPossible()) {
-                    log.warn("[Tracker Busy] Disk flush queue is full!");
-                }
                 long retryAfterSeconds = generateRetryInterval() / 1000;
-                return generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+                if (warningSender.sendIfPossible()) {
+                    log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
+                }
+                return generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
             }
-        }
-        TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
-        tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
-        tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
-        tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
-        long intervalMillis = generateInterval();
-        // 合成响应
-        Map<String, Object> map = new HashMap<>();
-        map.put("interval", intervalMillis / 1000);
-        map.put("complete", peers.seeders());
-        map.put("incomplete", peers.leechers());
-        map.put("downloaded", peers.downloaded());
-        map.put("external ip", ip(req));
-        map.put("tracker id", instanceTrackerId);
+
+            for (InetAddress ip : peerIps) {
+                if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
+                        infoHash,
+                        peerId,
+                        reqIpInetAddress,
+                        ip,
+                        port,
+                        uploaded,
+                        downloaded,
+                        left,
+                        peerEvent,
+                        ua(req),
+                        requireCrypto || supportCrypto,
+                        key,
+                        corrupt,
+                        -1,
+                        trackerId,
+                        cryptoPort,
+                        hide,
+                        azudp,
+                        azhttp,
+                        azq,
+                        azver,
+                        azup,
+                        azas,
+                        aznp,
+                        numWant
+                ))) {
+                    tickMetrics("announce_req_fails", 1);
+                    if (warningSender.sendIfPossible()) {
+                        log.warn("[Tracker Busy] Disk flush queue is full!");
+                    }
+                    long retryAfterSeconds = generateRetryInterval() / 1000;
+                    return generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds);
+                }
+            }
+            TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
+            tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
+            tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
+            tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
+            long intervalMillis = generateInterval();
+            // 合成响应
+            Map<String, Object> map = new HashMap<>();
+            map.put("interval", intervalMillis / 1000);
+            map.put("complete", peers.seeders());
+            map.put("incomplete", peers.leechers());
+            map.put("downloaded", peers.downloaded());
+            map.put("external ip", ip(req));
+            map.put("tracker id", instanceTrackerId);
 //        if (compact || noPeerId) {
-        tickMetrics("announce_return_peers_format_compact", 1);
-        map.put("peers", compactPeers(peers.v4(), false));
-        if (!peers.v6().isEmpty())
-            map.put("peers6", compactPeers(peers.v6(), true));
+            tickMetrics("announce_return_peers_format_compact", 1);
+            map.put("peers", compactPeers(peers.v4(), false));
+            if (!peers.v6().isEmpty())
+                map.put("peers6", compactPeers(peers.v6(), true));
 //        } else {
 //        tickMetrics("announce_return_peers_format_full", 1);
 //        List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4().size() + peers.v6().size());
@@ -259,10 +254,13 @@ public class TrackerController extends SparkleController {
 //            }
 //        }});
 //        //}
-        //setNextAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash), intervalMillis);
-        tickMetrics("announce_req_success", 1);
-        //auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
-        return BencodeUtil.INSTANCE.encode(map);
+            //setNextAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash), intervalMillis);
+            tickMetrics("announce_req_success", 1);
+            //auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
+            return BencodeUtil.INSTANCE.encode(map);
+        } finally {
+            parallelAnnounceSemaphore.release();
+        }
     }
 
     private byte[] generateFailureResponse(String reason, long retryAfterSeconds) {
