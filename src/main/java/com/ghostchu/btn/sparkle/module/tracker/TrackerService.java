@@ -170,7 +170,7 @@ public class TrackerService {
             }
 
             String upsertSql = """
-                        INSERT INTO tracked_peer 
+                        INSERT INTO tracker_peers 
                             (req_ip, peer_id, peer_id_raw, peer_ip, peer_port, info_hash, uploaded, 
                              downloaded, "left", peer_event, user_agent, last_update, geo_data)
                         VALUES 
