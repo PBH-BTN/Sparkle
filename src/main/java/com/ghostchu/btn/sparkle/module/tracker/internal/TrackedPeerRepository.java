@@ -1,9 +1,7 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,7 +26,6 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
             where t.torrent_info_hash = ?1
             order by RANDOM() limit ?2
             """, nativeQuery = true)
-    @Lock(LockModeType.READ)
     List<ThinTrackedPeer> fetchPeersFromTorrent(String torrentInfoHash, int limit);
 
     @Modifying
