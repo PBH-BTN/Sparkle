@@ -249,7 +249,8 @@ public class TrackerController extends SparkleController {
 //                map.put("peers6", compactPeers(peers.v6(), true));
 //        } else {
         tickMetrics("announce_return_peers_format_full", 1);
-        List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4());
+        List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4().size() + peers.v6().size());
+        allPeers.addAll(peers.v4());
         allPeers.addAll(peers.v6());
         map.put("peers", new HashMap<>() {{
             for (TrackerService.Peer p : allPeers) {
