@@ -66,26 +66,27 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long deleteByLastTimeSeenLessThanEqual(OffsetDateTime deleteAllEntireBeforeThisTime);
 
+    @Query("select count(1) from TrackedPeer t where t.pk.torrentInfoHash = ?1")
     long countByPk_TorrentInfoHashAndLeft(String torrentInfoHash, Long left);
 
+    @Query("select count(1) from TrackedPeer t where t.pk.torrentInfoHash = ?1 and t.left <> ?2")
     long countByPk_TorrentInfoHashAndLeftNot(String torrentInfoHash, Long left);
 
     @Query("select count(distinct t.pk.torrentInfoHash) from TrackedPeer t")
     long countTrackingTorrents();
 
-    long countByLeft(Long left);
-
-    long countByLeftNot(Long left);
-
+    @Query("select count(distinct t.pk.peerId) from TrackedPeer t")
     long countDistinctPeerIdBy();
 
+    @Query("select count(distinct t.peerIp) from TrackedPeer t")
     long countDistinctPeerIpBy();
 
+    @Query("select count(distinct t.pk.torrentInfoHash) from TrackedPeer t")
     long countDistinctTorrentInfoHashBy();
 
     List<TrackedPeer> findByUserAgentLike(String userAgent);
 
     Collection<? extends TrackedPeer> findByUserAgentLikeAndPeerIdHumanReadableLike(String userAgent, String peerIdHumanReadable);
 
-    Collection<? extends TrackedPeer> findByUserAgentLikeAndPeerIdHumanReadableNotLike(String userAgent, String peerIdHumanReadable);
+    List<TrackedPeer> findByUserAgentLikeAndPeerIdHumanReadableNotLike(String userAgent, String peerIdHumanReadable);
 }
