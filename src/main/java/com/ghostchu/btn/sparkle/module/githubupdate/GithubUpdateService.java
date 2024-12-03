@@ -68,6 +68,13 @@ public class GithubUpdateService {
         //updateFile(repository, "go.torrent dev 20181121.txt", () -> generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "0xde-0xad-0xbe-0xef.txt", () -> generateDeadBeef().getBytes(StandardCharsets.UTF_8));
         updateFile(repository, "123pan.txt", () -> generate123pan().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "tracker-high-risk-ips.txt", () -> generateTrackerHighRiskIps().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String generateTrackerHighRiskIps() {
+        var strJoiner = new StringJoiner("\n");
+        analyseService.getTrackerHighRisk().forEach(r -> strJoiner.add(r.getIp()));
+        return strJoiner.toString();
     }
 
     private String generateUntrustedIps() {
@@ -104,10 +111,10 @@ public class GithubUpdateService {
 
     private String generateGopeedDev() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "Gopeed dev%",
+        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
                         pastTimestamp(),
-                        nowTimestamp()
+                        nowTimestamp(),
+                        "Gopeed dev%"
                 ).stream()
                 .filter(banHistory -> !banHistory.getPeerId().toLowerCase(Locale.ROOT).startsWith("-gp"))
                 .map(history -> IPUtil.toString(history.getPeerIp()))
@@ -119,10 +126,10 @@ public class GithubUpdateService {
 
     private String generate123pan() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "offline-download (devel) (anacrolix/torrent unknown)%",
+        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
                         pastTimestamp(),
-                        nowTimestamp()
+                        nowTimestamp(),
+                        "offline-download (devel) (anacrolix/torrent unknown)%"
                 )
                 .stream()
                 .map(history -> IPUtil.toString(history.getPeerIp()))
@@ -134,10 +141,10 @@ public class GithubUpdateService {
 
     private String generateDeadBeef() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "ޭ__%",
+        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
                         pastTimestamp(),
-                        nowTimestamp()
+                        nowTimestamp(),
+                        "ޭ__%"
                 )
                 .stream()
                 .map(history -> IPUtil.toString(history.getPeerIp()))
@@ -149,10 +156,10 @@ public class GithubUpdateService {
 
     private String generateBaiduNetdisk() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerClientNameLikeAndInsertTimeBetween(
-                        "go.torrent dev 20181121%",
+        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
                         pastTimestamp(),
-                        nowTimestamp()
+                        nowTimestamp(),
+                        "go.torrent dev 20181121%"
                 )
                 .stream()
                 .map(history -> IPUtil.toString(history.getPeerIp()))

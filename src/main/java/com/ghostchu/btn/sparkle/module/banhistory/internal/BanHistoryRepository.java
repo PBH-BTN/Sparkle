@@ -26,27 +26,17 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
     @Transactional
     List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold, Duration timeBucket);
 
-    Page<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, Pageable pageable);
-
-    @Query("""
-                SELECT DISTINCT ban.peerIp FROM BanHistory ban
-                WHERE
-                    family(ban.peerIp) = ?3
-                    AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
-                    AND ban.module LIKE '%ProgressCheatBlocker%'
-                GROUP BY ban.peerIp
-            """)
-    @Transactional
-    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(OffsetDateTime from, OffsetDateTime to, int family);
-
-    List<BanHistory> findByInsertTimeBetweenOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to);
-
-    Page<BanHistory> findByInsertTimeBetweenAndPeerIdLikeIgnoreCaseOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, String peerId, Pageable pageable);
-
-    Page<BanHistory> findByInsertTimeBetweenAndPeerClientNameLikeIgnoreCaseOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, String peerClientName, Pageable pageable);
-
-    Page<BanHistory> findByInsertTimeBetweenAndPeerIpEqualsOrderByInsertTimeDesc(OffsetDateTime from, OffsetDateTime to, InetAddress peerIp, Pageable pageable);
-
+    //    @Query("""
+//                SELECT DISTINCT ban.peerIp FROM BanHistory ban
+//                WHERE
+//                    family(ban.peerIp) = ?3
+//                    AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
+//                    AND ban.module LIKE '%ProgressCheatBlocker%'
+//                GROUP BY ban.peerIp
+//            """)
+//    @Transactional
+//    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(OffsetDateTime from, OffsetDateTime to, int family);
+//
     Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
 
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
@@ -59,14 +49,12 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
             """)
     @Transactional
     List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(String peerId, String peerClientName, OffsetDateTime from, OffsetDateTime to);
-
-    List<BanHistory> findDistinctByPeerIdLikeAndInsertTimeBetween(String peerId, OffsetDateTime from, OffsetDateTime to);
-
     @Query(nativeQuery = true, value = "SELECT * from banhistory ban WHERE ban.insert_time >= ?2 AND ban.insert_time <= ?3 AND host(ban.peer_ip) LIKE ?1")
     @Transactional
     List<BanHistory> findByPeerIp(String peerIp, OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
-    List<BanHistory> findDistinctByPeerClientNameLikeAndInsertTimeBetween(String peerClientName, OffsetDateTime from, OffsetDateTime to);
 
-    List<BanHistory> findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween(String peerClientName, String module, OffsetDateTime from, OffsetDateTime to);
+    List<BanHistory> findDistinctByInsertTimeBetweenAndPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerClientName);
+
+    List<BanHistory> findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(OffsetDateTime from, OffsetDateTime to, String peerClientName, String module);
 }

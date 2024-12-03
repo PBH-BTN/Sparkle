@@ -3,6 +3,8 @@ package com.ghostchu.btn.sparkle.module.analyse;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
+import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
+import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.MsgUtil;
@@ -38,6 +40,8 @@ public class AnalyseService {
     private static final String OVER_DOWNLOAD = "BTN 网络 IP 下载量分析";
     private static final String HIGH_RISK_IP = "高风险 IP 地址";
     private static final String HIGH_RISK_IPV6_IDENTITY = "高风险 IPV6 特征";
+    private static final String TRACKER_HIGH_RISK = "Tracker 高风险特征";
+    private static final String PCB_MODULE_NAME = "com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker";
     private final Semaphore generateParallel = new Semaphore(1);
     @Autowired
     private BanHistoryRepository banHistoryRepository;
@@ -65,6 +69,7 @@ public class AnalyseService {
     private EntityManager entityManager;
     @Autowired
     private MeterRegistry meterRegistry;
+    private TrackedPeerRepository trackedPeerRepository;
 
     @Transactional
     @Modifying
@@ -119,27 +124,27 @@ public class AnalyseService {
             var startAt = System.currentTimeMillis();
             Set<IPAddress> list =
                     new HashSet<>(banHistoryRepository
-                            .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.94", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                            .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "Transmission 2.94", PCB_MODULE_NAME)
                             .stream()
                             .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                             .distinct()
                             .toList());
             list.addAll(banHistoryRepository
-                    .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 2.93", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                    .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "Transmission 2.93", PCB_MODULE_NAME)
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                     .distinct()
                     .toList());
             list.addAll(banHistoryRepository
-                    .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("Transmission 3.00", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                    .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "Transmission 3.00", PCB_MODULE_NAME)
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                     .distinct()
                     .toList());
             list.addAll(banHistoryRepository
-                    .findDistinctByPeerClientNameAndModuleLikeAndInsertTimeBetween("aria2/%", "%ProgressCheatBlocker%", pastTimestamp(highRiskIpsOffset), nowTimestamp())
+                    .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "aria2/%", PCB_MODULE_NAME)
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
@@ -203,6 +208,58 @@ public class AnalyseService {
 
     public List<AnalysedRule> getHighRiskIPV6Identity() {
         return analysedRuleRepository.findByModule(HIGH_RISK_IPV6_IDENTITY);
+    }
+
+//    @Transactional
+//    @Modifying
+//    @Lock(LockModeType.READ)
+//    @Scheduled(fixedRateString = "${analyse.trackerunion.interval}")
+//    public void cronUpdateTrackerUnion() throws InterruptedException {
+//        try{
+//            generateParallel.acquire();
+//            var startAt = System.currentTimeMillis();
+//            var query = entityManager.createNativeQuery("""
+//                    SELECT DISTINCT bh.peer_ip, bh.peer_id, bh.peer_client_name, tp.user_agent, tp.peer_id_human_readable
+//                    FROM banhistory bh
+//                    INNER JOIN (
+//                        SELECT DISTINCT ON (peer_ip) *
+//                        FROM tracker_peers
+//                        ORDER BY peer_ip, last_time_seen DESC
+//                    ) tp ON bh.peer_ip = tp.peer_ip
+//                    WHERE module LIKE ? AND bh.insert_time >= ?
+//                    ORDER BY bh.peer_ip ASC;
+//                    """);
+//        }finally {
+//            generateParallel.release();
+//        }
+//    }
+
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.READ)
+    @Scheduled(fixedRateString = "${analyse.trackerhighrisk.interval}")
+    public void cronUpdateTrackerHighRisk() throws InterruptedException {
+        try {
+            generateParallel.acquire();
+            var startAt = System.currentTimeMillis();
+            List<TrackedPeer> peers = new ArrayList<>();
+            peers.addAll(trackedPeerRepository.findByUserAgentLike("curl/%"));
+            peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("Transmission%", "-TR%"));
+            peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("qBittorrent%", "-qB%"));
+            var highRiskIps = peers.stream()
+                    .map(peer -> new AnalysedRule(null, peer.getPeerIp().getHostAddress(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString()))
+                    .toList();
+            analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);
+            meterRegistry.gauge("sparkle_analyse_tracker_high_risk", Collections.emptyList(), highRiskIps.size());
+            analysedRuleRepository.saveAll(highRiskIps);
+            log.info("Tracker high risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
+        } finally {
+            generateParallel.release();
+        }
+    }
+
+    public List<AnalysedRule> getTrackerHighRisk() {
+        return analysedRuleRepository.findByModule(TRACKER_HIGH_RISK);
     }
 
     @Transactional

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -82,4 +83,9 @@ public interface TrackedPeerRepository extends SparkleCommonRepository<TrackedPe
 
     long countDistinctTorrentInfoHashBy();
 
+    List<TrackedPeer> findByUserAgentLike(String userAgent);
+
+    Collection<? extends TrackedPeer> findByUserAgentLikeAndPeerIdHumanReadableLike(String userAgent, String peerIdHumanReadable);
+
+    Collection<? extends TrackedPeer> findByUserAgentLikeAndPeerIdHumanReadableNotLike(String userAgent, String peerIdHumanReadable);
 }
