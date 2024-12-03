@@ -5,10 +5,7 @@ import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
-import com.ghostchu.btn.sparkle.util.IPMerger;
-import com.ghostchu.btn.sparkle.util.IPUtil;
-import com.ghostchu.btn.sparkle.util.MsgUtil;
-import com.ghostchu.btn.sparkle.util.TimeUtil;
+import com.ghostchu.btn.sparkle.util.*;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -30,7 +27,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,7 +38,7 @@ public class AnalyseService {
     private static final String HIGH_RISK_IPV6_IDENTITY = "高风险 IPV6 特征";
     private static final String TRACKER_HIGH_RISK = "Tracker 高风险特征";
     private static final String PCB_MODULE_NAME = "com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker";
-    private final Semaphore generateParallel = new Semaphore(1);
+
     @Autowired
     private BanHistoryRepository banHistoryRepository;
     @Autowired
@@ -78,7 +74,7 @@ public class AnalyseService {
     @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
     public void cronUntrustedIPAddresses() throws InterruptedException {
         try {
-            generateParallel.acquire();
+            DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             var list = ipMerger.merge(banHistoryRepository
                             .generateUntrustedIPAddresses(
@@ -98,7 +94,7 @@ public class AnalyseService {
             analysedRuleRepository.saveAll(untrustedIps);
             log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps.size(), System.currentTimeMillis() - startAt);
         } finally {
-            generateParallel.release();
+            DatabaseCare.generateParallel.release();
         }
     }
 
@@ -121,7 +117,7 @@ public class AnalyseService {
     @Scheduled(fixedRateString = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() throws InterruptedException {
         try {
-            generateParallel.acquire();
+            DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             Set<IPAddress> list =
                     new HashSet<>(banHistoryRepository
@@ -158,7 +154,7 @@ public class AnalyseService {
             analysedRuleRepository.saveAll(highRiskIps);
             log.info("High risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
         } finally {
-            generateParallel.release();
+            DatabaseCare.generateParallel.release();
         }
     }
 
@@ -172,7 +168,7 @@ public class AnalyseService {
     @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
     public void cronHighRiskIPV6Identity() throws InterruptedException {
         try {
-            generateParallel.acquire();
+            DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             Set<IPAddress> list = new HashSet<>();
             banHistoryRepository.findByPeerIp(
@@ -203,7 +199,7 @@ public class AnalyseService {
             analysedRuleRepository.saveAll(ips);
             log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
         } finally {
-            generateParallel.release();
+            DatabaseCare.generateParallel.release();
         }
     }
 
@@ -241,7 +237,7 @@ public class AnalyseService {
     @Scheduled(fixedRateString = "${analyse.trackerhighrisk.interval}")
     public void cronUpdateTrackerHighRisk() throws InterruptedException {
         try {
-            generateParallel.acquire();
+            DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             Set<TrackedPeer> peers = new HashSet<>();
             peers.addAll(trackedPeerRepository.findByUserAgentLike("curl/%"));
@@ -255,7 +251,7 @@ public class AnalyseService {
             analysedRuleRepository.saveAll(ips);
             log.info("Tracker high risk IPs: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
         } finally {
-            generateParallel.release();
+            DatabaseCare.generateParallel.release();
         }
     }
 
@@ -269,7 +265,7 @@ public class AnalyseService {
     @Scheduled(fixedRateString = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() throws InterruptedException {
         try {
-            generateParallel.acquire();
+            DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             var query = entityManager.createNativeQuery("""
                     WITH LatestSnapshots AS (
@@ -330,7 +326,7 @@ public class AnalyseService {
             analysedRuleRepository.saveAll(rules);
             log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
         } finally {
-            generateParallel.release();
+            DatabaseCare.generateParallel.release();
         }
     }
 
