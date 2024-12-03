@@ -8,8 +8,6 @@ import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -17,7 +15,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.net.Inet4Address;
@@ -37,7 +35,6 @@ public class TrackerService {
     private final long inactiveInterval;
     private final int maxPeersReturn;
     private final GeoIPManager geoIPManager;
-    private final Counter announceCounter;
     private final Counter peersFetchCounter;
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
@@ -46,8 +43,6 @@ public class TrackerService {
     private final ReentrantLock announceFlushLock = new ReentrantLock();
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final int maxAnnounceProcessBatchSize;
-    @PersistenceContext
-    private EntityManager entityManager;
 
 
 
@@ -65,7 +60,6 @@ public class TrackerService {
         this.maxPeersReturn = maxPeersReturn;
         this.geoIPManager = geoIPManager;
         this.meterRegistry = meterRegistry;
-        this.announceCounter = meterRegistry.counter("sparkle_tracker_announce");
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.jacksonObjectMapper = jacksonObjectMapper;
@@ -73,7 +67,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
-    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void updateTrackerMetrics() {
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", trackedPeerRepository.count());
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", trackedPeerRepository.countDistinctPeerIdBy());
@@ -83,7 +77,7 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
-    @org.springframework.transaction.annotation.Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void cleanup() {
         var count = trackedPeerRepository.deleteByLastTimeSeenLessThanEqual(TimeUtil.toUTC(System.currentTimeMillis() - inactiveInterval));
         log.info("已清除 {} 个不活跃的 Peers", count);
@@ -93,67 +87,83 @@ public class TrackerService {
         return announceDeque.offer(announce);
     }
 
-    public void executeAnnounce() {
-        List<PeerAnnounce> batch = new ArrayList<>(maxAnnounceProcessBatchSize);
-        // 从队列中取出任务
-        while (!announceDeque.isEmpty() && batch.size() < maxAnnounceProcessBatchSize) {
-            PeerAnnounce announce = announceDeque.poll();
-            if (announce != null) {
-                batch.add(announce);
-            }
-        }
-        if (batch.isEmpty()) {
-            return; // 队列为空，直接返回
-        }
-        // 按 peerId 和 infoHash 分组，只保留最后一个事件
-        Map<byte[], PeerAnnounce> latestAnnounceMap = new HashMap<>();
-        for (PeerAnnounce announce : batch) {
-            byte[] key = new byte[announce.peerId().length + announce.infoHash().length];
-            System.arraycopy(announce.peerId(), 0, key, 0, announce.peerId().length);
-            System.arraycopy(announce.infoHash(), 0, key, announce.peerId().length, announce.infoHash().length);
-            latestAnnounceMap.put(key, announce);
-        }
-        batch.clear();
-        // 批量删除 STOPPED
-        List<Map<String, Object>> deleteParams = new ArrayList<>();
-        for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() == PeerEvent.STOPPED).toList()) {
-            Map<String, Object> params = new HashMap<>(2);
-            params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
-            params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
-            deleteParams.add(params);
-        }
-        if (!deleteParams.isEmpty()) {
-            String deleteSql = "DELETE FROM tracker_peers WHERE peer_id = :peer_id AND info_hash = :info_hash";
-            jdbcTemplate.batchUpdate(deleteSql, deleteParams.toArray(new Map[0]));
-            deleteParams.clear();
-        }
 
-        // 批量插入或更新 active announces
-        List<Map<String, Object>> upsertParams = new ArrayList<>();
+    @Modifying
+    @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
+    @Transactional
+    public void flushAnnounces() {
+        boolean locked = announceFlushLock.tryLock();
+        if (!locked) {
+            log.info("Skipped this round announce flush, another task is running. Remaining announces: {}", announceDeque.size());
+            return;
+        }
         try {
-            for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() != PeerEvent.STOPPED).toList()) {
-                Map<String, Object> params = new HashMap<>(13);
-                params.put("req_ip", announce.reqIp().getHostAddress());
-                params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
-                params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
-                params.put("peer_ip", announce.peerIp().getHostAddress());
-                params.put("peer_port", announce.peerPort());
-                params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
-                params.put("uploaded_offset", announce.uploaded());
-                params.put("downloaded_offset", announce.downloaded());
-                params.put("left", announce.left());
-                params.put("last_event", announce.peerEvent().ordinal());
-                params.put("user_agent", ByteUtil.filterUTF8(announce.userAgent()));
-                params.put("last_time_seen", OffsetDateTime.now());
-                params.put("peer_geoip", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
-                upsertParams.add(params);
+            if (announceDeque.isEmpty()) {
+                return;
             }
+            while (!announceDeque.isEmpty()) {
 
-        } catch (Exception e) {
-            log.warn("Failed to handle active announce", e);
-        }
 
-        String upsertSql = """
+                List<PeerAnnounce> batch = new ArrayList<>(maxAnnounceProcessBatchSize);
+                // 从队列中取出任务
+                while (!announceDeque.isEmpty() && batch.size() < maxAnnounceProcessBatchSize) {
+                    PeerAnnounce announce = announceDeque.poll();
+                    if (announce != null) {
+                        batch.add(announce);
+                    }
+                }
+                if (batch.isEmpty()) {
+                    return; // 队列为空，直接返回
+                }
+                // 按 peerId 和 infoHash 分组，只保留最后一个事件
+                Map<byte[], PeerAnnounce> latestAnnounceMap = new HashMap<>();
+                for (PeerAnnounce announce : batch) {
+                    byte[] key = new byte[announce.peerId().length + announce.infoHash().length];
+                    System.arraycopy(announce.peerId(), 0, key, 0, announce.peerId().length);
+                    System.arraycopy(announce.infoHash(), 0, key, announce.peerId().length, announce.infoHash().length);
+                    latestAnnounceMap.put(key, announce);
+                }
+                batch.clear();
+                // 批量删除 STOPPED
+                List<Map<String, Object>> deleteParams = new ArrayList<>();
+                for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() == PeerEvent.STOPPED).toList()) {
+                    Map<String, Object> params = new HashMap<>(2);
+                    params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
+                    params.put("info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+                    deleteParams.add(params);
+                }
+                if (!deleteParams.isEmpty()) {
+                    String deleteSql = "DELETE FROM tracker_peers WHERE peer_id = :peer_id AND info_hash = :info_hash";
+                    jdbcTemplate.batchUpdate(deleteSql, deleteParams.toArray(new Map[0]));
+                    deleteParams.clear();
+                }
+
+                // 批量插入或更新 active announces
+                List<Map<String, Object>> upsertParams = new ArrayList<>();
+                try {
+                    for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() != PeerEvent.STOPPED).toList()) {
+                        Map<String, Object> params = new HashMap<>(13);
+                        params.put("req_ip", announce.reqIp().getHostAddress());
+                        params.put("peer_id", ByteUtil.bytesToHex(announce.peerId()));
+                        params.put("peer_id_human_readable", ByteUtil.filterUTF8(new String(announce.peerId(), StandardCharsets.ISO_8859_1)));
+                        params.put("peer_ip", announce.peerIp().getHostAddress());
+                        params.put("peer_port", announce.peerPort());
+                        params.put("torrent_info_hash", ByteUtil.bytesToHex(announce.infoHash()));
+                        params.put("uploaded_offset", announce.uploaded());
+                        params.put("downloaded_offset", announce.downloaded());
+                        params.put("left", announce.left());
+                        params.put("last_event", announce.peerEvent().ordinal());
+                        params.put("user_agent", ByteUtil.filterUTF8(announce.userAgent()));
+                        params.put("last_time_seen", OffsetDateTime.now());
+                        params.put("peer_geoip", jacksonObjectMapper.writeValueAsString(geoIPManager.geoData(announce.peerIp())));
+                        upsertParams.add(params);
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Failed to handle active announce", e);
+                }
+
+                String upsertSql = """
                     INSERT INTO tracker_peers
                         (req_ip, peer_id, peer_id_human_readable, peer_ip, peer_port, torrent_info_hash, 
                          uploaded_offset, downloaded_offset, "left", last_event, user_agent, 
@@ -170,25 +180,9 @@ public class TrackerService {
                         last_event = EXCLUDED.last_event,
                         last_time_seen = EXCLUDED.last_time_seen
                 """;
-        jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
-    }
+                jdbcTemplate.batchUpdate(upsertSql, upsertParams.toArray(new Map[0]));
 
 
-    @Modifying
-    @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
-    //@Transactional(isolation = Isolation.READ_COMMITTED)
-    public void flushAnnounces() {
-        boolean locked = announceFlushLock.tryLock();
-        if (!locked) {
-            log.info("Skipped this round announce flush, another task is running. Remaining announces: {}", announceDeque.size());
-            return;
-        }
-        try {
-            if (announceDeque.isEmpty()) {
-                return;
-            }
-            while (!announceDeque.isEmpty()) {
-                executeAnnounce();
             }
         } finally {
             announceFlushLock.unlock();
