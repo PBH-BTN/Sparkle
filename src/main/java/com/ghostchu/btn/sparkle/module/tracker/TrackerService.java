@@ -8,6 +8,8 @@ import com.ghostchu.btn.sparkle.util.TimeUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -45,6 +47,8 @@ public class TrackerService {
     private final ReentrantLock announceFlushLock = new ReentrantLock();
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final int maxAnnounceProcessBatchSize;
+    @PersistenceContext
+    private EntityManager entityManager;
 
 
 
@@ -110,6 +114,7 @@ public class TrackerService {
             System.arraycopy(announce.infoHash(), 0, key, announce.peerId().length, announce.infoHash().length);
             latestAnnounceMap.put(key, announce);
         }
+        batch.clear();
 
         // 批量删除 STOPPED
         List<Map<String, Object>> deleteParams = new ArrayList<>();
@@ -173,7 +178,7 @@ public class TrackerService {
 
     @Modifying
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
