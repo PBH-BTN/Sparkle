@@ -18,7 +18,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.net.Inet4Address;
@@ -115,7 +114,6 @@ public class TrackerService {
             latestAnnounceMap.put(key, announce);
         }
         batch.clear();
-
         // 批量删除 STOPPED
         List<Map<String, Object>> deleteParams = new ArrayList<>();
         for (PeerAnnounce announce : latestAnnounceMap.values().stream().filter(pa -> pa.peerEvent() == PeerEvent.STOPPED).toList()) {
@@ -178,7 +176,7 @@ public class TrackerService {
 
     @Modifying
     @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    //@Transactional(isolation = Isolation.READ_COMMITTED)
     public void flushAnnounces() {
         boolean locked = announceFlushLock.tryLock();
         if (!locked) {
