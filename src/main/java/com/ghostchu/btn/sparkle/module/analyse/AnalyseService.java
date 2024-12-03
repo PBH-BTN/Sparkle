@@ -246,17 +246,13 @@ public class AnalyseService {
             peers.addAll(trackedPeerRepository.findByUserAgentLike("curl/%"));
             peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("Transmission%", "-TR%"));
             peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("qBittorrent%", "-qB%"));
-            var ips = ipMerger.merge(peers.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1])))
-                            .collect(Collectors.toList())).stream().map(i -> new IPAddressString(i).getAddress())
+            var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getPeerIp().getHostAddress())).toList()).stream()
                     .filter(Objects::nonNull)
-                    .toList();
-            var rules = filterIP(ips).stream()
-                    .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK,
-                            "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+                    .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);
-            meterRegistry.gauge("sparkle_analyse_tracker_high_risk", Collections.emptyList(), rules.size());
-            analysedRuleRepository.saveAll(rules);
-            log.info("Tracker high risk IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
+            meterRegistry.gauge("sparkle_analyse_tracker_high_risk", Collections.emptyList(), ips.size());
+            analysedRuleRepository.saveAll(ips);
+            log.info("Tracker high risk IPs: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
         } finally {
             generateParallel.release();
         }
