@@ -173,10 +173,10 @@ public class GithubUpdateService {
     private String generateDtTorrents() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerIdLikeOrPeerClientNameLike(
-                        "-DT%",
-                        "dt/torrent%",
                         pastTimestamp(),
-                        nowTimestamp()
+                        nowTimestamp(),
+                        "-DT%",
+                        "dt/torrent%"
                 ).stream()
                 .map(history -> IPUtil.toString(history.getPeerIp()))
                 .sorted()
@@ -188,11 +188,10 @@ public class GithubUpdateService {
     private String generateHpTorrents() {
         var strJoiner = new StringJoiner("\n");
         banHistoryRepository.findDistinctByPeerIdLikeOrPeerClientNameLike(
-                        "-HP%",
-                        "hp/torrent%",
                         pastTimestamp(),
-                        nowTimestamp()
-
+                        nowTimestamp(),
+                        "-HP%",
+                        "hp/torrent%"
                 )
                 .stream()
                 .map(history -> IPUtil.toString(history.getPeerIp()))

@@ -69,6 +69,7 @@ public class AnalyseService {
     private EntityManager entityManager;
     @Autowired
     private MeterRegistry meterRegistry;
+    @Autowired
     private TrackedPeerRepository trackedPeerRepository;
 
     @Transactional
@@ -124,27 +125,27 @@ public class AnalyseService {
             var startAt = System.currentTimeMillis();
             Set<IPAddress> list =
                     new HashSet<>(banHistoryRepository
-                            .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "Transmission 2.94", PCB_MODULE_NAME)
+                            .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.94")
                             .stream()
                             .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                             .distinct()
                             .toList());
             list.addAll(banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "Transmission 2.93", PCB_MODULE_NAME)
+                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.93")
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                     .distinct()
                     .toList());
             list.addAll(banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "Transmission 3.00", PCB_MODULE_NAME)
+                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 3.00")
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                     .distinct()
                     .toList());
             list.addAll(banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), "aria2/%", PCB_MODULE_NAME)
+                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "aria2/%")
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))

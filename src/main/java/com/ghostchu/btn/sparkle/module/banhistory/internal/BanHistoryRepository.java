@@ -18,8 +18,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                 SELECT DISTINCT ban.peerIp
                        FROM BanHistory ban
                        WHERE
-                            ban.module LIKE '%ProgressCheatBlocker%'
-                            AND ban.insertTime >= ?1 AND ban.insertTime <= ?2
+                          ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND ban.module LIKE '%ProgressCheatBlocker%'
                        GROUP BY ban.peerIp, time_bucket(?4, ban.insertTime)
                        HAVING COUNT(DISTINCT ban.userApplication.appId) >= ?3
             """)
@@ -44,11 +43,11 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
     @Query("""
                 SELECT DISTINCT ban FROM BanHistory ban
                 WHERE
-                    (ban.peerId LIKE ?1 OR ban.peerClientName LIKE ?2)
-                    AND ban.insertTime >= ?3 AND ban.insertTime <= ?4
+                    ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND
+                    (ban.peerId LIKE ?3 OR ban.peerClientName LIKE ?4)
             """)
     @Transactional
-    List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(String peerId, String peerClientName, OffsetDateTime from, OffsetDateTime to);
+    List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerId, String peerClientName);
     @Query(nativeQuery = true, value = "SELECT * from banhistory ban WHERE ban.insert_time >= ?2 AND ban.insert_time <= ?3 AND host(ban.peer_ip) LIKE ?1")
     @Transactional
     List<BanHistory> findByPeerIp(String peerIp, OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
@@ -56,5 +55,5 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 
     List<BanHistory> findDistinctByInsertTimeBetweenAndPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerClientName);
 
-    List<BanHistory> findDistinctByInsertTimeBetweenAndPeerClientNameLikeAndModuleLike(OffsetDateTime from, OffsetDateTime to, String peerClientName, String module);
+    List<BanHistory> findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String module, String peerClientName);
 }

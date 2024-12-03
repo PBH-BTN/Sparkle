@@ -13,14 +13,9 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "banhistory", indexes = {
-        @Index(columnList = "insertTime")
-        , @Index(columnList = "userApplication")
-        , @Index(columnList = "peerId")
-        , @Index(columnList = "peerClientName")
-        , @Index(columnList = "torrent")
-        , @Index(columnList = "peerIp")
-        , @Index(columnList = "module")
-        , @Index(columnList = "btnBan")})
+        @Index(columnList = "insertTime, module"),
+        @Index(columnList = "insertTime, module, peerClientName"),
+        @Index(columnList = "insertTime, module, peerId")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

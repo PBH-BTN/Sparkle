@@ -16,7 +16,7 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "tracker_peers",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"peerId", "torrentInfoHash"})},
-        indexes = {@Index(columnList = "peerId"), @Index(columnList = "peerIp"), @Index(columnList = "torrentInfoHash")}
+        indexes = {@Index(columnList = "userAgent, peerIdHumanReadable")}
 )
 @AllArgsConstructor
 @NoArgsConstructor
