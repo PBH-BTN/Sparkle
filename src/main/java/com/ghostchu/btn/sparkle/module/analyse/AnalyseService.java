@@ -242,17 +242,21 @@ public class AnalyseService {
         try {
             generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            List<TrackedPeer> peers = new ArrayList<>();
+            Set<TrackedPeer> peers = new HashSet<>();
             peers.addAll(trackedPeerRepository.findByUserAgentLike("curl/%"));
             peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("Transmission%", "-TR%"));
             peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("qBittorrent%", "-qB%"));
-            var highRiskIps = peers.stream()
-                    .map(peer -> new AnalysedRule(null, peer.getPeerIp().getHostAddress(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString()))
+            var ips = ipMerger.merge(peers.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1])))
+                            .collect(Collectors.toList())).stream().map(i -> new IPAddressString(i).getAddress())
+                    .filter(Objects::nonNull)
                     .toList();
+            var rules = filterIP(ips).stream()
+                    .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK,
+                            "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);
-            meterRegistry.gauge("sparkle_analyse_tracker_high_risk", Collections.emptyList(), highRiskIps.size());
-            analysedRuleRepository.saveAll(highRiskIps);
-            log.info("Tracker high risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
+            meterRegistry.gauge("sparkle_analyse_tracker_high_risk", Collections.emptyList(), rules.size());
+            analysedRuleRepository.saveAll(rules);
+            log.info("Tracker high risk IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
         } finally {
             generateParallel.release();
         }
