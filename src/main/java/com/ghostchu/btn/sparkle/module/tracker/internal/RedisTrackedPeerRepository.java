@@ -2,7 +2,6 @@ package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,8 +10,7 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Repository;
 
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 
@@ -22,6 +20,8 @@ public class RedisTrackedPeerRepository {
     @Autowired
     @Qualifier("redisTemplateTrackedPeer")
     private RedisTemplate<String, TrackedPeer> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, String> generalRedisTemplate;
     @Value("${service.tracker.inactive-interval}")
     private long inactiveInterval;
 
@@ -34,27 +34,10 @@ public class RedisTrackedPeerRepository {
         long startAt = System.nanoTime();
         try {
             String infoHashString = ByteUtil.bytesToHex(infoHash);
-            List<TrackedPeer> pendingForRemove = new ArrayList<>();
-            try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + infoHashString, ScanOptions.scanOptions().build())) {
-                while (cursor.hasNext()) {
-                    var existingPeer = cursor.next();
-                    for (TrackedPeer peer : peers) {
-                        Validate.notNull(existingPeer.getPeerId(), "Existing peer's PeerId is null");
-                        Validate.notNull(peer.getPeerId(), "Peer's PeerId is null");
-                        Validate.notNull(existingPeer.getPeerIp(), "Existing peer's PeerIp is null");
-                        Validate.notNull(peer.getPeerIp(), "Peer's PeerIp is null");
-                        if (existingPeer.getPeerId().equals(peer.getPeerId()) ||
-                            (existingPeer.getPeerIp().equals(peer.getPeerIp()) && Objects.equals(existingPeer.getPeerPort(), peer.getPeerPort()))) {
-                            //cursor.remove(); remove isn't work :(
-                            pendingForRemove.add(existingPeer);
-                        }
-                    }
-                }
-            }
-            for (TrackedPeer peer : pendingForRemove) {
-                redisTemplate.opsForSet().remove("tracker_peers:" + infoHashString, peer);
-            }
             redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
+            for (TrackedPeer peer : peers) {
+                generalRedisTemplate.opsForValue().set("peer_last_seen:" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
+            }
         } finally {
             meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
         }
@@ -87,7 +70,7 @@ public class RedisTrackedPeerRepository {
             try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
-                    if (peer.getLeft() == 0) {
+                    if (peer.isSeeder()) {
                         seeders++;
                     } else {
                         leechers++;
@@ -145,10 +128,15 @@ public class RedisTrackedPeerRepository {
             while (cursor.hasNext()) {
                 var peer = cursor.next();
                 // check if inactive
-                if (peer.getLastTimeSeen().isBefore(OffsetDateTime.now().minus(inactiveInterval, ChronoUnit.MILLIS))) {
-                    // it not working cursor.remove();
+                String lastSeen = generalRedisTemplate.opsForValue().get(peer.toKey());
+                if (lastSeen == null) {
+                    // key indicator has been expired
                     pendingForRemove.add(peer);
-                    //redisTemplate.opsForSet().remove(key, peer);
+                } else {
+                    // and we check if it's inactive
+                    if (System.currentTimeMillis() - Long.parseLong(lastSeen) > inactiveInterval) {
+                        pendingForRemove.add(peer);
+                    }
                 }
             }
             for (TrackedPeer trackedPeer : pendingForRemove) {

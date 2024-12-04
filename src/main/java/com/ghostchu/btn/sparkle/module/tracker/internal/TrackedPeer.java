@@ -1,26 +1,21 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.time.OffsetDateTime;
 import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@Data
 public class TrackedPeer {
     private String peerId;
     private String reqIp;
     private String peerIp;
-    private Integer peerPort;
-    private Long left;
+    private int peerPort;
+    private boolean seeder;
     private String userAgent;
-    private OffsetDateTime lastTimeSeen;
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -32,5 +27,9 @@ public class TrackedPeer {
     @Override
     public int hashCode() {
         return Objects.hash(peerId, peerIp, peerPort);
+    }
+
+    public String toKey() {
+        return peerId + "," + reqIp + "," + peerIp + "," + peerPort + "," + seeder + "," + userAgent;
     }
 }
