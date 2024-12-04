@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.util.ByteUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,36 +18,46 @@ import java.util.function.Function;
 
 @Repository
 public class RedisTrackedPeerRepository {
+    private final MeterRegistry meterRegistry;
     @Autowired
     @Qualifier("redisTemplateTrackedPeer")
     private RedisTemplate<String, TrackedPeer> redisTemplate;
     @Value("${service.tracker.inactive-interval}")
     private long inactiveInterval;
 
+    public RedisTrackedPeerRepository(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
+
     public void registerPeers(byte[] infoHash, Collection<TrackedPeer> peers) {
         // remove exists peers from redis if they have same peerId OR same peerIp and port
-        String infoHashString = ByteUtil.bytesToHex(infoHash);
-        List<TrackedPeer> pendingForRemove = new ArrayList<>();
-        try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + infoHashString, ScanOptions.scanOptions().build())) {
-            while (cursor.hasNext()) {
-                var existingPeer = cursor.next();
-                for (TrackedPeer peer : peers) {
-                    Validate.notNull(existingPeer.getPeerId(), "Existing peer's PeerId is null");
-                    Validate.notNull(peer.getPeerId(), "Peer's PeerId is null");
-                    Validate.notNull(existingPeer.getPeerIp(), "Existing peer's PeerIp is null");
-                    Validate.notNull(peer.getPeerIp(), "Peer's PeerIp is null");
-                    if (existingPeer.getPeerId().equals(peer.getPeerId()) ||
-                        (existingPeer.getPeerIp().equals(peer.getPeerIp()) && Objects.equals(existingPeer.getPeerPort(), peer.getPeerPort()))) {
-                        //cursor.remove(); remove isn't work :(
-                        pendingForRemove.add(existingPeer);
+        long startAt = System.nanoTime();
+        try {
+            String infoHashString = ByteUtil.bytesToHex(infoHash);
+            List<TrackedPeer> pendingForRemove = new ArrayList<>();
+            try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + infoHashString, ScanOptions.scanOptions().build())) {
+                while (cursor.hasNext()) {
+                    var existingPeer = cursor.next();
+                    for (TrackedPeer peer : peers) {
+                        Validate.notNull(existingPeer.getPeerId(), "Existing peer's PeerId is null");
+                        Validate.notNull(peer.getPeerId(), "Peer's PeerId is null");
+                        Validate.notNull(existingPeer.getPeerIp(), "Existing peer's PeerIp is null");
+                        Validate.notNull(peer.getPeerIp(), "Peer's PeerIp is null");
+                        if (existingPeer.getPeerId().equals(peer.getPeerId()) ||
+                            (existingPeer.getPeerIp().equals(peer.getPeerIp()) && Objects.equals(existingPeer.getPeerPort(), peer.getPeerPort()))) {
+                            //cursor.remove(); remove isn't work :(
+                            pendingForRemove.add(existingPeer);
+                        }
                     }
                 }
             }
+            for (TrackedPeer peer : pendingForRemove) {
+                redisTemplate.opsForSet().remove("tracker_peers:" + infoHashString, peer);
+            }
+            redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
+        } finally {
+            meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
         }
-        for (TrackedPeer peer : pendingForRemove) {
-            redisTemplate.opsForSet().remove("tracker_peers:" + infoHashString, peer);
-        }
-        redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
     }
 
     public Set<TrackedPeer> getPeers(byte[] infoHash, int amount) {
