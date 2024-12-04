@@ -21,20 +21,25 @@ public class RedisTrackedPeerRepository {
     @Value("${service.tracker.inactive-interval}")
     private long inactiveInterval;
 
-    public void registerPeers(byte[] infoHash, TrackedPeer... peers) {
+    public void registerPeers(byte[] infoHash, Collection<TrackedPeer> peers) {
         // remove exists peers from redis if they have same peerId OR same peerIp and port
-        for (TrackedPeer peer : peers) {
-            try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), ScanOptions.scanOptions().build())) {
-                while (cursor.hasNext()) {
-                    var existingPeer = cursor.next();
+        List<TrackedPeer> pendingForRemove = new ArrayList<>();
+        try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), ScanOptions.scanOptions().build())) {
+            while (cursor.hasNext()) {
+                var existingPeer = cursor.next();
+                for (TrackedPeer peer : peers) {
                     if (existingPeer.getPeerId().equals(peer.getPeerId()) ||
                         (existingPeer.getPeerIp().equals(peer.getPeerIp()) && Objects.equals(existingPeer.getPeerPort(), peer.getPeerPort()))) {
-                        cursor.remove();
+                        //cursor.remove(); remove isn't work :(
+                        pendingForRemove.add(existingPeer);
                     }
                 }
             }
         }
-        redisTemplate.opsForSet().add("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), peers);
+        for (TrackedPeer peer : pendingForRemove) {
+            redisTemplate.opsForSet().remove("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), peer);
+        }
+        redisTemplate.opsForSet().add("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), peers.toArray(new TrackedPeer[0]));
     }
 
     public List<TrackedPeer> getPeers(byte[] infoHash, int amount) {
@@ -115,23 +120,28 @@ public class RedisTrackedPeerRepository {
     }
 
     public long cleanup() {
-        long removed = 0;
+        long deleted = 0;
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
+            List<TrackedPeer> pendingForRemove = new ArrayList<>();
             var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build());
             while (cursor.hasNext()) {
                 var peer = cursor.next();
                 // check if inactive
                 if (peer.getLastTimeSeen().isBefore(OffsetDateTime.now().minus(inactiveInterval, ChronoUnit.MILLIS))) {
-                    cursor.remove();
-                    removed++;
+                    // it not working cursor.remove();
+                    pendingForRemove.add(peer);
                     //redisTemplate.opsForSet().remove(key, peer);
                 }
+            }
+            for (TrackedPeer trackedPeer : pendingForRemove) {
+                redisTemplate.opsForSet().remove(key, trackedPeer);
+                deleted++;
             }
             // check if empty
             if (redisTemplate.opsForSet().size(key) == 0) {
                 redisTemplate.delete(key);
             }
         }
-        return removed;
+        return deleted;
     }
 }

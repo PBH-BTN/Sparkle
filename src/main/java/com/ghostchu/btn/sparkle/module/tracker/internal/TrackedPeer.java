@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,4 +26,17 @@ public class TrackedPeer {
     private String userAgent;
     private OffsetDateTime lastTimeSeen;
     private IPGeoData peerGeoIP;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TrackedPeer that = (TrackedPeer) o;
+        return Objects.equals(peerId, that.peerId) && Objects.equals(peerIp, that.peerIp) && Objects.equals(peerPort, that.peerPort);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(peerId, peerIp, peerPort);
+    }
 }
