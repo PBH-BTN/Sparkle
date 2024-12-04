@@ -122,8 +122,8 @@ public class TrackerService {
                     try {
                         semaphore.acquire();
                         redisTrackedPeerRepository.registerPeers(entry.getKey(), entry.getValue());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                    } catch (Exception e) {
+                        log.warn("Failed to register peers on Redis", e);
                     } finally {
                         semaphore.release();
                     }
