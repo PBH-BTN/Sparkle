@@ -107,13 +107,9 @@ public class TrackerService {
                     announce.reqIp().getHostAddress(),
                     announce.peerIp().getHostAddress(),
                     announce.peerPort(),
-                    announce.uploaded(),
-                    announce.downloaded(),
                     announce.left(),
-                    announce.peerEvent(),
                     announce.userAgent(),
-                    OffsetDateTime.now(),
-                    geoIPManager.geoData(announce.peerIp())
+                    OffsetDateTime.now()
             ));
         }
         Semaphore semaphore = new Semaphore(announceRegisterParallel);
