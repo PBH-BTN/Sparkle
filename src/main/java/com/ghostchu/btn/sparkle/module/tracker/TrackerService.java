@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -107,9 +106,8 @@ public class TrackerService {
                     announce.reqIp().getHostAddress(),
                     announce.peerIp().getHostAddress(),
                     announce.peerPort(),
-                    announce.left(),
-                    announce.userAgent(),
-                    OffsetDateTime.now()
+                    announce.left() == 0,
+                    announce.userAgent()
             ));
         }
         Semaphore semaphore = new Semaphore(announceRegisterParallel);
@@ -228,7 +226,7 @@ public class TrackerService {
             } else if (ipAddress.isIPv6Convertible()) {
                 v6.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), ipAddress.toIPv6().toString(), peer.getPeerPort()));
             }
-            if (peer.getLeft() == 0) {
+            if (peer.isSeeder()) {
                 seeders++;
             } else {
                 leechers++;
