@@ -67,7 +67,7 @@ public class RedisTrackedPeerRepository {
         int seeders = 0;
         int leechers = 0;
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:" + ByteUtil.bytesToHex(infoHash))) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
+            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(100).build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
                     if (peer.isSeeder()) {

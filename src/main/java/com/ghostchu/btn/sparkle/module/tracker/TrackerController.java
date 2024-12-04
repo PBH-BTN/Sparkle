@@ -292,36 +292,36 @@ public class TrackerController extends SparkleController {
     }
 
 
-    @GetMapping("/tracker/scrape")
-    @ResponseBody
-    public ResponseEntity<byte[]> scrapeForward() throws InterruptedException {
-        return scrape();
-    }
+//    @GetMapping("/tracker/scrape")
+//    @ResponseBody
+//    public ResponseEntity<byte[]> scrapeForward() throws InterruptedException {
+//        return scrape();
+//    }
 
-    @GetMapping("/scrape")
-    @ResponseBody
-    public ResponseEntity<byte[]> scrape() throws InterruptedException {
-        if (trackerMaintenance) {
-            return ResponseEntity.ok(generateFailureResponse(trackerMaintenanceMessage, 86400));
-        }
-        tickMetrics("scrape_req", 1);
-        var infoHashes = extractInfoHashes(req.getQueryString());
-        var map = new HashMap<>();
-        var files = new HashMap<>();
-        tickMetrics("scrape_info_hashes", infoHashes.size());
-        for (byte[] infoHash : infoHashes) {
-            files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new HashMap<>() {{
-                var peers = trackerService.scrape(infoHash);
-                put("complete", peers.seeders());
-                put("incomplete", peers.leechers());
-                put("downloaded", peers.downloaded());
-            }});
-        }
-        map.put("files", files);
-        map.put("external ip", ip(req));
-        //auditService.log(req, "TRACKER_SCRAPE", true, Map.of("hash", infoHashes, "user-agent", ua(req)));
-        return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
-    }
+//    @GetMapping("/scrape")
+//    @ResponseBody
+//    public ResponseEntity<byte[]> scrape() throws InterruptedException {
+//        if (trackerMaintenance) {
+//            return ResponseEntity.ok(generateFailureResponse(trackerMaintenanceMessage, 86400));
+//        }
+//        tickMetrics("scrape_req", 1);
+//        var infoHashes = extractInfoHashes(req.getQueryString());
+//        var map = new HashMap<>();
+//        var files = new HashMap<>();
+//        tickMetrics("scrape_info_hashes", infoHashes.size());
+//        for (byte[] infoHash : infoHashes) {
+//            files.put(new String(infoHash, StandardCharsets.ISO_8859_1), new HashMap<>() {{
+//                var peers = trackerService.scrape(infoHash);
+//                put("complete", peers.seeders());
+//                put("incomplete", peers.leechers());
+//                put("downloaded", peers.downloaded());
+//            }});
+//        }
+//        map.put("files", files);
+//        map.put("external ip", ip(req));
+//        //auditService.log(req, "TRACKER_SCRAPE", true, Map.of("hash", infoHashes, "user-agent", ua(req)));
+//        return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
+//    }
 
     public List<String> getPossiblePeerIps(HttpServletRequest req) {
         List<String> found = new ArrayList<>(12);

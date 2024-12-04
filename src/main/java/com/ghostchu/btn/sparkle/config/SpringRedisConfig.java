@@ -25,6 +25,17 @@ public class SpringRedisConfig {
         return redisTemplate;
     }
 
+    @Bean("longRedisTemplate")
+    public RedisTemplate<String, Long> longRedisTemplate(LettuceConnectionFactory redisConnectionFactory, ObjectMapper mapper) {
+        RedisTemplate<String, Long> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
+        return redisTemplate;
+    }
+
     @Bean("redisTemplateTrackedPeer")
     public RedisTemplate<String, TrackedPeer> redisTemplateTrackedPeer(LettuceConnectionFactory redisConnectionFactory, ObjectMapper mapper) {
         RedisTemplate<String, TrackedPeer> redisTemplate = new RedisTemplate<>();
