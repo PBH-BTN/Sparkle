@@ -3,7 +3,6 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.RedisTrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
-import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import inet.ipaddr.IPAddress;
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -101,7 +101,7 @@ public class TrackerService {
             // get or create Set by info_hash
             var peers = announceMap.computeIfAbsent(announce.infoHash(), k -> new HashSet<>());
             peers.add(new TrackedPeer(
-                    ByteUtil.bytesToHex(announce.peerId()),
+                    new String(announce.peerId(), StandardCharsets.ISO_8859_1),
                     announce.reqIp().getHostAddress(),
                     announce.peerIp().getHostAddress(),
                     announce.peerPort(),
