@@ -95,7 +95,7 @@ public class TrackerService {
         }
     }
 
-    private synchronized void executeRedisAnnounce() {
+    private void executeRedisAnnounce() {
         Map<byte[], Set<TrackedPeer>> announceMap = new HashMap<>();
         for (int i = 0; i < processBatchSize && !peerAnnounces.isEmpty(); i++) {
             var announce = peerAnnounces.poll();
