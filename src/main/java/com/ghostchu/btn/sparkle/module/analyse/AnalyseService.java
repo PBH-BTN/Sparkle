@@ -252,7 +252,7 @@ public class AnalyseService {
                 }
                 return false;
             }));
-            var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getPeerIp().getHostAddress())).toList()).stream()
+            var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getPeerIp())).toList()).stream()
                     .filter(Objects::nonNull)
                     .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);

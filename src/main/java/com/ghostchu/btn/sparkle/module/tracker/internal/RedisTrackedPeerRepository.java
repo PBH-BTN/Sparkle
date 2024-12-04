@@ -113,12 +113,12 @@ public class RedisTrackedPeerRepository {
     }
 
     public long countUniqueIps() {
-        Set<byte[]> count = new HashSet<>();
+        Set<String> count = new HashSet<>();
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
             var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build());
             while (cursor.hasNext()) {
                 var peer = cursor.next();
-                count.add(peer.getPeerIp().getAddress());
+                count.add(peer.getPeerIp());
             }
         }
         return count.size();
