@@ -11,7 +11,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -216,7 +215,7 @@ public class TrackerService {
 //
 //    }
 
-    @Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
+    //@Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) throws InterruptedException {
         peersFetchCounter.increment();
         List<Peer> v4 = new ArrayList<>();
@@ -241,7 +240,6 @@ public class TrackerService {
     }
 
 
-    @Cacheable(value = {"scrape#60000"}, key = "#torrentInfoHash")
     public ScrapeResponse scrape(byte[] torrentInfoHash) {
         scrapeCounter.increment();
         var scrape = redisTrackedPeerRepository.scrapeTorrent(torrentInfoHash);
