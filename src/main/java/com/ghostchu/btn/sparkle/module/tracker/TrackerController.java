@@ -146,6 +146,7 @@ public class TrackerController extends SparkleController {
         long downloaded = Long.parseLong(req.getParameter("downloaded"));
         var leftBi = new BigInteger(req.getParameter("left") != null ? req.getParameter("left") : "-1");
         long left = leftBi.longValue();
+        boolean compact = "1".equals(req.getParameter("compact"));
         PeerEvent peerEvent = PeerEvent.EMPTY;
         String event = req.getParameter("event");
         if (event != null) {
@@ -210,9 +211,23 @@ public class TrackerController extends SparkleController {
             map.put("tracker id", instanceTrackerId);
 //        if (compact || noPeerId) {
             tickMetrics("announce_return_peers_format_compact", 1);
-            map.put("peers", compactPeers(peers.v4(), false));
-            if (!peers.v6().isEmpty())
-                map.put("peers6", compactPeers(peers.v6(), true));
+            if (compact) {
+                tickMetrics("announce_return_peers_format_compact", 1);
+                map.put("peers", compactPeers(peers.v4(), false));
+                if (!peers.v6().isEmpty())
+                    map.put("peers6", compactPeers(peers.v6(), true));
+            } else {
+                tickMetrics("announce_return_peers_format_full", 1);
+                List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4());
+                allPeers.addAll(peers.v6());
+                map.put("peers", new HashMap<>() {{
+                    for (TrackerService.Peer p : allPeers) {
+                        put("peer id", new String(p.peerId(), StandardCharsets.ISO_8859_1));
+                        put("ip", p.ip());
+                        put("port", p.port());
+                    }
+                }});
+            }
 //        } else {
 //        tickMetrics("announce_return_peers_format_full", 1);
 //        List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4().size() + peers.v6().size());

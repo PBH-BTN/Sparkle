@@ -226,9 +226,9 @@ public class TrackerService {
         for (var peer : redisTrackedPeerRepository.getPeers(torrentInfoHash, Math.min(numWant, maxPeersReturn))) {
             IPAddress ipAddress = IPUtil.toIPAddress(peer.getPeerIp());
             if (ipAddress.isIPv4Convertible()) {
-                v4.add(new Peer(ipAddress.toIPv4().toString(), peer.getPeerPort()));
+                v4.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), ipAddress.toIPv4().toString(), peer.getPeerPort()));
             } else if (ipAddress.isIPv6Convertible()) {
-                v6.add(new Peer(ipAddress.toIPv6().toString(), peer.getPeerPort()));
+                v6.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), ipAddress.toIPv6().toString(), peer.getPeerPort()));
             }
             if (peer.getLeft() == 0) {
                 seeders++;
@@ -278,6 +278,7 @@ public class TrackerService {
     }
 
     public record Peer(
+            byte[] peerId,
             String ip,
             int port
     ) implements Serializable {
