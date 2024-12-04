@@ -91,7 +91,9 @@ public class TrackerService {
             if (peerAnnounces.isEmpty()) {
                 return;
             }
-            executeRedisAnnounce();
+            while (!peerAnnounces.isEmpty()) {
+                executeRedisAnnounce();
+            }
         } finally {
             announceFlushLock.unlock();
         }
