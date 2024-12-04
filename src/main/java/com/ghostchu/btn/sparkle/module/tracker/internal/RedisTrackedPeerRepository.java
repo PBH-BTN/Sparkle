@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
+import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,10 @@ public class RedisTrackedPeerRepository {
             while (cursor.hasNext()) {
                 var existingPeer = cursor.next();
                 for (TrackedPeer peer : peers) {
+                    Validate.notNull(existingPeer.getPeerId(), "Existing peer's PeerId is null");
+                    Validate.notNull(peer.getPeerId(), "Peer's PeerId is null");
+                    Validate.notNull(existingPeer.getPeerIp(), "Existing peer's PeerIp is null");
+                    Validate.notNull(peer.getPeerIp(), "Peer's PeerIp is null");
                     if (existingPeer.getPeerId().equals(peer.getPeerId()) ||
                         (existingPeer.getPeerIp().equals(peer.getPeerIp()) && Objects.equals(existingPeer.getPeerPort(), peer.getPeerPort()))) {
                         //cursor.remove(); remove isn't work :(
