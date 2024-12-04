@@ -1,11 +1,8 @@
 package com.ghostchu.btn.sparkle.module.tracker;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.RedisTrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
-import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerPK;
-import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,21 +31,18 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final RedisTrackedPeerRepository redisTrackedPeerRepository;
-    private final ObjectMapper objectMapper;
     private final GeoIPManager geoIPManager;
 
 
     public TrackerService(@Value("${service.tracker.max-peers-return}") int maxPeersReturn,
                           MeterRegistry meterRegistry,
                           RedisTrackedPeerRepository redisTrackedPeerRepository,
-                          ObjectMapper objectMapper,
                           GeoIPManager geoIPManager) {
         this.maxPeersReturn = maxPeersReturn;
         this.meterRegistry = meterRegistry;
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.redisTrackedPeerRepository = redisTrackedPeerRepository;
-        this.objectMapper = objectMapper;
         this.geoIPManager = geoIPManager;
     }
 
@@ -71,9 +65,8 @@ public class TrackerService {
 
     public boolean scheduleAnnounce(PeerAnnounce announce) {
         redisTrackedPeerRepository.registerPeers(announce.infoHash, new TrackedPeer(
-                new TrackedPeerPK(ByteUtil.bytesToHex(announce.peerId), ByteUtil.bytesToHex(announce.infoHash)),
-                announce.reqIp,
                 new String(announce.peerId, StandardCharsets.ISO_8859_1),
+                announce.reqIp,
                 announce.peerIp,
                 announce.peerPort,
                 announce.uploaded,

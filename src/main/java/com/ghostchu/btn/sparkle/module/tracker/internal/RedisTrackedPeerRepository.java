@@ -1,6 +1,5 @@
 package com.ghostchu.btn.sparkle.module.tracker.internal;
 
-import com.ghostchu.btn.sparkle.util.ByteUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 
 @Repository
 public class RedisTrackedPeerRepository {
@@ -24,10 +24,10 @@ public class RedisTrackedPeerRepository {
     public void registerPeers(byte[] infoHash, TrackedPeer... peers) {
         // remove exists peers from redis if they have same peerId OR same peerIp and port
         for (TrackedPeer peer : peers) {
-            try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + ByteUtil.bytesToHex(infoHash), ScanOptions.scanOptions().build())) {
+            try (var cursor = redisTemplate.opsForSet().scan("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), ScanOptions.scanOptions().build())) {
                 while (cursor.hasNext()) {
                     var existingPeer = cursor.next();
-                    if (existingPeer.getPeerIdHumanReadable().equals(peer.getPeerIdHumanReadable()) ||
+                    if (existingPeer.getPeerId().equals(peer.getPeerId()) ||
                         (existingPeer.getPeerIp().equals(peer.getPeerIp()) && Objects.equals(existingPeer.getPeerPort(), peer.getPeerPort()))) {
                         cursor.remove();
                     }
@@ -38,14 +38,29 @@ public class RedisTrackedPeerRepository {
     }
 
     public List<TrackedPeer> getPeers(byte[] infoHash, int amount) {
-        return redisTemplate.opsForSet().randomMembers("tracker_peers:" + ByteUtil.bytesToHex(infoHash), amount);
+        return redisTemplate.opsForSet().randomMembers("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1), amount);
+    }
+
+    public List<TrackedPeer> scanPeersWithCondition(Function<TrackedPeer, Boolean> condition) {
+        List<TrackedPeer> result = new ArrayList<>();
+        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
+            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
+                while (cursor.hasNext()) {
+                    var peer = cursor.next();
+                    if (condition.apply(peer)) {
+                        result.add(peer);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     public Map<String, Integer> scrapeTorrent(byte[] infoHash) {
         Map<String, Integer> count = new HashMap<>(2);
         int seeders = 0;
         int leechers = 0;
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:" + ByteUtil.bytesToHex(infoHash))) {
+        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:" + new String(infoHash, StandardCharsets.ISO_8859_1))) {
             try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
@@ -76,7 +91,7 @@ public class RedisTrackedPeerRepository {
             try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
-                    count.add(peer.getPeerIdHumanReadable().getBytes(StandardCharsets.ISO_8859_1));
+                    count.add(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1));
                 }
             }
         }

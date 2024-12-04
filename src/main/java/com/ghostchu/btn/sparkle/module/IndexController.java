@@ -3,12 +3,8 @@ package com.ghostchu.btn.sparkle.module;
 import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
-import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
-import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryRepository;
 import com.ghostchu.btn.sparkle.module.snapshot.SnapshotService;
-import com.ghostchu.btn.sparkle.module.snapshot.internal.SnapshotRepository;
-import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.user.internal.UserRepository;
 import org.springframework.stereotype.Controller;
@@ -20,28 +16,17 @@ import java.time.OffsetDateTime;
 
 @Controller
 public class IndexController extends SparkleController {
-    private final BanHistoryRepository banHistoryRepository;
-    private final SnapshotRepository snapshotRepository;
-    private final ClientDiscoveryRepository clientDiscoveryRepository;
-    private final TrackedPeerRepository trackedPeerRepository;
     private final BanHistoryService banHistoryService;
     private final SnapshotService snapshotService;
     private final ClientDiscoveryService clientDiscoveryService;
     private final UserService userService;
-    private final UserRepository userRepository;
 
-    public IndexController(BanHistoryRepository banHistoryRepository, SnapshotRepository snapshotRepository,
-                           ClientDiscoveryRepository clientDiscoveryRepository, TrackedPeerRepository trackedPeerRepository, BanHistoryService banHistoryService, SnapshotService snapshotService, ClientDiscoveryService clientDiscoveryService, UserService userService, UserRepository userRepository) {
+    public IndexController(BanHistoryService banHistoryService, SnapshotService snapshotService, ClientDiscoveryService clientDiscoveryService, UserService userService, UserRepository userRepository) {
         super();
-        this.banHistoryRepository = banHistoryRepository;
-        this.snapshotRepository = snapshotRepository;
-        this.clientDiscoveryRepository = clientDiscoveryRepository;
-        this.trackedPeerRepository = trackedPeerRepository;
         this.banHistoryService = banHistoryService;
         this.snapshotService = snapshotService;
         this.clientDiscoveryService = clientDiscoveryService;
         this.userService = userService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping("/healthcheck")

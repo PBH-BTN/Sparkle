@@ -3,8 +3,8 @@ package com.ghostchu.btn.sparkle.module.analyse;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
+import com.ghostchu.btn.sparkle.module.tracker.internal.RedisTrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
-import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeerRepository;
 import com.ghostchu.btn.sparkle.util.*;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
@@ -66,7 +66,7 @@ public class AnalyseService {
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
-    private TrackedPeerRepository trackedPeerRepository;
+    private RedisTrackedPeerRepository redisTrackedPeerRepository;
 
     @Transactional
     @Modifying
@@ -240,9 +240,18 @@ public class AnalyseService {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             Set<TrackedPeer> peers = new HashSet<>();
-            peers.addAll(trackedPeerRepository.findByUserAgentLike("curl/%"));
-            peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("Transmission%", "-TR%"));
-            peers.addAll(trackedPeerRepository.findByUserAgentLikeAndPeerIdHumanReadableNotLike("qBittorrent%", "-qB%"));
+            peers.addAll(redisTrackedPeerRepository.scanPeersWithCondition((peer) -> {
+                if (peer.getUserAgent().contains("curl/")) {
+                    return true;
+                }
+                if (peer.getUserAgent().contains("Transmission") && !peer.getPeerId().startsWith("-TR")) {
+                    return true;
+                }
+                if (peer.getUserAgent().contains("qBittorrent") && !peer.getPeerId().startsWith("-qB")) {
+                    return true;
+                }
+                return false;
+            }));
             var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getPeerIp().getHostAddress())).toList()).stream()
                     .filter(Objects::nonNull)
                     .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
