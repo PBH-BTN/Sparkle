@@ -249,7 +249,8 @@ public class AnalyseService {
                 }
                 return peer.getUserAgent().contains("qBittorrent") && !peer.getPeerId().startsWith("-qB");
             }));
-            var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getPeerIp())).toList()).stream()
+            // 这里不用 PeerIP，因为 PeerIP 可以被用户操纵
+            var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getReqIp())).toList()).stream()
                     .filter(Objects::nonNull)
                     .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);
