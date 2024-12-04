@@ -88,9 +88,6 @@ public class TrackerService {
             return;
         }
         try {
-            if (peerAnnounces.isEmpty()) {
-                return;
-            }
             while (!peerAnnounces.isEmpty()) {
                 executeRedisAnnounce();
             }
