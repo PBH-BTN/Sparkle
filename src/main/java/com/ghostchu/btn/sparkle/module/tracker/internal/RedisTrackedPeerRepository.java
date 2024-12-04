@@ -36,7 +36,7 @@ public class RedisTrackedPeerRepository {
             String infoHashString = ByteUtil.bytesToHex(infoHash);
             redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
             for (TrackedPeer peer : peers) {
-                generalRedisTemplate.opsForValue().set("peer_last_seen:" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
+                generalRedisTemplate.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
             }
         } finally {
             meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
@@ -128,7 +128,8 @@ public class RedisTrackedPeerRepository {
             while (cursor.hasNext()) {
                 var peer = cursor.next();
                 // check if inactive
-                String lastSeen = generalRedisTemplate.opsForValue().get(peer.toKey());
+                String infoHash = key.substring("tracker_peers:".length());
+                String lastSeen = generalRedisTemplate.opsForValue().get("peer_last_seen:" + infoHash + ":" + peer.toKey());
                 if (lastSeen == null) {
                     // key indicator has been expired
                     pendingForRemove.add(peer);
