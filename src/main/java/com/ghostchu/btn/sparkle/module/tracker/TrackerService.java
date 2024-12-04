@@ -4,7 +4,9 @@ import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.RedisTrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
+import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
+import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -98,8 +98,8 @@ public class TrackerService {
             var peers = announceMap.computeIfAbsent(announce.infoHash(), k -> new HashSet<>());
             peers.add(new TrackedPeer(
                     ByteUtil.bytesToHex(announce.peerId()),
-                    announce.reqIp(),
-                    announce.peerIp(),
+                    announce.reqIp().getHostAddress(),
+                    announce.peerIp().getHostAddress(),
                     announce.peerPort(),
                     announce.uploaded(),
                     announce.downloaded(),
@@ -208,10 +208,11 @@ public class TrackerService {
         int leechers = 0;
         long downloaded = 0;
         for (var peer : redisTrackedPeerRepository.getPeers(torrentInfoHash, Math.min(numWant, maxPeersReturn))) {
-            if (peer.getPeerIp() instanceof Inet4Address ipv4) {
-                v4.add(new Peer(ipv4.getHostAddress(), peer.getPeerPort()));
-            } else if (peer.getPeerIp() instanceof Inet6Address ipv6) {
-                v6.add(new Peer(ipv6.getHostAddress(), peer.getPeerPort()));
+            IPAddress ipAddress = IPUtil.toIPAddress(peer.getPeerIp());
+            if (ipAddress.isIPv4Convertible()) {
+                v4.add(new Peer(ipAddress.toIPv4().toString(), peer.getPeerPort()));
+            } else if (ipAddress.isIPv6Convertible()) {
+                v6.add(new Peer(ipAddress.toIPv6().toString(), peer.getPeerPort()));
             }
             if (peer.getLeft() == 0) {
                 seeders++;

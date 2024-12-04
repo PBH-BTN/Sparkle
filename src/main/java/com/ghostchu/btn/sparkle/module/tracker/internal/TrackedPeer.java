@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -16,8 +15,8 @@ import java.util.Objects;
 @Setter
 public class TrackedPeer {
     private String peerId;
-    private InetAddress reqIp;
-    private InetAddress peerIp;
+    private String reqIp;
+    private String peerIp;
     private Integer peerPort;
     private Long uploadedOffset;
     private Long downloadedOffset;
