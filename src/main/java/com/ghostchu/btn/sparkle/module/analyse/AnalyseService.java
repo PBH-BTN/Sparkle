@@ -247,10 +247,7 @@ public class AnalyseService {
                 if (peer.getUserAgent().contains("Transmission") && !peer.getPeerId().startsWith("-TR")) {
                     return true;
                 }
-                if (peer.getUserAgent().contains("qBittorrent") && !peer.getPeerId().startsWith("-qB")) {
-                    return true;
-                }
-                return false;
+                return peer.getUserAgent().contains("qBittorrent") && !peer.getPeerId().startsWith("-qB");
             }));
             var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getPeerIp())).toList()).stream()
                     .filter(Objects::nonNull)

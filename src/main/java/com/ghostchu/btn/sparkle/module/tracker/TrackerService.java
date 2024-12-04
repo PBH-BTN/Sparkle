@@ -37,16 +37,19 @@ public class TrackerService {
     private final Deque<PeerAnnounce> peerAnnounces;
     private final ReentrantLock announceFlushLock = new ReentrantLock();
     private final int processBatchSize;
+    private final int announceRegisterParallel;
 
 
     public TrackerService(@Value("${service.tracker.max-peers-return}") int maxPeersReturn,
                           @Value("${service.tracker.announce-queue-max-size}") int queueMaxSize,
                           @Value("${service.tracker.announce-process-batch-size}") int processBatchSize,
+                          @Value("${service.tracker.announce-register-parallel}") int announceRegisterParallel,
                           MeterRegistry meterRegistry,
                           RedisTrackedPeerRepository redisTrackedPeerRepository,
                           GeoIPManager geoIPManager) {
         this.maxPeersReturn = maxPeersReturn;
         this.meterRegistry = meterRegistry;
+        this.announceRegisterParallel = announceRegisterParallel;
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.redisTrackedPeerRepository = redisTrackedPeerRepository;
@@ -114,7 +117,7 @@ public class TrackerService {
                     geoIPManager.geoData(announce.peerIp())
             ));
         }
-        Semaphore semaphore = new Semaphore(4);
+        Semaphore semaphore = new Semaphore(announceRegisterParallel);
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (var entry : announceMap.entrySet()) {
                 executor.submit(() -> {
