@@ -49,8 +49,8 @@ public class RedisTrackedPeerRepository {
         redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
     }
 
-    public List<TrackedPeer> getPeers(byte[] infoHash, int amount) {
-        return redisTemplate.opsForSet().randomMembers("tracker_peers:" + ByteUtil.bytesToHex(infoHash), amount);
+    public Set<TrackedPeer> getPeers(byte[] infoHash, int amount) {
+        return redisTemplate.opsForSet().distinctRandomMembers("tracker_peers:" + ByteUtil.bytesToHex(infoHash), amount);
     }
 
     public List<TrackedPeer> scanPeersWithCondition(Function<TrackedPeer, Boolean> condition) {
