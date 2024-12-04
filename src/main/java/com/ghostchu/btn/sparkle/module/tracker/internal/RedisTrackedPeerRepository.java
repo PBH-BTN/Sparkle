@@ -129,7 +129,8 @@ public class RedisTrackedPeerRepository {
                 var peer = cursor.next();
                 // check if inactive
                 String infoHash = key.substring("tracker_peers:".length());
-                String lastSeen = generalRedisTemplate.opsForValue().get("peer_last_seen:" + infoHash + ":" + peer.toKey());
+                var lastSeenKey = "peer_last_seen:" + infoHash + ":" + peer.toKey();
+                String lastSeen = generalRedisTemplate.opsForValue().get(lastSeenKey);
                 if (lastSeen == null) {
                     // key indicator has been expired
                     pendingForRemove.add(peer);
@@ -137,6 +138,7 @@ public class RedisTrackedPeerRepository {
                     // and we check if it's inactive
                     if (System.currentTimeMillis() - Long.parseLong(lastSeen) > inactiveInterval) {
                         pendingForRemove.add(peer);
+                        redisTemplate.opsForValue().getAndDelete(lastSeenKey);
                     }
                 }
             }
