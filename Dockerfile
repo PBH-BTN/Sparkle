@@ -4,7 +4,7 @@ USER 0
 ENV TZ=UTC
 WORKDIR /app
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
-RUN apt update && apt install -y curl vim && apt clean \
+RUN apt update && apt install curl vim -y && apt clean && \
     curl -o /app/arthas-boot.jar https://arthas.aliyun.com/arthas-boot.jar
 COPY target/sparkle-0.0.1-SNAPSHOT.jar /app/sparkle.jar
 
