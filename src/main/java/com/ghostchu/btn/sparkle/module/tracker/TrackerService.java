@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
@@ -35,10 +37,12 @@ public class TrackerService {
     private final GeoIPManager geoIPManager;
     private final Deque<PeerAnnounce> peerAnnounces;
     private final ReentrantLock announceFlushLock = new ReentrantLock();
+    private final int processBatchSize;
 
 
     public TrackerService(@Value("${service.tracker.max-peers-return}") int maxPeersReturn,
                           @Value("${service.tracker.announce-queue-max-size}") int queueMaxSize,
+                          @Value("${service.tracker.announce-process-batch-size}") int processBatchSize,
                           MeterRegistry meterRegistry,
                           RedisTrackedPeerRepository redisTrackedPeerRepository,
                           GeoIPManager geoIPManager) {
@@ -48,6 +52,7 @@ public class TrackerService {
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.redisTrackedPeerRepository = redisTrackedPeerRepository;
         this.peerAnnounces = new LinkedBlockingDeque<>(queueMaxSize);
+        this.processBatchSize = processBatchSize;
         this.geoIPManager = geoIPManager;
     }
 
@@ -92,7 +97,7 @@ public class TrackerService {
 
     private synchronized void executeRedisAnnounce() {
         Map<byte[], Set<TrackedPeer>> announceMap = new HashMap<>();
-        while (!peerAnnounces.isEmpty()) {
+        for (int i = 0; i < processBatchSize && !peerAnnounces.isEmpty(); i++) {
             var announce = peerAnnounces.poll();
             // get or create Set by info_hash
             var peers = announceMap.computeIfAbsent(announce.infoHash(), k -> new HashSet<>());
@@ -110,8 +115,20 @@ public class TrackerService {
                     geoIPManager.geoData(announce.peerIp())
             ));
         }
-        for (var entry : announceMap.entrySet()) {
-            redisTrackedPeerRepository.registerPeers(entry.getKey(), entry.getValue());
+        Semaphore semaphore = new Semaphore(4);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (var entry : announceMap.entrySet()) {
+                executor.submit(() -> {
+                    try {
+                        semaphore.acquire();
+                        redisTrackedPeerRepository.registerPeers(entry.getKey(), entry.getValue());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        semaphore.release();
+                    }
+                });
+            }
         }
     }
 //
