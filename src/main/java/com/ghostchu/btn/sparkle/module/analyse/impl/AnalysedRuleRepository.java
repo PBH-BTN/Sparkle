@@ -7,7 +7,8 @@ import java.util.List;
 
 @Repository
 public interface AnalysedRuleRepository extends SparkleCommonRepository<AnalysedRule, Long> {
-    List<AnalysedRule> findByModule(String module);
+    //List<AnalysedRule> findByModule(String module);
+    List<AnalysedRule> findByModuleOrderByIpAsc(String module);
     long deleteAllByModule(String module);
     List<AnalysedRule> findAll();
 }

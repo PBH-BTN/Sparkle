@@ -162,6 +162,7 @@ public class PingService {
                 .map(rule -> new RuleDto(null, rule.getModule(), rule.getIp(), "ip", 0L, 0L))
                 .toList());
         rules.addAll(ruleService.getUnexpiredRules());
+        rules.sort(Comparator.comparing(RuleDto::getContent));
         meterRegistry.gauge("sparkle_ping_rules", rules.size());
         return new BtnRule(rules);
     }

@@ -104,11 +104,11 @@ public class AnalyseService {
     }
 
     public List<AnalysedRule> getUntrustedIPAddresses() {
-        return analysedRuleRepository.findByModule(UNTRUSTED_IP);
+        return analysedRuleRepository.findByModuleOrderByIpAsc(UNTRUSTED_IP);
     }
 
     public List<AnalysedRule> getOverDownloadIPAddresses() {
-        return analysedRuleRepository.findByModule(OVER_DOWNLOAD);
+        return analysedRuleRepository.findByModuleOrderByIpAsc(OVER_DOWNLOAD);
     }
 
     @Transactional
@@ -159,7 +159,7 @@ public class AnalyseService {
     }
 
     public List<AnalysedRule> getHighRiskIps() {
-        return analysedRuleRepository.findByModule(HIGH_RISK_IP);
+        return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IP);
     }
 
     @Transactional
@@ -204,7 +204,7 @@ public class AnalyseService {
     }
 
     public List<AnalysedRule> getHighRiskIPV6Identity() {
-        return analysedRuleRepository.findByModule(HIGH_RISK_IPV6_IDENTITY);
+        return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IPV6_IDENTITY);
     }
 
 //    @Transactional
@@ -239,8 +239,7 @@ public class AnalyseService {
         try {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            Set<TrackedPeer> peers = new HashSet<>();
-            peers.addAll(redisTrackedPeerRepository.scanPeersWithCondition((peer) -> {
+            Set<TrackedPeer> peers = new HashSet<>(redisTrackedPeerRepository.scanPeersWithCondition((peer) -> {
                 if (peer.getUserAgent().contains("curl/")) {
                     return true;
                 }
@@ -249,8 +248,9 @@ public class AnalyseService {
                 }
                 return peer.getUserAgent().contains("qBittorrent") && !peer.getPeerId().startsWith("-qB");
             }));
+            var ipList = ipMerger.merge(peers.stream().map(TrackedPeer::getPeerIp).toList());
             // 这里不用 PeerIP，因为 PeerIP 可以被用户操纵
-            var ips = filterIP(peers.stream().map(p -> IPUtil.toIPAddress(p.getReqIp())).toList()).stream()
+            var ips = filterIP(ipList.stream().map(IPUtil::toIPAddress).toList()).stream()
                     .filter(Objects::nonNull)
                     .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);
@@ -263,7 +263,7 @@ public class AnalyseService {
     }
 
     public List<AnalysedRule> getTrackerHighRisk() {
-        return analysedRuleRepository.findByModule(TRACKER_HIGH_RISK);
+        return analysedRuleRepository.findByModuleOrderByIpAsc(TRACKER_HIGH_RISK);
     }
 
     @Transactional
