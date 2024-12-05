@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.RedisTrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
 import com.ghostchu.btn.sparkle.util.*;
+import inet.ipaddr.Address;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -147,7 +148,7 @@ public class AnalyseService {
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
                     .distinct()
                     .toList());
-            var highRiskIps = filterIP(list).stream()
+            var highRiskIps = filterIP(ipMerger.merge(list.stream().map(Address::toString).toList()).stream().map(IPUtil::toIPAddress).toList()).stream()
                     .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
             meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
