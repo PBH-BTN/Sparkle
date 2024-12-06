@@ -417,8 +417,12 @@ public class AnalyseService {
         var list = new ArrayList<>(ips);
         return list.stream().filter(ip -> !ip.isLocal() && !ip.isLoopback())
                 .map(ip -> {
-                    if (ip.isIPv6()) {
-                        ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
+                    try {
+                        if (ip.isIPv6()) {
+                            ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
+                        }
+                    } catch (Exception e) {
+                        log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
                     }
                     return ip;
                 })
