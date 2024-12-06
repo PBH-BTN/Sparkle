@@ -82,7 +82,12 @@ public class IPMerger {
     }
 
     private IPAddress toIP(String ip) {
-        return new IPAddressString(ip).getAddress();
+        try {
+            return new IPAddressString(ip).getAddress();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private IPAddress toCIDR(String cidr) {
