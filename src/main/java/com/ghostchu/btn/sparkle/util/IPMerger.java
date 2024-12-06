@@ -24,6 +24,7 @@ public class IPMerger {
     private int IPV4_PREFIX_LENGTH = 24;
 
     public List<String> merge(List<String> sorted) {
+        sorted = new ArrayList<>(sorted);
         sorted.sort(String::compareTo);
         Set<String> createdCIDR = new LinkedHashSet<>();
         IPAddress current = null;
@@ -61,9 +62,10 @@ public class IPMerger {
                 }
             }
         }
+        List<String> finalSorted = sorted;
         createdCIDR.forEach(cidr -> {
             var base = toCIDR(cidr);
-            sorted.removeIf(ip -> {
+            finalSorted.removeIf(ip -> {
                 IPAddress address = toIP(ip);
                 if (address == null) {
                     System.out.println("(Unresolved data) " + ip);
@@ -75,7 +77,7 @@ public class IPMerger {
         });
         return new ArrayList<>() {{
             this.addAll(createdCIDR);
-            this.addAll(sorted);
+            this.addAll(finalSorted);
         }};
     }
 
