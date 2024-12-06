@@ -34,6 +34,8 @@ public class UserApplication {
     private User user;
     @Column(nullable = false)
     private Boolean banned;
-    @Column()
+    @Column
+    private String bannedReason;
+    @Column
     private OffsetDateTime deletedAt;
 }

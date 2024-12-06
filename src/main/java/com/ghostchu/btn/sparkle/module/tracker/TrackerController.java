@@ -4,6 +4,7 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
+import com.ghostchu.btn.sparkle.util.ServletUtil;
 import com.ghostchu.btn.sparkle.util.WarningSender;
 import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -160,7 +161,14 @@ public class TrackerController extends SparkleController {
         List<InetAddress> peerIps = getPossiblePeerIps(req)
                 .stream()
                 .filter(s -> !s.endsWith(":0"))
-                .map(IPUtil::toIPAddress)
+                .map(s -> {
+                    var addr = IPUtil.toIPAddress(s);
+                    if (addr == null || addr.toString().equals(IPUtil.INVALID_FALLBACK_ADDRESS)) {
+                        log.error("Query {} contains illegal IP address: {}, userIp={}, userAgent={}", req.getQueryString(), s, ServletUtil.getIP(req), req.getHeader("User-Agent"));
+                        return null;
+                    }
+                    return addr;
+                })
                 .filter(Objects::nonNull)
                 .distinct()
                 .filter(ip -> !ip.isLocal() && !ip.isLoopback())

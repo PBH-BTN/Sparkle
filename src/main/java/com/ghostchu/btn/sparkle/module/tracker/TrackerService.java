@@ -221,6 +221,10 @@ public class TrackerService {
         long downloaded = 0;
         for (var peer : redisTrackedPeerRepository.getPeers(torrentInfoHash, Math.min(numWant, maxPeersReturn))) {
             IPAddress ipAddress = IPUtil.toIPAddress(peer.getPeerIp());
+            if (ipAddress.toString().equals(IPUtil.INVALID_FALLBACK_ADDRESS)) {
+                log.info("Found illegal PeerIP from Tracker repository: {}", peer.getPeerIp());
+                continue;
+            }
             if (ipAddress.isIPv4Convertible()) {
                 v4.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), ipAddress.toIPv4().toString(), peer.getPeerPort()));
             } else if (ipAddress.isIPv6Convertible()) {
