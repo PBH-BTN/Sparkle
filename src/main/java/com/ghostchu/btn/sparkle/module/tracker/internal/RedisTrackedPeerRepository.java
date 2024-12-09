@@ -50,7 +50,7 @@ public class RedisTrackedPeerRepository {
     public List<TrackedPeer> scanPeersWithCondition(Function<TrackedPeer, Boolean> condition) {
         List<TrackedPeer> result = new ArrayList<>();
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
+            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
                     if (condition.apply(peer)) {
@@ -67,7 +67,7 @@ public class RedisTrackedPeerRepository {
         int seeders = 0;
         int leechers = 0;
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:" + ByteUtil.bytesToHex(infoHash))) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(100).build())) {
+            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(300).build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
                     if (peer.isSeeder()) {
@@ -94,7 +94,7 @@ public class RedisTrackedPeerRepository {
     public long countUniquePeerIds() {
         Set<byte[]> count = new HashSet<>();
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
+            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
                     count.add(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1));
@@ -111,7 +111,7 @@ public class RedisTrackedPeerRepository {
     public long countUniqueIps() {
         Set<String> count = new HashSet<>();
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build());
+            var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
             while (cursor.hasNext()) {
                 var peer = cursor.next();
                 count.add(peer.getPeerIp());
@@ -124,7 +124,7 @@ public class RedisTrackedPeerRepository {
         long deleted = 0;
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
             List<TrackedPeer> pendingForRemove = new ArrayList<>();
-            var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build());
+            var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
             while (cursor.hasNext()) {
                 var peer = cursor.next();
                 // check if inactive

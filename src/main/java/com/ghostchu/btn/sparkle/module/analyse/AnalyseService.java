@@ -418,7 +418,7 @@ public class AnalyseService {
         return list.stream().filter(ip -> !ip.isLocal() && !ip.isLoopback())
                 .map(ip -> {
                     try {
-                        if (ip.isIPv6()) {
+                        if (ip.getPrefixLength() == null && ip.isIPv6()) {
                             ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
                         }
                     } catch (Exception e) {
