@@ -5,8 +5,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.RedisStringCommands;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.types.Expiration;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Repository;
 
 import java.nio.charset.StandardCharsets;
@@ -35,9 +39,15 @@ public class RedisTrackedPeerRepository {
         try {
             String infoHashString = ByteUtil.bytesToHex(infoHash);
             redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
-            for (TrackedPeer peer : peers) {
-                generalRedisTemplate.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
-            }
+            RedisSerializer<String> keySerializer = (RedisSerializer<String>) redisTemplate.getKeySerializer();
+            RedisSerializer<String> valueSerializer = (RedisSerializer<String>) redisTemplate.getValueSerializer();
+            generalRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                connection.openPipeline();
+                for (TrackedPeer peer : peers) {
+                    connection.stringCommands().set(keySerializer.serialize("peer_last_seen:" + infoHashString + ":" + peer.toKey()), valueSerializer.serialize(String.valueOf(System.currentTimeMillis())), Expiration.from(Duration.ofMillis(inactiveInterval)), RedisStringCommands.SetOption.UPSERT);
+                }
+                return null;
+            });
         } finally {
             meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
         }
