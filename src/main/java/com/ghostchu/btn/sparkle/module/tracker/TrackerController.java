@@ -204,7 +204,12 @@ public class TrackerController extends SparkleController {
                     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
                 }
             }
-            TrackerService.TrackedPeerList peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
+            TrackerService.TrackedPeerList peers;
+            if (peerEvent != PeerEvent.STOPPED) {
+                peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
+            } else {
+                peers = new TrackerService.TrackedPeerList(Collections.emptyList(), Collections.emptyList(), 0L, 0L, 0L);
+            }
             tickMetrics("announce_provided_peers", peers.v4().size() + peers.v6().size());
             tickMetrics("announce_provided_peers_ipv4", peers.v4().size());
             tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
@@ -217,6 +222,7 @@ public class TrackerController extends SparkleController {
             map.put("downloaded", peers.downloaded());
             map.put("external ip", ip(req));
             map.put("tracker id", instanceTrackerId);
+
 //        if (compact || noPeerId) {
             tickMetrics("announce_return_peers_format_compact", 1);
             if (compact) {
