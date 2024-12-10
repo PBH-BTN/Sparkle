@@ -15,6 +15,6 @@ public class TrackedPeer {
     private boolean seeder;
     private String userAgent;
     public String toKey() {
-        return infoHash + "," + peerId + "," + reqIp + "," + peerIp + "," + peerPort + "," + seeder + "," + userAgent;
+        return peerId + "," + reqIp + "," + peerIp + "," + peerPort + "," + seeder + "," + userAgent;
     }
 }
