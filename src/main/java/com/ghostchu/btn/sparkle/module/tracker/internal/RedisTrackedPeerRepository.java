@@ -153,7 +153,7 @@ public class RedisTrackedPeerRepository {
                     // and we check if it's inactive
                     if (System.currentTimeMillis() - Long.parseLong(lastSeen) > inactiveInterval) {
                         pendingForRemove.add(peer);
-                        redisTemplate.opsForValue().getAndDelete(lastSeenKey);
+                        generalRedisTemplate.opsForValue().getAndDelete(lastSeenKey);
                     }
                 }
             }
