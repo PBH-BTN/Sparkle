@@ -12,7 +12,7 @@ public class IPUtil {
     public static IPAddress toIPAddress(String ip) {
         var address = new IPAddressString(ip).getAddress();
         if (address == null) {
-            log.error("Unable convert {} to IPAddressString (toIPAddress)", ip);
+            //log.error("Unable convert {} to IPAddressString (toIPAddress)", ip);
             return new IPAddressString(INVALID_FALLBACK_ADDRESS).getAddress();
         }
         return address;

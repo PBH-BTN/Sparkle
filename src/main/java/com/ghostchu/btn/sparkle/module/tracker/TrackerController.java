@@ -4,7 +4,6 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
-import com.ghostchu.btn.sparkle.util.ServletUtil;
 import com.ghostchu.btn.sparkle.util.WarningSender;
 import inet.ipaddr.IPAddress;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -147,7 +146,7 @@ public class TrackerController extends SparkleController {
         long downloaded = Long.parseLong(req.getParameter("downloaded"));
         var leftBi = new BigInteger(req.getParameter("left") != null ? req.getParameter("left") : "-1");
         long left = leftBi.longValue();
-        boolean compact = "1".equals(req.getParameter("compact"));
+        boolean compact = "1".equals(req.getParameter("compact")) || "1".equals(req.getParameter("no_peer_id"));
         PeerEvent peerEvent = PeerEvent.EMPTY;
         String event = req.getParameter("event");
         if (event != null) {
@@ -164,7 +163,7 @@ public class TrackerController extends SparkleController {
                 .map(s -> {
                     var addr = IPUtil.toIPAddress(s);
                     if (addr == null || addr.toString().equals(IPUtil.INVALID_FALLBACK_ADDRESS)) {
-                        log.error("Query {} contains illegal IP address: {}, userIp={}, userAgent={}", req.getQueryString(), s, ServletUtil.getIP(req), req.getHeader("User-Agent"));
+                        //log.error("Query {} contains illegal IP address: {}, userIp={}, userAgent={}", req.getQueryString(), s, ServletUtil.getIP(req), req.getHeader("User-Agent"));
                         return null;
                     }
                     return addr;
