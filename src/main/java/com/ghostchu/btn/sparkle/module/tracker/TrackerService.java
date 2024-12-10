@@ -59,7 +59,7 @@ public class TrackerService {
     @Transactional
     public void updateTrackerMetrics() {
         var uniqueRecords = redisTrackedPeerRepository.countUniqueRecords();
-        var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", uniqueRecords.getUniquePeerIds());
+        var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", uniqueRecords.getPeers());
         var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", uniqueRecords.getUniquePeerIds());
         var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", uniqueRecords.getUniqueIps());
         var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_active_tasks", uniqueRecords.getUniqueInfoHashes());
