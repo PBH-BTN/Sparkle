@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 @Repository
@@ -136,7 +137,7 @@ public class RedisTrackedPeerRepository {
     }
 
     public long cleanup() {
-        long deleted = 0;
+        AtomicLong deleted = new AtomicLong(0);
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
             List<TrackedPeer> pendingForRemove = new ArrayList<>();
             var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
@@ -157,16 +158,22 @@ public class RedisTrackedPeerRepository {
                     }
                 }
             }
-            for (TrackedPeer trackedPeer : pendingForRemove) {
-                redisTemplate.opsForSet().remove(key, trackedPeer);
-                deleted++;
-            }
+            redisTemplate.executePipelined(new SessionCallback<>() {
+                @Override
+                public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
+                    for (TrackedPeer trackedPeer : pendingForRemove) {
+                        deleted.incrementAndGet();
+                        ops.opsForSet().remove((K) key, trackedPeer);
+                    }
+                    return null;
+                }
+            });
             // check if empty
             if (redisTemplate.opsForSet().size(key) == 0) {
                 redisTemplate.delete(key);
             }
         }
-        return deleted;
+        return deleted.get();
     }
 
 }
