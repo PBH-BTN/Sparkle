@@ -72,12 +72,15 @@ public class RedisTrackedPeerRepository {
 
     public List<TrackedPeer> scanPeersWithCondition(Function<TrackedPeer, Boolean> condition) {
         List<TrackedPeer> result = new ArrayList<>();
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(3000).build())) {
-                while (cursor.hasNext()) {
-                    var peer = cursor.next();
-                    if (condition.apply(peer)) {
-                        result.add(peer);
+        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").count(3000).build())) {
+            while (infoHashCursor.hasNext()) {
+                var key = infoHashCursor.next();
+                try (var peersCursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(3000).build())) {
+                    while (peersCursor.hasNext()) {
+                        var p = peersCursor.next();
+                        if (condition.apply(p)) {
+                            result.add(p);
+                        }
                     }
                 }
             }
@@ -89,15 +92,13 @@ public class RedisTrackedPeerRepository {
         Map<String, Integer> count = new HashMap<>(2);
         int seeders = 0;
         int leechers = 0;
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:" + ByteUtil.bytesToHex(infoHash))) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(300).build())) {
-                while (cursor.hasNext()) {
-                    var peer = cursor.next();
-                    if (peer.isSeeder()) {
-                        seeders++;
-                    } else {
-                        leechers++;
-                    }
+        try (var cursor = redisTemplate.opsForSet().scan("tracked_peer:" + ByteUtil.bytesToHex(infoHash), ScanOptions.scanOptions().count(500).build())) {
+            while (cursor.hasNext()) {
+                var peer = cursor.next();
+                if (peer.isSeeder()) {
+                    seeders++;
+                } else {
+                    leechers++;
                 }
             }
         }
