@@ -66,7 +66,6 @@ public class TrackerService {
     }
 
     @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
-    @Transactional
     public void cleanup() {
         var count = redisTrackedPeerRepository.cleanup();
         log.info("已清除 {} 个不活跃的 Peers", count);

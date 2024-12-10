@@ -15,6 +15,8 @@ import org.springframework.stereotype.Repository;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -28,6 +30,8 @@ public class RedisTrackedPeerRepository {
     private RedisTemplate<String, String> generalRedisTemplate;
     @Value("${service.tracker.inactive-interval}")
     private long inactiveInterval;
+    @Value("${service.tracker.cleanup-parallel-threshold}")
+    private int parallelCleanupThreshold;
 
     public RedisTrackedPeerRepository(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -137,43 +141,51 @@ public class RedisTrackedPeerRepository {
     }
 
     public long cleanup() {
+        Semaphore semaphore = new Semaphore(parallelCleanupThreshold);
         AtomicLong deleted = new AtomicLong(0);
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            List<TrackedPeer> pendingForRemove = new ArrayList<>();
-            var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
-            while (cursor.hasNext()) {
-                var peer = cursor.next();
-                // check if inactive
-                String infoHash = key.substring("tracker_peers:".length());
-                var lastSeenKey = "peer_last_seen:" + infoHash + ":" + peer.toKey();
-                String lastSeen = generalRedisTemplate.opsForValue().get(lastSeenKey);
-                if (lastSeen == null) {
-                    // key indicator has been expired
-                    pendingForRemove.add(peer);
-                } else {
-                    // and we check if it's inactive
-                    if (System.currentTimeMillis() - Long.parseLong(lastSeen) > inactiveInterval) {
-                        pendingForRemove.add(peer);
-                        generalRedisTemplate.opsForValue().getAndDelete(lastSeenKey);
+        try (var exec = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
+                exec.submit(() -> {
+                    List<TrackedPeer> pendingForRemove = new ArrayList<>();
+                    var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
+                    while (cursor.hasNext()) {
+                        var peer = cursor.next();
+                        // check if inactive
+                        String infoHash = key.substring("tracker_peers:".length());
+                        var lastSeenKey = "peer_last_seen:" + infoHash + ":" + peer.toKey();
+                        String lastSeen = generalRedisTemplate.opsForValue().get(lastSeenKey);
+                        if (lastSeen == null) {
+                            // key indicator has been expired
+                            pendingForRemove.add(peer);
+                        } else {
+                            // and we check if it's inactive
+                            if (System.currentTimeMillis() - Long.parseLong(lastSeen) > inactiveInterval) {
+                                pendingForRemove.add(peer);
+                                generalRedisTemplate.opsForValue().getAndDelete(lastSeenKey);
+                            }
+                        }
                     }
-                }
-            }
-            redisTemplate.executePipelined(new SessionCallback<>() {
-                @Override
-                public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
-                    for (TrackedPeer trackedPeer : pendingForRemove) {
-                        deleted.incrementAndGet();
-                        ops.opsForSet().remove((K) key, trackedPeer);
+                    redisTemplate.executePipelined(new SessionCallback<>() {
+                        @Override
+                        public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
+                            for (TrackedPeer trackedPeer : pendingForRemove) {
+                                deleted.incrementAndGet();
+                                ops.opsForSet().remove((K) key, trackedPeer);
+                            }
+                            return null;
+                        }
+                    });
+                    // check if empty
+                    if (redisTemplate.opsForSet().size(key) == 0) {
+                        redisTemplate.delete(key);
                     }
-                    return null;
-                }
-            });
-            // check if empty
-            if (redisTemplate.opsForSet().size(key) == 0) {
-                redisTemplate.delete(key);
+                });
             }
+
         }
         return deleted.get();
+
+
     }
 
 }
