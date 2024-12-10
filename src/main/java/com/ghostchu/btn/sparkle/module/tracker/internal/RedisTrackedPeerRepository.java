@@ -32,26 +32,30 @@ public class RedisTrackedPeerRepository {
         this.meterRegistry = meterRegistry;
     }
 
-    public void registerPeers(byte[] infoHash, Collection<TrackedPeer> peers) {
-        // remove exists peers from redis if they have same peerId OR same peerIp and port
+
+    public void registerPeers(Map<byte[], Set<TrackedPeer>> announceMap) {
         long startAt = System.nanoTime();
-        try {
-            String infoHashString = ByteUtil.bytesToHex(infoHash);
-            redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
-
-            generalRedisTemplate.executePipelined(new SessionCallback<>() {
-                @Override
-                public <K, V> Object execute(RedisOperations<K, V> operations) throws DataAccessException {
-                    for (TrackedPeer peer : peers) {
-                        generalRedisTemplate.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
+        redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public <K, V> Object execute(RedisOperations<K, V> redisTemplateOperations) throws DataAccessException {
+                generalRedisTemplate.executePipelined(new SessionCallback<>() {
+                    @Override
+                    public <K2, V2> Object execute(RedisOperations<K2, V2> generalTemplateOperations) throws DataAccessException {
+                        for (Map.Entry<byte[], Set<TrackedPeer>> entry : announceMap.entrySet()) {
+                            String infoHashString = ByteUtil.bytesToHex(entry.getKey());
+                            var peers = entry.getValue();
+                            redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
+                            for (TrackedPeer peer : peers) {
+                                generalRedisTemplate.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
+                            }
+                        }
+                        return null;
                     }
-                    return null;
-                }
-            });
-
-        } finally {
-            meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
-        }
+                });
+                return null;
+            }
+        });
+        meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
     }
 
     public Set<TrackedPeer> getPeers(byte[] infoHash, int amount) {
@@ -164,4 +168,5 @@ public class RedisTrackedPeerRepository {
         }
         return deleted;
     }
+
 }

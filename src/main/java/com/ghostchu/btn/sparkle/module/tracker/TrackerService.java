@@ -18,9 +18,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
@@ -110,21 +108,13 @@ public class TrackerService {
                     announce.userAgent()
             ));
         }
-        Semaphore semaphore = new Semaphore(announceRegisterParallel);
-        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (var entry : announceMap.entrySet()) {
-                executor.submit(() -> {
-                    try {
-                        semaphore.acquire();
-                        redisTrackedPeerRepository.registerPeers(entry.getKey(), entry.getValue());
-                    } catch (Exception e) {
-                        log.warn("Failed to register peers on Redis", e);
-                    } finally {
-                        semaphore.release();
-                    }
-                });
-            }
+        try {
+            redisTrackedPeerRepository.registerPeers(announceMap);
+        } catch (Exception e) {
+            log.warn("Failed to register peers on Redis", e);
+
         }
+        ;
     }
 //
 //    private void executeJdbcAnnounce() {
