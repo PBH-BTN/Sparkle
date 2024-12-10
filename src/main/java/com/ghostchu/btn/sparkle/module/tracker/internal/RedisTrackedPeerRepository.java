@@ -49,9 +49,9 @@ public class RedisTrackedPeerRepository {
                         for (Map.Entry<byte[], Set<TrackedPeer>> entry : announceMap.entrySet()) {
                             String infoHashString = ByteUtil.bytesToHex(entry.getKey());
                             var peers = entry.getValue();
-                            redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
+                            redisTemplateOperations.opsForSet().add((K) ("tracker_peers:" + infoHashString), (V) peers.toArray(new TrackedPeer[0]));
                             for (TrackedPeer peer : peers) {
-                                generalRedisTemplate.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
+                                generalTemplateOperations.opsForValue().set((K2) ("peer_last_seen:" + infoHashString + ":" + peer.toKey()), (V2) String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
                             }
                         }
                         return null;
