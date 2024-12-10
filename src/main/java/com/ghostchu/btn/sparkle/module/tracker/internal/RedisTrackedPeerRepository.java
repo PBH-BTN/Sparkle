@@ -167,16 +167,19 @@ public class RedisTrackedPeerRepository {
                             }
                         }
                     }
-                    redisTemplate.executePipelined(new SessionCallback<>() {
-                        @Override
-                        public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
-                            for (TrackedPeer trackedPeer : pendingForRemove) {
-                                deleted.incrementAndGet();
-                                ops.opsForSet().remove((K) key, trackedPeer);
-                            }
-                            return null;
-                        }
-                    });
+                    for (TrackedPeer trackedPeer : pendingForRemove) {
+                        deleted.incrementAndGet();
+                        redisTemplate.opsForSet().remove(key, trackedPeer);
+                    }
+//                    redisTemplate.executePipelined(new SessionCallback<>() {
+//                        @Override
+//                        public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
+//                            for (TrackedPeer trackedPeer : pendingForRemove) {
+//
+//                            }
+//                            return null;
+//                        }
+//                    });
                     // check if empty
                     if (redisTemplate.opsForSet().size(key) == 0) {
                         redisTemplate.delete(key);
