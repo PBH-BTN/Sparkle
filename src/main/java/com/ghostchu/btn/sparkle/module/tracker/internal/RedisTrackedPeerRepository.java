@@ -2,6 +2,9 @@ package com.ghostchu.btn.sparkle.module.tracker.internal;
 
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,8 +18,6 @@ import org.springframework.stereotype.Repository;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -72,7 +73,7 @@ public class RedisTrackedPeerRepository {
     public List<TrackedPeer> scanPeersWithCondition(Function<TrackedPeer, Boolean> condition) {
         List<TrackedPeer> result = new ArrayList<>();
         for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build())) {
+            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(3000).build())) {
                 while (cursor.hasNext()) {
                     var peer = cursor.next();
                     if (condition.apply(peer)) {
@@ -105,92 +106,83 @@ public class RedisTrackedPeerRepository {
         return count;
     }
 
-    public long countPeers() {
-        long count = 0;
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            count += redisTemplate.opsForSet().size(key);
-        }
-        return count;
-    }
-
-    public long countUniquePeerIds() {
-        Set<byte[]> count = new HashSet<>();
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            try (var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build())) {
-                while (cursor.hasNext()) {
-                    var peer = cursor.next();
-                    count.add(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1));
+    public UniqueRecords countUniqueRecords() {
+        Set<byte[]> peerIds = new HashSet<>();
+        Set<byte[]> ips = new HashSet<>();
+        long infoHashes = 0;
+        long peers = 0;
+        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").count(3000).build())) {
+            while (infoHashCursor.hasNext()) {
+                var peer = infoHashCursor.next();
+                infoHashes++;
+                try (var peersCursor = redisTemplate.opsForSet().scan(peer, ScanOptions.scanOptions().count(3000).build())) {
+                    while (peersCursor.hasNext()) {
+                        var trackedPeer = peersCursor.next();
+                        peers++;
+                        peerIds.add(trackedPeer.getPeerId().getBytes(StandardCharsets.ISO_8859_1));
+                        ips.add(trackedPeer.getPeerIp().getBytes(StandardCharsets.ISO_8859_1));
+                    }
                 }
             }
         }
-        return count.size();
-    }
-
-    public long countUniqueTorrents() {
-        return redisTemplate.opsForSet().getOperations().keys("tracker_peers:*").size();
-    }
-
-    public long countUniqueIps() {
-        Set<String> count = new HashSet<>();
-        for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-            var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
-            while (cursor.hasNext()) {
-                var peer = cursor.next();
-                count.add(peer.getPeerIp());
-            }
-        }
-        return count.size();
+        return new UniqueRecords(infoHashes, peerIds.size(), ips.size(), peers);
     }
 
     public long cleanup() {
-        Semaphore semaphore = new Semaphore(parallelCleanupThreshold);
         AtomicLong deleted = new AtomicLong(0);
-        try (var exec = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (String key : redisTemplate.opsForSet().getOperations().keys("tracker_peers:*")) {
-                exec.submit(() -> {
-                    List<TrackedPeer> pendingForRemove = new ArrayList<>();
-                    var cursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(10000).build());
-                    while (cursor.hasNext()) {
-                        var peer = cursor.next();
+        var pendingForRemove = scanExpiredPeers();
+        redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
+                RedisOperations<String, TrackedPeer> opsForce = (RedisOperations<String, TrackedPeer>) ops;
+                for (Map.Entry<String, Set<TrackedPeer>> entry : pendingForRemove.entrySet()) {
+                    for (TrackedPeer trackedPeer : entry.getValue()) {
+                        deleted.incrementAndGet();
+                        opsForce.opsForSet().remove(entry.getKey(), trackedPeer);
+                    }
+                }
+                return null;
+            }
+        });
+        // check if empty
+        for (String key : pendingForRemove.keySet()) {
+            if (redisTemplate.opsForSet().size(key) == 0) {
+                redisTemplate.delete(key);
+            }
+        }
+        return deleted.get();
+    }
+
+    private Map<String, Set<TrackedPeer>> scanExpiredPeers() {
+        Map<String, Set<TrackedPeer>> pendingForRemove = new HashMap<>();
+        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").count(3000).build())) {
+            while (infoHashCursor.hasNext()) {
+                var key = infoHashCursor.next();
+                try (var peersCursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(3000).build())) {
+                    while (peersCursor.hasNext()) {
+                        var peer = peersCursor.next();
                         // check if inactive
                         String infoHash = key.substring("tracker_peers:".length());
                         var lastSeenKey = "peer_last_seen:" + infoHash + ":" + peer.toKey();
                         String lastSeen = generalRedisTemplate.opsForValue().get(lastSeenKey);
                         if (lastSeen == null) {
-                            // key indicator has been expired
-                            pendingForRemove.add(peer);
-                        } else {
-                            // and we check if it's inactive
-                            if (System.currentTimeMillis() - Long.parseLong(lastSeen) > inactiveInterval) {
-                                pendingForRemove.add(peer);
-                                generalRedisTemplate.opsForValue().getAndDelete(lastSeenKey);
-                            }
+                            // add to pending for remove
+                            pendingForRemove.computeIfAbsent("tracker_peers:" + infoHash, k -> new HashSet<>()).add(peer);
                         }
                     }
-                    for (TrackedPeer trackedPeer : pendingForRemove) {
-                        deleted.incrementAndGet();
-                        redisTemplate.opsForSet().remove(key, trackedPeer);
-                    }
-//                    redisTemplate.executePipelined(new SessionCallback<>() {
-//                        @Override
-//                        public <K, V> Object execute(RedisOperations<K, V> ops) throws DataAccessException {
-//                            for (TrackedPeer trackedPeer : pendingForRemove) {
-//
-//                            }
-//                            return null;
-//                        }
-//                    });
-                    // check if empty
-                    if (redisTemplate.opsForSet().size(key) == 0) {
-                        redisTemplate.delete(key);
-                    }
-                });
+                }
             }
-
         }
-        return deleted.get();
-
-
+        return pendingForRemove;
     }
 
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class UniqueRecords {
+        private long uniqueInfoHashes;
+        private long uniquePeerIds;
+        private long uniqueIps;
+        private long peers;
+    }
 }

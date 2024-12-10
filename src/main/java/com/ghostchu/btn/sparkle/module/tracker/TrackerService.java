@@ -58,10 +58,11 @@ public class TrackerService {
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
     @Transactional
     public void updateTrackerMetrics() {
-        var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", redisTrackedPeerRepository.countPeers());
-        var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", redisTrackedPeerRepository.countUniquePeerIds());
-        var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", redisTrackedPeerRepository.countUniqueIps());
-        var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_active_tasks", redisTrackedPeerRepository.countUniqueTorrents());
+        var uniqueRecords = redisTrackedPeerRepository.countUniqueRecords();
+        var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", uniqueRecords.getUniquePeerIds());
+        var uniquePeers = meterRegistry.gauge("sparkle_tracker_tracking_unique_peers", uniqueRecords.getUniquePeerIds());
+        var uniqueIps = meterRegistry.gauge("sparkle_tracker_tracking_unique_ips", uniqueRecords.getUniqueIps());
+        var activeTasks = meterRegistry.gauge("sparkle_tracker_tracking_active_tasks", uniqueRecords.getUniqueInfoHashes());
         log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
