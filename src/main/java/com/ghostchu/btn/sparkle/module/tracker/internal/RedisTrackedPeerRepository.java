@@ -39,30 +39,43 @@ public class RedisTrackedPeerRepository {
     }
 
 
+//    public void registerPeers(Map<byte[], Set<TrackedPeer>> announceMap) {
+//        long startAt = System.nanoTime();
+//        redisTemplate.executePipelined(new SessionCallback<>() {
+//            @Override
+//            public <K, V> Object execute(RedisOperations<K, V> redisTemplateOperations) throws DataAccessException {
+//                RedisOperations<String, TrackedPeer> redisTemplateOperationsForce = (RedisOperations<String, TrackedPeer>) redisTemplateOperations;
+//                redisTemplateOperationsForce.executePipelined(new SessionCallback<>() {
+//                    @Override
+//                    public <K2, V2> Object execute(RedisOperations<K2, V2> generalTemplateOperations) throws DataAccessException {
+//                        RedisOperations<String, String> generalTemplateOperationsForce = (RedisOperations<String, String>) generalTemplateOperations;
+//                        for (Map.Entry<byte[], Set<TrackedPeer>> entry : announceMap.entrySet()) {
+//                            String infoHashString = ByteUtil.bytesToHex(entry.getKey());
+//                            var peers = entry.getValue();
+//                            redisTemplateOperationsForce.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
+//                            for (TrackedPeer peer : peers) {
+//                                generalTemplateOperationsForce.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
+//                            }
+//                        }
+//                        return null;
+//                    }
+//                });
+//                return null;
+//            }
+//        });
+//        meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
+//    }
+
     public void registerPeers(Map<byte[], Set<TrackedPeer>> announceMap) {
         long startAt = System.nanoTime();
-        redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public <K, V> Object execute(RedisOperations<K, V> redisTemplateOperations) throws DataAccessException {
-                RedisOperations<String, TrackedPeer> redisTemplateOperationsForce = (RedisOperations<String, TrackedPeer>) redisTemplateOperations;
-                redisTemplateOperationsForce.executePipelined(new SessionCallback<>() {
-                    @Override
-                    public <K2, V2> Object execute(RedisOperations<K2, V2> generalTemplateOperations) throws DataAccessException {
-                        RedisOperations<String, String> generalTemplateOperationsForce = (RedisOperations<String, String>) generalTemplateOperations;
-                        for (Map.Entry<byte[], Set<TrackedPeer>> entry : announceMap.entrySet()) {
-                            String infoHashString = ByteUtil.bytesToHex(entry.getKey());
-                            var peers = entry.getValue();
-                            redisTemplateOperationsForce.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
-                            for (TrackedPeer peer : peers) {
-                                generalTemplateOperationsForce.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
-                            }
-                        }
-                        return null;
-                    }
-                });
-                return null;
+        for (Map.Entry<byte[], Set<TrackedPeer>> entry : announceMap.entrySet()) {
+            String infoHashString = ByteUtil.bytesToHex(entry.getKey());
+            var peers = entry.getValue();
+            redisTemplate.opsForSet().add("tracker_peers:" + infoHashString, peers.toArray(new TrackedPeer[0]));
+            for (TrackedPeer peer : peers) {
+                generalRedisTemplate.opsForValue().set("peer_last_seen:" + infoHashString + ":" + peer.toKey(), String.valueOf(System.currentTimeMillis()), Duration.ofMillis(inactiveInterval));
             }
-        });
+        }
         meterRegistry.gauge("tracker_register_peers_cost_ns", System.nanoTime() - startAt);
     }
 

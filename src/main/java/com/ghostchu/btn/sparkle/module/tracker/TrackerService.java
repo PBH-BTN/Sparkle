@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,9 +19,10 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -29,9 +31,9 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final RedisTrackedPeerRepository redisTrackedPeerRepository;
-    private final Deque<PeerAnnounce> peerAnnounces;
-    private final ReentrantLock announceFlushLock = new ReentrantLock();
-    private final int processBatchSize;
+//    private final Deque<PeerAnnounce> peerAnnounces;
+//    private final ReentrantLock announceFlushLock = new ReentrantLock();
+//    private final int processBatchSize;
 
 
     public TrackerService(
@@ -43,8 +45,8 @@ public class TrackerService {
         this.peersFetchCounter = meterRegistry.counter("sparkle_tracker_peers_fetch");
         this.scrapeCounter = meterRegistry.counter("sparkle_tracker_scrape");
         this.redisTrackedPeerRepository = redisTrackedPeerRepository;
-        this.peerAnnounces = new LinkedBlockingDeque<>(queueMaxSize);
-        this.processBatchSize = processBatchSize;
+//        this.peerAnnounces = new LinkedBlockingDeque<>(queueMaxSize);
+//        this.processBatchSize = processBatchSize;
     }
 
     @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
@@ -64,49 +66,60 @@ public class TrackerService {
         log.info("已清除 {} 个不活跃的 Peers", count);
     }
 
-    public boolean scheduleAnnounce(PeerAnnounce announce) {
-        return peerAnnounces.offer(announce);
+//    public boolean scheduleAnnounce(PeerAnnounce announce) {
+//        return peerAnnounces.offer(announce);
+//    }
+
+
+    //    @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
+//    public void flushAnnounces() {
+//        boolean locked = announceFlushLock.tryLock();
+//        if (!locked) {
+//            log.info("Skipped this round announce flush, another task is running. Remaining announces: {}", peerAnnounces.size());
+//            return;
+//        }
+//        try {
+//            while (!peerAnnounces.isEmpty()) {
+//                executeRedisAnnounce();
+//            }
+//        } finally {
+//            announceFlushLock.unlock();
+//        }
+//    }
+    @Async
+    public void announce(PeerAnnounce announce) {
+        redisTrackedPeerRepository.registerPeers(Map.of(announce.infoHash(), Set.of(new TrackedPeer(
+                new String(announce.peerId(), StandardCharsets.ISO_8859_1),
+                announce.reqIp(),
+                announce.peerIp(),
+                announce.peerPort(),
+                announce.left() == 0,
+                announce.userAgent()
+        ))));
     }
 
-
-    @Scheduled(fixedRateString = "${service.tracker.announce-flush-interval}")
-    public void flushAnnounces() {
-        boolean locked = announceFlushLock.tryLock();
-        if (!locked) {
-            log.info("Skipped this round announce flush, another task is running. Remaining announces: {}", peerAnnounces.size());
-            return;
-        }
-        try {
-            while (!peerAnnounces.isEmpty()) {
-                executeRedisAnnounce();
-            }
-        } finally {
-            announceFlushLock.unlock();
-        }
-    }
-
-    private void executeRedisAnnounce() {
-        Map<byte[], Set<TrackedPeer>> announceMap = new HashMap<>();
-        for (int i = 0; i < processBatchSize && !peerAnnounces.isEmpty(); i++) {
-            var announce = peerAnnounces.poll();
-            // get or create Set by info_hash
-            var peers = announceMap.computeIfAbsent(announce.infoHash(), k -> new HashSet<>());
-            peers.add(new TrackedPeer(
-                    new String(announce.peerId(), StandardCharsets.ISO_8859_1),
-                    announce.reqIp(),
-                    announce.peerIp(),
-                    announce.peerPort(),
-                    announce.left() == 0,
-                    announce.userAgent()
-            ));
-        }
-        try {
-            redisTrackedPeerRepository.registerPeers(announceMap);
-        } catch (Exception e) {
-            log.warn("Failed to register peers on Redis", e);
-
-        }
-    }
+//    private void executeRedisAnnounce() {
+//        Map<byte[], Set<TrackedPeer>> announceMap = new HashMap<>();
+//        for (int i = 0; i < processBatchSize && !peerAnnounces.isEmpty(); i++) {
+//            var announce = peerAnnounces.poll();
+//            // get or create Set by info_hash
+//            var peers = announceMap.computeIfAbsent(announce.infoHash(), k -> new HashSet<>());
+//            peers.add(new TrackedPeer(
+//                    new String(announce.peerId(), StandardCharsets.ISO_8859_1),
+//                    announce.reqIp(),
+//                    announce.peerIp(),
+//                    announce.peerPort(),
+//                    announce.left() == 0,
+//                    announce.userAgent()
+//            ));
+//        }
+//        try {
+//            redisTrackedPeerRepository.registerPeers(announceMap);
+//        } catch (Exception e) {
+//            log.warn("Failed to register peers on Redis", e);
+//
+//        }
+//    }
 
     @Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {

@@ -189,7 +189,7 @@ public class TrackerController extends SparkleController {
             }
 
             for (InetAddress ip : peerIps) {
-                if (!trackerService.scheduleAnnounce(new TrackerService.PeerAnnounce(
+                trackerService.announce(new TrackerService.PeerAnnounce(
                         infoHash,
                         peerId,
                         reqIpInetAddress,
@@ -200,16 +200,7 @@ public class TrackerController extends SparkleController {
                         left,
                         peerEvent,
                         ua(req)
-                ))) {
-                    tickMetrics("announce_req_fails", 1);
-                    if (warningSender.sendIfPossible()) {
-                        log.warn("[Tracker Busy] Disk flush queue is full!");
-                    }
-                    long retryAfterSeconds = generateRetryInterval() / 1000;
-                    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                            .contentType(MediaType.TEXT_PLAIN)
-                            .body(generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
-                }
+                ));
             }
             TrackerService.TrackedPeerList peers;
             if (peerEvent != PeerEvent.STOPPED) {
