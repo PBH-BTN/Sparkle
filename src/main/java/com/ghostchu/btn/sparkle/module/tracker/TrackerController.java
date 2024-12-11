@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -118,16 +119,25 @@ public class TrackerController extends SparkleController {
     @ResponseBody
     public ResponseEntity<byte[]> announce() throws InterruptedException {
         if (trackerMaintenance) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(generateFailureResponse(trackerMaintenanceMessage, 86400));
+            return ResponseEntity
+                    .status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(generateFailureResponse(trackerMaintenanceMessage, 86400));
         }
         tickMetrics("announce_req", 1);
         if (req.getQueryString() == null) {
-            return ResponseEntity.badRequest().body("Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8));
+            return ResponseEntity
+                    .badRequest()
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body("Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8));
         }
         String userAgent = ua(req);
         if (userAgent != null) {
             if (userAgent.contains("Mozilla")) {
-                return ResponseEntity.badRequest().body("Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8));
+                return ResponseEntity
+                        .badRequest()
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body("Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8));
             }
         }
         var infoHashes = extractInfoHashes(req.getQueryString());
@@ -173,7 +183,9 @@ public class TrackerController extends SparkleController {
                 if (warningSender.sendIfPossible()) {
                     log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
                 }
-                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
+                return ResponseEntity.status(HttpStatus.BANDWIDTH_LIMIT_EXCEEDED)
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body(generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
             }
 
             for (InetAddress ip : peerIps) {
@@ -194,7 +206,9 @@ public class TrackerController extends SparkleController {
                         log.warn("[Tracker Busy] Disk flush queue is full!");
                     }
                     long retryAfterSeconds = generateRetryInterval() / 1000;
-                    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
+                    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                            .contentType(MediaType.TEXT_PLAIN)
+                            .body(generateFailureResponse("Tracker is busy (disk flush queue is full), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
                 }
             }
             TrackerService.TrackedPeerList peers;
@@ -234,7 +248,10 @@ public class TrackerController extends SparkleController {
                 }});
             }
             tickMetrics("announce_req_success", 1);
-            return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(BencodeUtil.INSTANCE.encode(map));
         } finally {
             parallelAnnounceSemaphore.release();
         }
