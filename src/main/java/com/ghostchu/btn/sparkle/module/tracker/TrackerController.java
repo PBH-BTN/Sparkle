@@ -3,7 +3,6 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
-import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.WarningSender;
 import com.google.common.net.HostAndPort;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -152,7 +151,7 @@ public class TrackerController extends SparkleController {
             peerEvent = PeerEvent.fromString(event);
         }
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
-        var reqIpInetAddress = IPUtil.toInet(ip(req));
+        var reqIpInetAddress = ip(req);
         List<InetAddress> peerIps = getPossiblePeerIps(req)
                 .stream()
                 .map(s -> {
@@ -182,7 +181,7 @@ public class TrackerController extends SparkleController {
                         infoHash,
                         peerId,
                         reqIpInetAddress,
-                        ip,
+                        ip.getHostAddress(),
                         port,
                         uploaded,
                         downloaded,

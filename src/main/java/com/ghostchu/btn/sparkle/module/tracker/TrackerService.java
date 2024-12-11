@@ -93,8 +93,8 @@ public class TrackerService {
             var peers = announceMap.computeIfAbsent(announce.infoHash(), k -> new HashSet<>());
             peers.add(new TrackedPeer(
                     new String(announce.peerId(), StandardCharsets.ISO_8859_1),
-                    announce.reqIp().getHostAddress(),
-                    announce.peerIp().getHostAddress(),
+                    announce.reqIp(),
+                    announce.peerIp(),
                     announce.peerPort(),
                     announce.left() == 0,
                     announce.userAgent()
@@ -156,8 +156,8 @@ public class TrackerService {
     public record PeerAnnounce(
             byte[] infoHash,
             byte[] peerId,
-            InetAddress reqIp,
-            InetAddress peerIp,
+            String reqIp,
+            String peerIp,
             int peerPort,
             long uploaded,
             long downloaded,
