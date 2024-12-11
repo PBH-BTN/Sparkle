@@ -5,7 +5,7 @@ import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.WarningSender;
-import inet.ipaddr.IPAddress;
+import com.google.common.net.HostAndPort;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigInteger;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.URLDecoder;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -58,6 +60,8 @@ public class TrackerController extends SparkleController {
     private MeterRegistry meterRegistry;
     @Autowired
     private StringRedisTemplate redisStringTemplate;
+    @Value("${service.tracker.max-peers-return}")
+    private int maxPeersReturn;
 
     public TrackerController(@Value("${service.tracker.max-parallel-announce-service-requests}")
                              int maxParallelAnnounceServiceRequests,
@@ -90,7 +94,7 @@ public class TrackerController extends SparkleController {
      * @return 使用 ISO_8859_1 进行 URL 解码的 Info Hash 集合
      */
     public static List<byte[]> extractInfoHashes(String queryString) {
-        List<byte[]> infoHashes = new ArrayList<>();
+        List<byte[]> infoHashes = new ArrayList<>(1);
         if (queryString == null)
             throw new IllegalArgumentException("No queryString provided");
         String[] params = queryString.split("&");
@@ -123,12 +127,7 @@ public class TrackerController extends SparkleController {
         }
         String userAgent = ua(req);
         if (userAgent != null) {
-            if (userAgent.contains("Mozilla")
-                || userAgent.contains("Chrome")
-                || userAgent.contains("Firefox")
-                || userAgent.contains("Safari")
-                || userAgent.contains("Edge")
-                || userAgent.contains("Opera")) {
+            if (userAgent.contains("Mozilla")) {
                 return ResponseEntity.badRequest().body("Sorry, This is a BitTorrent Tracker, and access announce endpoint via Browser is disallowed and useless.".getBytes(StandardCharsets.UTF_8));
             }
         }
@@ -150,28 +149,24 @@ public class TrackerController extends SparkleController {
         PeerEvent peerEvent = PeerEvent.EMPTY;
         String event = req.getParameter("event");
         if (event != null) {
-            try {
-                peerEvent = PeerEvent.valueOf(event);
-            } catch (Exception ignored) {
-            }
+            peerEvent = PeerEvent.fromString(event);
         }
         int numWant = Integer.parseInt(Optional.ofNullable(req.getParameter("num_want")).orElse("50"));
         var reqIpInetAddress = IPUtil.toInet(ip(req));
         List<InetAddress> peerIps = getPossiblePeerIps(req)
                 .stream()
-                .filter(s -> !s.endsWith(":0"))
                 .map(s -> {
-                    var addr = IPUtil.toIPAddress(s);
-                    if (addr == null || addr.toString().equals(IPUtil.INVALID_FALLBACK_ADDRESS)) {
-                        //log.error("Query {} contains illegal IP address: {}, userIp={}, userAgent={}", req.getQueryString(), s, ServletUtil.getIP(req), req.getHeader("User-Agent"));
+                    try {
+                        return InetAddress.getByName(s.getHost());
+                    } catch (UnknownHostException e) {
+                        log.warn("Failed to parse peer IP: {}", s.getHost());
                         return null;
                     }
-                    return addr;
                 })
-                .filter(Objects::nonNull)
                 .distinct()
-                .filter(ip -> !ip.isLocal() && !ip.isLoopback())
-                .map(IPAddress::toInetAddress).toList();
+                .filter(Objects::nonNull)
+                .filter(ip -> !ip.isSiteLocalAddress() && !ip.isLoopbackAddress() && !ip.isAnyLocalAddress() && !ip.isMulticastAddress())
+                .toList();
         try {
             if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
                 tickMetrics("announce_req_fails", 1);
@@ -205,7 +200,7 @@ public class TrackerController extends SparkleController {
             }
             TrackerService.TrackedPeerList peers;
             if (peerEvent != PeerEvent.STOPPED) {
-                peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, numWant);
+                peers = trackerService.fetchPeersFromTorrent(infoHash, peerId, null, Math.min(maxPeersReturn, numWant));
             } else {
                 peers = new TrackerService.TrackedPeerList(Collections.emptyList(), Collections.emptyList(), 0L, 0L, 0L);
             }
@@ -214,7 +209,7 @@ public class TrackerController extends SparkleController {
             tickMetrics("announce_provided_peers_ipv6", peers.v6().size());
             long intervalMillis = generateInterval();
             // 合成响应
-            Map<String, Object> map = new HashMap<>();
+            Map<String, Object> map = new HashMap<>(8);
             map.put("interval", intervalMillis / 1000);
             map.put("complete", peers.seeders());
             map.put("incomplete", peers.leechers());
@@ -222,8 +217,6 @@ public class TrackerController extends SparkleController {
             map.put("external ip", ip(req));
             map.put("tracker id", instanceTrackerId);
 
-//        if (compact || noPeerId) {
-            tickMetrics("announce_return_peers_format_compact", 1);
             if (compact) {
                 tickMetrics("announce_return_peers_format_compact", 1);
                 map.put("peers", compactPeers(peers.v4(), false));
@@ -241,21 +234,7 @@ public class TrackerController extends SparkleController {
                     }
                 }});
             }
-//        } else {
-//        tickMetrics("announce_return_peers_format_full", 1);
-//        List<TrackerService.Peer> allPeers = new ArrayList<>(peers.v4().size() + peers.v6().size());
-//        allPeers.addAll(peers.v4());
-//        allPeers.addAll(peers.v6());
-//        map.put("peers", new HashMap<>() {{
-//            for (TrackerService.Peer p : allPeers) {
-//                put("ip", p.ip());
-//                put("port", p.port());
-//            }
-//        }});
-//        //}
-            //setNextAnnounceWindow(ByteUtil.bytesToHex(peerId), ByteUtil.bytesToHex(infoHash), intervalMillis);
             tickMetrics("announce_req_success", 1);
-            //auditService.log(req, "TRACKER_ANNOUNCE", true, Map.of("hash", infoHash, "user-agent", ua(req)));
             return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
         } finally {
             parallelAnnounceSemaphore.release();
@@ -336,7 +315,7 @@ public class TrackerController extends SparkleController {
 //        return ResponseEntity.ok(BencodeUtil.INSTANCE.encode(map));
 //    }
 
-    public List<String> getPossiblePeerIps(HttpServletRequest req) {
+    public List<HostAndPort> getPossiblePeerIps(HttpServletRequest req) {
         List<String> found = new ArrayList<>(12);
         found.add(ip(req));
         var ips = req.getParameterValues("ip");
@@ -351,31 +330,10 @@ public class TrackerController extends SparkleController {
         if (req.getParameter("ipv6") != null) {
             found.addAll(List.of(ipv6));
         }
-        return found;
+        return found.stream().map(HostAndPort::fromString).toList();
     }
 
     private void tickMetrics(String service, double increment) {
         meterRegistry.counter("sparkle_tracker_" + service).increment(increment);
-    }
-
-    private record SparkleTrackerMetricsMessage(
-            long seeders,
-            long leechers,
-            long finishes,
-            List<InetAddress> ips
-    ) {
-        @Override
-        public String toString() {
-            StringJoiner joiner = new StringJoiner(", ", "[", "]");
-            ips.stream().filter(inet -> inet instanceof Inet4Address).forEach(net -> joiner.add(net.getHostAddress()));
-            ips.stream().filter(inet -> inet instanceof Inet6Address).forEach(net -> joiner.add(net.getHostAddress()));
-            return "[Sparkle] S:%s L:%s F:%s, Announce IPs: %s"
-                    .formatted(
-                            seeders,
-                            leechers,
-                            finishes,
-                            joiner.toString()
-                    );
-        }
     }
 }
