@@ -329,7 +329,14 @@ public class TrackerController extends SparkleController {
         if (req.getParameter("ipv6") != null) {
             found.addAll(List.of(ipv6));
         }
-        return found.stream().map(HostAndPort::fromString).toList();
+        List<HostAndPort> hap = new ArrayList<>(found.size());
+        for (String s : found) {
+            try {
+                hap.add(HostAndPort.fromString(s));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return hap;
     }
 
     private void tickMetrics(String service, double increment) {
