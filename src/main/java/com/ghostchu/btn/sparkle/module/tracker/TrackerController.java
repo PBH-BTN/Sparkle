@@ -168,7 +168,7 @@ public class TrackerController extends SparkleController {
                     try {
                         return InetAddress.getByName(s.getHost());
                     } catch (UnknownHostException e) {
-                        log.warn("Failed to parse peer IP: {}", s.getHost());
+                        //log.warn("Failed to parse peer IP: {}", s.getHost());
                         return null;
                     }
                 })
