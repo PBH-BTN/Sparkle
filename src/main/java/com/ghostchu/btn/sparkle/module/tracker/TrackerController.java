@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 @Controller
 @Slf4j
@@ -117,7 +116,7 @@ public class TrackerController extends SparkleController {
 
     @GetMapping("/announce")
     @ResponseBody
-    public ResponseEntity<byte[]> announce() throws InterruptedException {
+    public ResponseEntity<byte[]> announce() {
         if (trackerMaintenance) {
             return ResponseEntity
                     .status(HttpStatus.SERVICE_UNAVAILABLE)
@@ -177,17 +176,6 @@ public class TrackerController extends SparkleController {
                 .filter(ip -> !ip.isSiteLocalAddress() && !ip.isLoopbackAddress() && !ip.isAnyLocalAddress() && !ip.isMulticastAddress())
                 .toList();
         try {
-            if (!parallelAnnounceSemaphore.tryAcquire(announceRequestMaxWait, TimeUnit.MILLISECONDS)) {
-                tickMetrics("announce_req_fails", 1);
-                long retryAfterSeconds = generateRetryInterval() / 1000;
-                if (warningSender.sendIfPossible()) {
-                    log.warn("[Tracker Busy] Too many queued requests, queue size: {}", parallelAnnounceSemaphore.getQueueLength());
-                }
-                return ResponseEntity.status(HttpStatus.BANDWIDTH_LIMIT_EXCEEDED)
-                        .contentType(MediaType.TEXT_PLAIN)
-                        .body(generateFailureResponse("Tracker is busy (too many queued requests), you have scheduled retry after " + retryAfterSeconds + " seconds", retryAfterSeconds));
-            }
-
             for (InetAddress ip : peerIps) {
                 trackerService.announce(new TrackerService.PeerAnnounce(
                         infoHash,
