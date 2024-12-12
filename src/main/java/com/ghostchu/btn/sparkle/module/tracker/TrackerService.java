@@ -3,11 +3,13 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.module.tracker.internal.RedisTrackedPeerRepository;
 import com.ghostchu.btn.sparkle.module.tracker.internal.TrackedPeer;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -31,6 +35,12 @@ public class TrackerService {
     private final Counter scrapeCounter;
     private final MeterRegistry meterRegistry;
     private final RedisTrackedPeerRepository redisTrackedPeerRepository;
+    private final Cache<byte[], TrackedPeerList> MEMORY_FAST_CACHE = CacheBuilder
+            .newBuilder()
+            .concurrencyLevel(200)
+            .expireAfterWrite(10000, TimeUnit.MILLISECONDS)
+            .maximumSize(200)
+            .build();
 //    private final Deque<PeerAnnounce> peerAnnounces;
 //    private final ReentrantLock announceFlushLock = new ReentrantLock();
 //    private final int processBatchSize;
@@ -121,34 +131,37 @@ public class TrackerService {
 //        }
 //    }
 
-    @Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
+    //@Cacheable(value = {"peers#10000"}, key = "#torrentInfoHash")
+    @SneakyThrows(ExecutionException.class)
     public TrackedPeerList fetchPeersFromTorrent(byte[] torrentInfoHash, byte[] peerId, InetAddress peerIp, int numWant) {
-        peersFetchCounter.increment();
-        List<Peer> v4 = new ArrayList<>(100);
-        List<Peer> v6 = new ArrayList<>(100);
-        int seeders = 0;
-        int leechers = 0;
-        long downloaded = 0;
-        for (var peer : redisTrackedPeerRepository.getPeers(torrentInfoHash, numWant)) {
-            try {
-                InetAddress address = InetAddress.getByName(peer.getPeerIp());
-                if (address instanceof Inet4Address inet4Address) {
-                    v4.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), inet4Address.getHostAddress(), peer.getPeerPort()));
-                } else if (address instanceof Inet6Address inet6Address) {
-                    v6.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), inet6Address.getHostAddress(), peer.getPeerPort()));
-                } else {
-                    continue;
+        return MEMORY_FAST_CACHE.get(torrentInfoHash, () -> {
+            peersFetchCounter.increment();
+            List<Peer> v4 = new ArrayList<>(100);
+            List<Peer> v6 = new ArrayList<>(100);
+            int seeders = 0;
+            int leechers = 0;
+            long downloaded = 0;
+            for (var peer : redisTrackedPeerRepository.getPeers(torrentInfoHash, numWant)) {
+                try {
+                    InetAddress address = InetAddress.getByName(peer.getPeerIp());
+                    if (address instanceof Inet4Address inet4Address) {
+                        v4.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), inet4Address.getHostAddress(), peer.getPeerPort()));
+                    } else if (address instanceof Inet6Address inet6Address) {
+                        v6.add(new Peer(peer.getPeerId().getBytes(StandardCharsets.ISO_8859_1), inet6Address.getHostAddress(), peer.getPeerPort()));
+                    } else {
+                        continue;
+                    }
+                    if (peer.isSeeder()) {
+                        seeders++;
+                    } else {
+                        leechers++;
+                    }
+                } catch (UnknownHostException e) {
+                    log.warn("Failed to parse peer IP: {}", peer.getPeerIp());
                 }
-                if (peer.isSeeder()) {
-                    seeders++;
-                } else {
-                    leechers++;
-                }
-            } catch (UnknownHostException e) {
-                log.warn("Failed to parse peer IP: {}", peer.getPeerIp());
             }
-        }
-        return new TrackedPeerList(v4, v6, seeders, leechers, downloaded);
+            return new TrackedPeerList(v4, v6, seeders, leechers, downloaded);
+        });
     }
 
 
