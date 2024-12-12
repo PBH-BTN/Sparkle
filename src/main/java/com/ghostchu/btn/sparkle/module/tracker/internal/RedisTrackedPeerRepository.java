@@ -85,10 +85,10 @@ public class RedisTrackedPeerRepository {
 
     public List<TrackedPeer> scanPeersWithCondition(Function<TrackedPeer, Boolean> condition) {
         List<TrackedPeer> result = new ArrayList<>();
-        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").count(3000).build())) {
+        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").build())) {
             while (infoHashCursor.hasNext()) {
                 var key = infoHashCursor.next();
-                try (var peersCursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(3000).build())) {
+                try (var peersCursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
                     while (peersCursor.hasNext()) {
                         var p = peersCursor.next();
                         if (condition.apply(p)) {
@@ -105,7 +105,7 @@ public class RedisTrackedPeerRepository {
         Map<String, Integer> count = new HashMap<>(2);
         int seeders = 0;
         int leechers = 0;
-        try (var cursor = redisTemplate.opsForSet().scan("tracked_peer:" + ByteUtil.bytesToHex(infoHash), ScanOptions.scanOptions().count(500).build())) {
+        try (var cursor = redisTemplate.opsForSet().scan("tracked_peer:" + ByteUtil.bytesToHex(infoHash), ScanOptions.scanOptions().build())) {
             while (cursor.hasNext()) {
                 var peer = cursor.next();
                 if (peer.isSeeder()) {
@@ -125,11 +125,11 @@ public class RedisTrackedPeerRepository {
         Set<byte[]> ips = new HashSet<>();
         long infoHashes = 0;
         long peers = 0;
-        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").count(3000).build())) {
+        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").build())) {
             while (infoHashCursor.hasNext()) {
                 var peer = infoHashCursor.next();
                 infoHashes++;
-                try (var peersCursor = redisTemplate.opsForSet().scan(peer, ScanOptions.scanOptions().count(3000).build())) {
+                try (var peersCursor = redisTemplate.opsForSet().scan(peer, ScanOptions.scanOptions().build())) {
                     while (peersCursor.hasNext()) {
                         var trackedPeer = peersCursor.next();
                         peers++;
@@ -169,10 +169,10 @@ public class RedisTrackedPeerRepository {
 
     private Map<String, Set<TrackedPeer>> scanExpiredPeers() {
         Map<String, Set<TrackedPeer>> pendingForRemove = new HashMap<>();
-        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").count(3000).build())) {
+        try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").build())) {
             while (infoHashCursor.hasNext()) {
                 var key = infoHashCursor.next();
-                try (var peersCursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().count(3000).build())) {
+                try (var peersCursor = redisTemplate.opsForSet().scan(key, ScanOptions.scanOptions().build())) {
                     while (peersCursor.hasNext()) {
                         var peer = peersCursor.next();
                         // check if inactive
