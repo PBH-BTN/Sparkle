@@ -16,12 +16,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class SpringRedisConfig {
     @Bean
-    public LettuceConnectionFactory redisConnectionFactory(@Value("${sparkle.redis.unixsocket}") String redisSocket, LettuceConnectionFactory lettuceConnectionFactory) {
-        if (redisSocket == null || redisSocket.isEmpty()) {
-            return lettuceConnectionFactory;
-        }
+    public LettuceConnectionFactory redisConnectionFactory(@Value("${sparkle.redis.unixsocket}") String redisSocket) {
         return new LettuceConnectionFactory(new RedisSocketConfiguration(redisSocket));
     }
+
     @Bean
     @Primary
     public RedisTemplate<String, String> redisTemplate(LettuceConnectionFactory redisConnectionFactory, ObjectMapper mapper) {
