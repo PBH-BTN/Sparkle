@@ -161,7 +161,7 @@ public class RedisTrackedPeerRepository {
         // check if empty
         for (String key : pendingForRemove.keySet()) {
             if (redisTemplate.opsForSet().size(key) == 0) {
-                redisTemplate.delete(key);
+                redisTemplate.unlink(key);
             }
         }
         return deleted.get();
