@@ -15,7 +15,6 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.stereotype.Repository;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -121,8 +120,8 @@ public class RedisTrackedPeerRepository {
     }
 
     public UniqueRecords countUniqueRecords() {
-        Set<byte[]> peerIds = new HashSet<>();
-        Set<byte[]> ips = new HashSet<>();
+        //Set<byte[]> peerIds = new HashSet<>();
+        //Set<byte[]> ips = new HashSet<>();
         long infoHashes = 0;
         long peers = 0;
         try (var infoHashCursor = redisTemplate.scan(ScanOptions.scanOptions().match("tracker_peers:*").build())) {
@@ -131,15 +130,16 @@ public class RedisTrackedPeerRepository {
                 infoHashes++;
                 try (var peersCursor = redisTemplate.opsForSet().scan(peer, ScanOptions.scanOptions().build())) {
                     while (peersCursor.hasNext()) {
-                        var trackedPeer = peersCursor.next();
+                        peersCursor.next();
+                        //var trackedPeer = peersCursor.next();
                         peers++;
-                        peerIds.add(trackedPeer.getPeerId().getBytes(StandardCharsets.ISO_8859_1));
-                        ips.add(trackedPeer.getPeerIp().getBytes(StandardCharsets.ISO_8859_1));
+                        //peerIds.add(trackedPeer.getPeerId().getBytes(StandardCharsets.ISO_8859_1));
+                        //ips.add(trackedPeer.getPeerIp().getBytes(StandardCharsets.ISO_8859_1));
                     }
                 }
             }
         }
-        return new UniqueRecords(infoHashes, peerIds.size(), ips.size(), peers);
+        return new UniqueRecords(infoHashes, -1, -1, peers);
     }
 
     public long cleanup() {
