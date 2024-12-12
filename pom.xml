@@ -252,11 +252,18 @@
             <artifactId>jackson-module-parameter-names</artifactId>
             <version>2.18.2</version>
         </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>io.gitee.the-keyboard.jdbc</groupId>-->
+        <!--            <artifactId>tx-plus</artifactId>-->
+        <!--            <version>0.1-beta</version>-->
+        <!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
         <dependency>
-            <groupId>io.gitee.the-keyboard.jdbc</groupId>
-            <artifactId>tx-plus</artifactId>
-            <version>0.1-beta</version>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.115.Final</version>
         </dependency>
+
     </dependencies>
     <dependencyManagement>
         <dependencies>
