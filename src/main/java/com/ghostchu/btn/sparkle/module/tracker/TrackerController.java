@@ -3,7 +3,6 @@ package com.ghostchu.btn.sparkle.module.tracker;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.tracker.internal.PeerEvent;
 import com.ghostchu.btn.sparkle.util.BencodeUtil;
-import com.ghostchu.btn.sparkle.util.WarningSender;
 import com.google.common.net.HostAndPort;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigInteger;
@@ -35,8 +33,6 @@ import java.util.concurrent.Semaphore;
 public class TrackerController extends SparkleController {
     private static final Random random = new Random();
     private final Semaphore parallelAnnounceSemaphore;
-    private final WarningSender warningSender = new WarningSender(5000);
-    private final int announceRequestMaxWait;
     @Autowired
     private HttpServletRequest req;
     @Autowired
@@ -67,7 +63,7 @@ public class TrackerController extends SparkleController {
                              @Value("${service.tracker.announce-requests-max-wait}")
                              int announceRequestMaxWait) {
         this.parallelAnnounceSemaphore = new Semaphore(maxParallelAnnounceServiceRequests);
-        this.announceRequestMaxWait = announceRequestMaxWait;
+        // this.announceRequestMaxWait = announceRequestMaxWait;
     }
 
     public static String compactPeers(List<TrackerService.Peer> peers, boolean isV6) throws IllegalStateException {
@@ -108,13 +104,13 @@ public class TrackerController extends SparkleController {
         return infoHashes;
     }
 
-    @GetMapping("/tracker/announce")
+    //@GetMapping("/tracker/announce")
     @ResponseBody
-    public ResponseEntity<byte[]> announceForward() throws InterruptedException {
+    public ResponseEntity<byte[]> announceForward() {
         return announce();
     }
 
-    @GetMapping("/announce")
+    //@GetMapping("/announce")
     @ResponseBody
     public ResponseEntity<byte[]> announce() {
         if (trackerMaintenance) {
