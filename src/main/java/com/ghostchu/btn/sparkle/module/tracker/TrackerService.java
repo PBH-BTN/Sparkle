@@ -11,9 +11,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.net.Inet4Address;
@@ -59,8 +57,8 @@ public class TrackerService {
 //        this.processBatchSize = processBatchSize;
     }
 
-    @Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
-    @Transactional
+    //@Scheduled(fixedRateString = "${service.tracker.metrics-interval}")
+    //@Transactional
     public void updateTrackerMetrics() {
         var uniqueRecords = redisTrackedPeerRepository.countUniqueRecords();
         var totalPeers = meterRegistry.gauge("sparkle_tracker_tracking_total_peers", uniqueRecords.getPeers());
@@ -70,7 +68,7 @@ public class TrackerService {
         log.info("[Tracker 实时] 总Peer: {}, 唯一Peer: {}, 唯一IP: {}, 活动种子: {}", totalPeers, uniquePeers, uniqueIps, activeTasks);
     }
 
-    @Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
+    //@Scheduled(fixedRateString = "${service.tracker.cleanup-interval}")
     public void cleanup() {
         var count = redisTrackedPeerRepository.cleanup();
         log.info("已清除 {} 个不活跃的 Peers", count);
