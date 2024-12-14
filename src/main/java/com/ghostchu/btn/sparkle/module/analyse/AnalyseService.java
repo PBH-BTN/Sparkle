@@ -9,11 +9,14 @@ import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -65,8 +68,8 @@ public class AnalyseService {
 //    private RedisTrackedPeerRepository redisTrackedPeerRepository;
 
     @Transactional
-    // @Modifying
-    // @Lock(LockModeType.READ)
+    @Modifying
+    @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
     public void cronUntrustedIPAddresses() throws InterruptedException {
         try {
@@ -94,7 +97,7 @@ public class AnalyseService {
         }
     }
 
-    //@Transactional
+    @Transactional
     public List<AnalysedRule> getAnalysedRules() {
         return analysedRuleRepository.findAll();
     }
@@ -108,7 +111,8 @@ public class AnalyseService {
     }
 
     @Transactional
-    //@Modifying
+    @Modifying
+    @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() throws InterruptedException {
         try {
@@ -158,7 +162,8 @@ public class AnalyseService {
     }
 
     @Transactional
-    //@Modifying
+    @Modifying
+    @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
     public void cronHighRiskIPV6Identity() throws InterruptedException {
         try {
@@ -261,7 +266,8 @@ public class AnalyseService {
     }
 
     @Transactional
-    //@Modifying
+    @Modifying
+    @Lock(LockModeType.READ)
     @Scheduled(fixedRateString = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() throws InterruptedException {
         try {
