@@ -16,7 +16,7 @@ import java.util.Collection;
 @Repository
 public interface ClientDiscoveryRepository extends SparkleCommonRepository<ClientDiscovery, Long> {
     @Modifying
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Query("UPDATE ClientDiscovery cd SET cd.lastSeenAt = ?2, cd.lastSeenBy = ?3 WHERE cd.hash IN ?1")
     void updateLastSeen(Collection<Long> ids, OffsetDateTime lastSeenAt, User lastSeenBy);
 
