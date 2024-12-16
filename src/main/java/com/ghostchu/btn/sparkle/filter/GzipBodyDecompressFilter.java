@@ -71,7 +71,7 @@ public class GzipBodyDecompressFilter implements Filter {
                     }
                 };
             } catch (IOException e) {
-                log.error("error while handling the request", e);
+                log.error("Error while handling the request: {}: {}", e.getClass().getName(), e.getMessage());
             }
         }
         chain.doFilter(httpServletRequest, response);
@@ -96,7 +96,7 @@ public class GzipBodyDecompressFilter implements Filter {
         /**
          * Maximum uncompressed size to prevent zip bomb
          */
-        private static final long MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 200MB
+        private static final long MAX_UNCOMPRESSED_SIZE = 64 * 1024 * 1024; // 64MB
 
         /**
          * Return decompression input stream if needed.
