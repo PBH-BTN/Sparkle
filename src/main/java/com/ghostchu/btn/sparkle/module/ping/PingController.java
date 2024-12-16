@@ -185,13 +185,13 @@ public class PingController extends SparkleController {
         BtnRule btn = service.generateBtnRule();
         String rev = Hashing.goodFastHash(32).hashString(objectMapper.writeValueAsString(btn), StandardCharsets.UTF_8).toString();
         if (rev.equals(version)) {
-            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, AppSecret={}, UA={})",
-                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, UA={})",
+                    ip(req), cred.getAppId(), ua(req));
             return ResponseEntity.status(204).build();
         }
         btn.setVersion(rev);
-        log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, AppSecret={}, UA={})",
-                ip(req), version, rev, cred.getAppId(), cred.getAppSecret(), ua(req));
+        log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, UA={})",
+                ip(req), version, rev, cred.getAppId(), ua(req));
         audit.put("from", version);
         audit.put("to", rev);
         auditService.log(req, "BTN_RULES_RETRIEVE", true, audit);
