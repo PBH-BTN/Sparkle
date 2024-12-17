@@ -28,11 +28,6 @@ public class IPUtil {
     }
 
     public static String toString(InetAddress inet) { // 压缩一下 :0:0:0
-        var address = new IPAddressString(inet.getHostAddress()).getAddress();
-        if (address == null) {
-            log.error("Unable convert {} to IPAddressString (toString)", inet);
-            return INVALID_FALLBACK_ADDRESS;
-        }
-        return address.toString();
+        return inet.getHostAddress();
     }
 }

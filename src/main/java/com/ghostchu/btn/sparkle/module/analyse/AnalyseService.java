@@ -4,9 +4,8 @@ import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.*;
-import inet.ipaddr.Address;
 import inet.ipaddr.IPAddress;
-import inet.ipaddr.IPAddressString;
+import inet.ipaddr.format.util.DualIPv4v6Tries;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -25,7 +24,10 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -75,7 +77,8 @@ public class AnalyseService {
         try {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            var list = ipMerger.merge(banHistoryRepository
+            var ipTries = new DualIPv4v6Tries();
+            ipMerger.merge(banHistoryRepository
                             .generateUntrustedIPAddresses(
                                     TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
                                     OffsetDateTime.now(),
@@ -86,8 +89,9 @@ public class AnalyseService {
                             .map(IPUtil::toString)
                             .collect(Collectors.toList()))
                     .stream().map(IPUtil::toIPAddress)
-                    .toList();
-            var untrustedIps = filterIP(list).stream().map(ip -> new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+                    .forEach(ipTries::add);
+            List<AnalysedRule> untrustedIps = new ArrayList<>();
+            filterIP(ipTries).forEach(ip -> untrustedIps.add(new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())));
             analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
             meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
             analysedRuleRepository.saveAll(untrustedIps);
@@ -118,35 +122,34 @@ public class AnalyseService {
         try {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            Set<IPAddress> list =
-                    new HashSet<>(banHistoryRepository
-                            .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.94")
-                            .stream()
-                            .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                            .distinct()
-                            .toList());
-            list.addAll(banHistoryRepository
+            var ipTries = new DualIPv4v6Tries();
+            banHistoryRepository
+                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.94")
+                    .stream()
+                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
+                    .forEach(ipTries::add);
+            banHistoryRepository
                     .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.93")
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .distinct()
-                    .toList());
-            list.addAll(banHistoryRepository
+                    .forEach(ipTries::add);
+            banHistoryRepository
                     .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 3.00")
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .distinct()
-                    .toList());
-            list.addAll(banHistoryRepository
+                    .forEach(ipTries::add);
+            banHistoryRepository
                     .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "aria2/%")
                     .stream()
                     .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .distinct()
-                    .toList());
-            var highRiskIps = filterIP(ipMerger.merge(list.stream().map(Address::toString).toList()).stream().map(IPUtil::toIPAddress).toList()).stream()
+                    .forEach(ipTries::add);
+            ipTries = filterIP(ipTries);
+            var highRiskIps = ipMerger.merge(ipTries)
+                    .stream()
+                    .map(IPUtil::toIPAddress)
                     .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
             analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
             meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
@@ -169,7 +172,7 @@ public class AnalyseService {
         try {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            Set<IPAddress> list = new HashSet<>();
+            var ipTries = new DualIPv4v6Tries();
             banHistoryRepository.findByPeerIp(
                             "%::1",
                             pastTimestamp(highRiskIpv6IdentityOffset),
@@ -177,9 +180,7 @@ public class AnalyseService {
                     )
                     .stream()
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .distinct()
-                    .sorted()
-                    .forEach(list::add);
+                    .forEach(ipTries::add);
             banHistoryRepository.findByPeerIp(
                             "%::2",
                             pastTimestamp(highRiskIpv6IdentityOffset),
@@ -187,12 +188,10 @@ public class AnalyseService {
                     )
                     .stream()
                     .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .distinct()
-                    .sorted()
-                    .forEach(list::add);
-            var ips = filterIP(list).stream()
-                    .filter(Objects::nonNull)
-                    .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+                    .forEach(ipTries::add);
+            ipTries = filterIP(ipTries);
+            List<AnalysedRule> ips = new ArrayList<>();
+            ipTries.forEach(ip -> ips.add(new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())));
             analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
             meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
             analysedRuleRepository.saveAll(ips);
@@ -315,18 +314,20 @@ public class AnalyseService {
                         t.size::float > 0 AND au.total_uploaded > t.size::float * ?
                     ORDER BY
                         upload_percentage DESC;
-                    
+                                        
                     """);
             query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
             query.setParameter(2, overDownloadGenerateThreshold);
             List<Object[]> queryResult = query.getResultList();
-            var ips = ipMerger.merge(queryResult.stream().map(arr -> IPUtil.toString(((InetAddress) arr[1])))
-                            .collect(Collectors.toList())).stream().map(i -> new IPAddressString(i).getAddress())
-                    .filter(Objects::nonNull)
-                    .toList();
-            var rules = filterIP(ips).stream()
-                    .map(ip -> new AnalysedRule(null, ip.toString(), OVER_DOWNLOAD,
-                            "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+            var ipTries = new DualIPv4v6Tries();
+            for (Object[] arr : queryResult) {
+                var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[1]).getHostAddress());
+                ipTries.add(ipAddr);
+            }
+            ipTries = filterIP(ipTries);
+            List<AnalysedRule> rules = new ArrayList<>();
+            ipMerger.merge(ipTries).forEach(i -> rules.add(new AnalysedRule(null, i, OVER_DOWNLOAD,
+                    "Generated at " + MsgUtil.getNowDateTimeString())));
             analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
             meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
             analysedRuleRepository.saveAll(rules);
@@ -426,6 +427,23 @@ public class AnalyseService {
                 })
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    public DualIPv4v6Tries filterIP(DualIPv4v6Tries ips) {
+        DualIPv4v6Tries dualIPv4v6Tries = new DualIPv4v6Tries();
+        ips.forEach(ip -> {
+            if (!ip.isLocal() && !ip.isLoopback()) {
+                try {
+                    if (ip.getPrefixLength() == null && ip.isIPv6()) {
+                        ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
+                    }
+                    dualIPv4v6Tries.add(ip);
+                } catch (Exception e) {
+                    log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
+                }
+            }
+        });
+        return dualIPv4v6Tries;
     }
 
 

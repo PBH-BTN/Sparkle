@@ -2,8 +2,6 @@ package com.ghostchu.btn.sparkle.module.banhistory.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -36,7 +34,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 //    @Transactional
 //    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(OffsetDateTime from, OffsetDateTime to, int family);
 //
-    Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
+    List<BanHistory> findByOrderByInsertTimeDesc();
 
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
@@ -48,6 +46,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
             """)
     @Transactional
     List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerId, String peerClientName);
+
     @Query(nativeQuery = true, value = "SELECT * from banhistory ban WHERE ban.insert_time >= ?2 AND ban.insert_time <= ?3 AND host(ban.peer_ip) LIKE ?1")
     @Transactional
     List<BanHistory> findByPeerIp(String peerIp, OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);

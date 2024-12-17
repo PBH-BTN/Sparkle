@@ -2,14 +2,12 @@ package com.ghostchu.btn.sparkle.util;
 
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
+import inet.ipaddr.format.util.DualIPv4v6Tries;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -23,14 +21,20 @@ public class IPMerger {
     @Value("${util.ipmerger.prefix-length.ipv4}")
     private int IPV4_PREFIX_LENGTH = 24;
 
-    public List<String> merge(List<String> sorted) {
-        sorted = new ArrayList<>(sorted);
-        sorted.sort(String::compareTo);
-        Set<String> createdCIDR = new LinkedHashSet<>();
+    public List<String> merge(DualIPv4v6Tries tries) {
+        List<String> list = new ArrayList<>();
+        tries.forEach(ip -> list.add(ip.toString()));
+        return merge(list);
+    }
+
+    public List<String> merge(Collection<String> sorted) {
+        var list = new ArrayList<>(sorted);
+        list.sort(String::compareTo);
+        Set<String> createdCIDR = new TreeSet<>();
         IPAddress current = null;
         int counter = 0;
-        sorted.removeIf(str -> str.startsWith("#"));
-        for (String rule : sorted) {
+        list.removeIf(str -> str.startsWith("#"));
+        for (String rule : list) {
             if (current == null) {
                 current = toCIDR(rule);
                 continue;
@@ -62,7 +66,7 @@ public class IPMerger {
                 }
             }
         }
-        List<String> finalSorted = sorted;
+        List<String> finalSorted = list;
         createdCIDR.forEach(cidr -> {
             var base = toCIDR(cidr);
             finalSorted.removeIf(ip -> {
