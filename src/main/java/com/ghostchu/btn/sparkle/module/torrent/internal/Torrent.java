@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Entity
 @Table(name = "torrent",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"identifier","size"})},
@@ -14,7 +16,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Torrent {
+public class Torrent implements Serializable {
     @Id
     @GeneratedValue
     @Column(nullable = false, unique = true)
