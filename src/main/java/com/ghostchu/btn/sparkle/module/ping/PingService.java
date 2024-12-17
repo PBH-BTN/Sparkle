@@ -176,6 +176,10 @@ public class PingService {
         usr.setLastAccessAt(now);
         userService.saveUser(usr);
         Set<ClientIdentity> identitySet = new HashSet<>();
+        if (ping.getPeers().size() > 15000) {
+            log.error("[ERROR] [Ping] 一次性处理的 PeerHistory 数量过多: {}，丢弃一部分数据……", ping.getPeers().size());
+            ping.setPeers(ping.getPeers().subList(0, 15000));
+        }
         List<PeerHistory> snapshotList = ping.getPeers().stream()
                 .peek(peer -> identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()), PeerUtil.cutClientName(peer.getClientName()))))
                 .map(peer -> {
