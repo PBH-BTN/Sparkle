@@ -6,16 +6,13 @@ import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
@@ -57,8 +54,7 @@ public class SnapshotService {
 
     @Modifying
     @Transactional
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Async
+    //@Lock(LockModeType.PESSIMISTIC_WRITE)
     public void saveSnapshots(List<Snapshot> snapshotList) {
         snapshotRepository.saveAll(snapshotList);
     }

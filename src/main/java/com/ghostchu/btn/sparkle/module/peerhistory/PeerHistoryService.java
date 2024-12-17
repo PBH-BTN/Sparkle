@@ -10,7 +10,6 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -50,7 +49,6 @@ public class PeerHistoryService {
     @Modifying
     @Transactional
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Async
     public void saveHistories(List<PeerHistory> peerHistoryList) {
         peerHistoryRepository.saveAll(peerHistoryList);
     }

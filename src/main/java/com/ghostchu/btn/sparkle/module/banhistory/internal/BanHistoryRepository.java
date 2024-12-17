@@ -2,6 +2,8 @@ package com.ghostchu.btn.sparkle.module.banhistory.internal;
 
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -34,7 +36,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
 //    @Transactional
 //    List<InetAddress> findByInsertTimeBetweenOrderByInsertTimeDescIPVx(OffsetDateTime from, OffsetDateTime to, int family);
 //
-    List<BanHistory> findByOrderByInsertTimeDesc();
+    Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
 
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
