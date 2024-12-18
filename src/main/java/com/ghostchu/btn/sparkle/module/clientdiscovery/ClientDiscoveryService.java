@@ -50,7 +50,14 @@ public class ClientDiscoveryService {
                         ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, user, timeForLastSeenAt, user))
                 .toList();
         meterRegistry.counter("sparkle_client_discovery_created").increment(notInDatabase.size());
-        clientDiscoveryRepository.saveAll(notInDatabase);
+
+        for (ClientDiscovery clientDiscovery : notInDatabase) {
+            try {
+                clientDiscoveryRepository.save(clientDiscovery);
+            } catch (Exception e) {
+                meterRegistry.counter("sparkle_client_discovery_conflict_errors").increment();
+            }
+        }
     }
 
     @Cacheable(value = "clientDiscoveryMetrics#1800000", key = "#from+'-'+#to")
