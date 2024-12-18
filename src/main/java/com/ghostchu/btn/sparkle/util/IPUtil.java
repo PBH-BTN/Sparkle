@@ -5,6 +5,7 @@ import inet.ipaddr.IPAddressString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @Slf4j
 public class IPUtil {
@@ -16,6 +17,11 @@ public class IPUtil {
             return new IPAddressString(INVALID_FALLBACK_ADDRESS).getAddress();
         }
         return address;
+    }
+
+    public static IPAddress toIPAddress(byte[] bytes) throws UnknownHostException {
+        var address = InetAddress.getByAddress(bytes);
+        return toIPAddress(address.getHostAddress());
     }
 
     public static InetAddress toInet(String ip) {

@@ -2,7 +2,11 @@ package com.ghostchu.btn.sparkle.module.analyse;
 
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
+import com.ghostchu.btn.sparkle.module.analyse.proto.Peer;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
+import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
+import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
+import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.util.*;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.format.util.DualIPv4v6Tries;
@@ -14,20 +18,26 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -60,12 +70,18 @@ public class AnalyseService {
     private int ipv6ConvertToPrefixLength;
     @Value("${analyse.highriskips.traffic-from-peer-less-than}")
     private long trafficFromPeerLessThan;
+    @Value("${analyse.tracker.dumpfile}")
+    private String dumpFilePath;
     @Autowired
     private AnalysedRuleRepository analysedRuleRepository;
     @PersistenceContext
     private EntityManager entityManager;
     @Autowired
     private MeterRegistry meterRegistry;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private ClientDiscoveryService clientDiscoveryService;
 //    @Autowired
 //    private RedisTrackedPeerRepository redisTrackedPeerRepository;
 
@@ -122,38 +138,26 @@ public class AnalyseService {
         try {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            var ipTries = new DualIPv4v6Tries();
-            banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.94")
+            final var ipTries = new DualIPv4v6Tries();
+            analysedRuleRepository.findAllByPaging((Specification<AnalysedRule>) (root, query, criteriaBuilder) -> {
+                if (query != null)
+                    query.distinct(true);
+                return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpsOffset), nowTimestamp()),
+                        criteriaBuilder.equal(root.get("module"), PCB_MODULE_NAME),
+                        criteriaBuilder.like(root.get("peerClientName"), "aria2/%"));
+            }, page -> page.forEach(rule -> {
+                try {
+                    ipTries.add(IPUtil.toIPAddress(rule.getIp()));
+                } catch (Exception e) {
+                    log.error("Unable to convert IP address: {}", rule.getIp(), e);
+                }
+            }));
+            var filtered = filterIP(ipTries);
+            var highRiskIps = ipMerger.merge(filtered)
                     .stream()
-                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .forEach(ipTries::add);
-            banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 2.93")
-                    .stream()
-                    .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
-                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .forEach(ipTries::add);
-            banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "Transmission 3.00")
-                    .stream()
-                    .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
-                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .forEach(ipTries::add);
-            banHistoryRepository
-                    .findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(pastTimestamp(highRiskIpsOffset), nowTimestamp(), PCB_MODULE_NAME, "aria2/%")
-                    .stream()
-                    .filter(banHistory -> banHistory.getFromPeerTraffic() != -1 && banHistory.getFromPeerTraffic() < trafficFromPeerLessThan)
-                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .forEach(ipTries::add);
-            ipTries = filterIP(ipTries);
-            var highRiskIps = ipMerger.merge(ipTries)
-                    .stream()
-                    .map(IPUtil::toIPAddress)
-                    .map(ip -> new AnalysedRule(null, ip.toString(), HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
-            analysedRuleRepository.deleteAllByModule(HIGH_RISK_IP);
+                    .map(ip -> new AnalysedRule(null, ip, HIGH_RISK_IP, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
+            analysedRuleRepository.replaceAll(HIGH_RISK_IP, highRiskIps);
             meterRegistry.gauge("sparkle_analyse_high_risk_ips", Collections.emptyList(), highRiskIps.size());
-            analysedRuleRepository.saveAll(highRiskIps);
             log.info("High risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
         } finally {
             DatabaseCare.generateParallel.release();
@@ -172,29 +176,28 @@ public class AnalyseService {
         try {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
-            var ipTries = new DualIPv4v6Tries();
-            banHistoryRepository.findByPeerIp(
-                            "%::1",
-                            pastTimestamp(highRiskIpv6IdentityOffset),
-                            nowTimestamp()
-                    )
-                    .stream()
-                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .forEach(ipTries::add);
-            banHistoryRepository.findByPeerIp(
-                            "%::2",
-                            pastTimestamp(highRiskIpv6IdentityOffset),
-                            nowTimestamp()
-                    )
-                    .stream()
-                    .map(ban -> IPUtil.toIPAddress(ban.getPeerIp().getHostAddress()))
-                    .forEach(ipTries::add);
-            ipTries = filterIP(ipTries);
-            List<AnalysedRule> ips = new ArrayList<>();
-            ipTries.forEach(ip -> ips.add(new AnalysedRule(null, ip.toString(), HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString())));
-            analysedRuleRepository.deleteAllByModule(HIGH_RISK_IPV6_IDENTITY);
+            final var ipTries = new DualIPv4v6Tries();
+            analysedRuleRepository.findAllByPaging((Specification<AnalysedRule>) (root, query, criteriaBuilder) -> {
+                if (query != null)
+                    query.distinct(true);
+                return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpv6IdentityOffset), nowTimestamp()),
+                        criteriaBuilder.equal(root.get("module"), PCB_MODULE_NAME),
+                        criteriaBuilder.or(
+                                criteriaBuilder.like(root.get("peerIp"), "%::1"),
+                                criteriaBuilder.like(root.get("peerIp"), "%::2")
+                        ));
+            }, page -> page.forEach(rule -> {
+                try {
+                    ipTries.add(IPUtil.toIPAddress(rule.getIp()));
+                } catch (Exception e) {
+                    log.error("Unable to convert IP address: {}", rule.getIp(), e);
+                }
+            }));
+            var filtered = filterIP(ipTries);
+            var ips = ipMerger.merge(filtered).stream().map(ip -> new AnalysedRule(null, ip, HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString()))
+                    .toList();
+            analysedRuleRepository.replaceAll(HIGH_RISK_IPV6_IDENTITY, ips);
             meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
-            analysedRuleRepository.saveAll(ips);
             log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
         } finally {
             DatabaseCare.generateParallel.release();
@@ -204,6 +207,65 @@ public class AnalyseService {
     public List<AnalysedRule> getHighRiskIPV6Identity() {
         return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IPV6_IDENTITY);
     }
+
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.READ)
+    @Scheduled(fixedRateString = "${analyse.trackerunion.interval}")
+    public void cronUpdateTrunkerFile() {
+        // Trunker, A BitTorrent Tracker, not a typo but a name
+        var startAt = System.currentTimeMillis();
+        final var ipTries = new DualIPv4v6Tries();
+        Set<ClientIdentity> clientDiscoveries = new HashSet<>();
+        var user = userService.getSystemUser("Tracker");
+
+        scanFile(peerInfo -> {
+            var peerId = new String(peerInfo.getPeerId().toByteArray(), StandardCharsets.ISO_8859_1);
+            try {
+                clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
+                if (peerInfo.getUserAgent().contains("curl/")
+                        || (peerInfo.getUserAgent().contains("Transmission") && !peerId.startsWith("-TR"))
+                ) {
+                    ipTries.add(IPUtil.toIPAddress(peerInfo.getIp().getClientIp().toByteArray()));
+                }
+            } catch (Exception e) {
+                log.error("Unable to handle PeerInfo check: {}", peerInfo, e);
+            } finally {
+                if (clientDiscoveries.size() > 500) {
+                    clientDiscoveryService.handleIdentities(user, OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
+                    clientDiscoveries.clear();
+                }
+            }
+        });
+
+        var filtered = filterIP(ipTries);
+        var ips = ipMerger.merge(filtered).stream().map(ip -> new AnalysedRule(null, ip, TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString()))
+                .toList();
+        analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, ips);
+        meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), ips.size());
+        log.info("Tracker HighRisk identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
+    }
+
+    private void scanFile(Consumer<Peer.PeerInfo> predicate) {
+        File file = new File(dumpFilePath);
+        if (!file.exists()) {
+            log.error("Tracker dump file not found: {}", dumpFilePath);
+            return;
+        }
+        try (FileInputStream fis = new FileInputStream(file);
+             FileLock ignored = fis.getChannel().lock(0L, Long.MAX_VALUE, true)) {
+            LargeFileReader reader = new LargeFileReader(fis.getChannel());
+            while (reader.available() > 0) {
+                int sizeInIntNeedToFix = ByteBuffer.wrap(reader.read(4)).order(ByteOrder.LITTLE_ENDIAN).getInt();
+                long remainingToRead = Integer.toUnsignedLong(sizeInIntNeedToFix);
+                byte[] buffer = reader.read((int) remainingToRead);
+                predicate.accept(Peer.PeerInfo.parseFrom(buffer));
+            }
+        } catch (IOException e) {
+            log.error("Unable to read tracker dump file: {}", dumpFilePath, e);
+        }
+    }
+
 
 //    @Transactional
 //    @Modifying
@@ -328,9 +390,8 @@ public class AnalyseService {
             List<AnalysedRule> rules = new ArrayList<>();
             ipMerger.merge(ipTries).forEach(i -> rules.add(new AnalysedRule(null, i, OVER_DOWNLOAD,
                     "Generated at " + MsgUtil.getNowDateTimeString())));
-            analysedRuleRepository.deleteAllByModule(OVER_DOWNLOAD);
+            analysedRuleRepository.replaceAll(OVER_DOWNLOAD);
             meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
-            analysedRuleRepository.saveAll(rules);
             log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
         } finally {
             DatabaseCare.generateParallel.release();

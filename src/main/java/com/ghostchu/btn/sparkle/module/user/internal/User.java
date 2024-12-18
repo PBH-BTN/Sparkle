@@ -43,4 +43,8 @@ public class User {
     private Boolean banned;
     @Column(nullable = false)
     private Integer randomGroup;
+
+    public boolean isSystemAccount() {
+        return email.endsWith("@sparkle.system");
+    }
 }

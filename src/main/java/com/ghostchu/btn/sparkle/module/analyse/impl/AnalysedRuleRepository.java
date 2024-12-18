@@ -11,4 +11,9 @@ public interface AnalysedRuleRepository extends SparkleCommonRepository<Analysed
     List<AnalysedRule> findByModuleOrderByIpAsc(String module);
     long deleteAllByModule(String module);
     List<AnalysedRule> findAll();
+
+    default void replaceAll(String module, List<AnalysedRule> rules) {
+        deleteAllByModule(module);
+        saveAll(rules);
+    }
 }

@@ -1,6 +1,6 @@
 # Sparkle - 花火
 
-一个使用 Java 语言的 BTN 实现与集成的 BitTorrent Tracker。
+一个使用 Java 语言的 BTN 实现。
 
 > [!WARNING]
 > Sparkle 目前处于实验性状态，不建议部署生产环境使用
@@ -16,7 +16,8 @@
 
 ## 简述
 
-Sparkle 是一个遵循 [BTN 规范](https://github.com/PBH-BTN/BTN-Spec) 的官方 Java 实现。能够接收 PBH 等 BTN 兼容客户端的数据上报，并下发云规则。除此之外，Sparkle 也是首个使用 Java 语言的支持 Scrape 和紧凑压缩格式 Peers 响应的 Bittorrent Tracker。
+Sparkle 是一个遵循 [BTN 规范](https://github.com/PBH-BTN/BTN-Spec) 的官方 Java 实现。能够接收 PBH 等 BTN
+兼容客户端的数据上报，并下发云规则。
 
 ## 需要环境
 
@@ -40,12 +41,6 @@ Sparkle 是一个遵循 [BTN 规范](https://github.com/PBH-BTN/BTN-Spec) 的官
 * [x] 自动生成不可信 IP 规则 (从 BanHistory)
 * [x] 自动生成过量下载规则 (从 Snapshot)
 * [x] 与 Github 仓库同步生成的规则
-* [x] BitTorrent Tracker (HTTP/HTTPS)，支持 Scrape 协议，支持 BEP 0024，并可持久记录下载次数，支持响应缓存，并与客户端特征发现异步集成
-  * BEP-3
-  * BEP-23
-  * BEP-24
-  * BEP-31
-  * BEP-48
 * [x] Snapshot/Ban 记录搜索 
 
 ## API 文档

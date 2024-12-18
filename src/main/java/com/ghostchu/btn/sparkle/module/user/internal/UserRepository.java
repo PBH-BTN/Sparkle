@@ -15,4 +15,6 @@ public interface UserRepository extends SparkleCommonRepository<User, Long> {
 
     long countUserByLastSeenAtAfter(OffsetDateTime time);
     List<User> findByNickname(String nickname);
+
+    Optional<User> findByEmail(String email);
 }
