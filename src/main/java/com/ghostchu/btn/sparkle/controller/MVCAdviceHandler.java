@@ -16,6 +16,7 @@ public class MVCAdviceHandler {
 
     @ModelAttribute("user")
     public UserDto addUserToModel() {
-        return userService.toDto(userService.getUser((StpUtil.getLoginIdAsLong())).get());
+        var optional = userService.getUser((StpUtil.getLoginIdAsLong()));
+        return optional.map(userService::toDto).orElse(null);
     }
 }
