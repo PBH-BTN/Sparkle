@@ -211,7 +211,7 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedRateString = "${analyse.trackerunion.interval}")
+    @Scheduled(fixedRateString = "${analyse.trackerhighrisk.interval}")
     public void cronUpdateTrunkerFile() {
         // Trunker, A BitTorrent Tracker, not a typo but a name
         var startAt = System.currentTimeMillis();
