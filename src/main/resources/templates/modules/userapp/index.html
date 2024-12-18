@@ -17,18 +17,20 @@
             <th scope="col">ID</th>
             <th scope="col">AppId</th>
             <th scope="col">备注</th>
+            <th scope="col">状态</th>
             <th scope="col">操作</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="app : ${userapps}">
-            <th scope="row" th:text="${app.getId()}">
-                <i class="fa-solid fa-check" th:if="${app.getBannedAt() == null}" title="状态正常"></i>
+            <th scope="row" th:text="${app.getId()}"></th>
+            <!-- 合并图标到 th 的 text 里 -->
+            <td th:text="${app.getAppId()}">000000000000000</td>
+            <td th:text="${app.getComment()}">测试</td>
+            <th><i class="fa-solid fa-check" th:if="${app.getBannedAt() == null}" title="状态正常"></i>
                 <i class="fa-solid fa-ban" th:if="${app.getBannedAt() != null}"
                    th:title="'已暂停：' + ${app.getBannedReason()}"></i>
             </th>
-            <td th:text="${app.getAppId()}">000000000000000</td>
-            <td th:text="${app.getComment()}">测试</td>
             <td><a th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}">删除</a> <a
                     th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}">重置 AppSecret</a></td>
         </tr>

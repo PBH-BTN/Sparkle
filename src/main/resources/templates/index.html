@@ -5,11 +5,11 @@
 <div th:insert="~{components/common::navbar}"></div>
 
 <div class="alert alert-warning" role="alert">
-    <b><i class="fa-solid fa-road-barrier"></i>改版装修中</b> BTN 2.0 正在加紧施工中。由于缺乏前端人手，目前前端仅基本功能可用，不影响后端运行和上报收集等功能。
+    <b><i class="fa-solid fa-road-barrier"></i> 改版装修中</b> BTN 2.0 正在加紧施工中。由于缺乏前端人手，目前前端仅基本功能可用，不影响后端运行和上报收集等功能。
 </div>
 
 <div class="alert alert-danger" role="alert" th:if="${user.getBannedAt() != null}">
-    <b><i class="fa-solid fa-ban"></i>账户暂停</b> 您的 BTN 账户已被管理员停用，原因： <span
+    <b><i class="fa-solid fa-ban"></i> 账户暂停</b> 您的 BTN 账户已被管理员停用，原因： <span
         th:text="${user.getBannedReason()}">未知</span>。
 </div>
 
