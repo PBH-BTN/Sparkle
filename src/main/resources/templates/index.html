@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<div th:insert="~{components/common::header}"></div>
+<div th:replace="~{components/common::header}"></div>
 <body>
-<div th:insert="~{components/common::navbar}"></div>
+<div th:replace="~{components/common::navbar}"></div>
 
 <div class="alert alert-warning" role="alert">
     <b><i class="fa-solid fa-road-barrier"></i> 改版装修中</b> BTN 2.0 正在加紧施工中。由于缺乏前端人手，目前前端仅基本功能可用，不影响后端运行和上报收集等功能。
@@ -20,65 +20,6 @@
     <p>连接到 BTN 网络，共享威胁情报，获取云端规则。</p>
     <a class="btn btn-primary btn-lg" th:href="@{/userapp/}" role="button">创建用户应用程序</a>
 </div>
-<!--<div class="container" style="margin: 10px auto; text-align: center">-->
-<!--    <p class="h1">BTN 网络数据</p>-->
-<!--</div>-->
-<!--<div class="container">-->
-<!--    <div class="row">-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">封禁统计</p>-->
-<!--            <p>网络上的客户端共封禁 <span th:text="${btnMetrics.allTimeBans()}">123</span> 次 Peers。</p>-->
-<!--            <p>最近 <span th:text="${btnMetrics.rangeInterval()}">14</span> 天，共封禁 <span-->
-<!--                    th:text="${btnMetrics.rangeBans()}">456</span>-->
-<!--                次 Peers。</p>-->
-<!--        </div>-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">提交数据</p>-->
-<!--            <p>网络上的客户端共提交 <span th:text="${btnMetrics.allTimeSubmits()}">123</span> 个 Peers。</p>-->
-<!--            <p>最近 <span th:text="${btnMetrics.rangeInterval()}">14</span> 天，共提交 <span-->
-<!--                    th:text="${btnMetrics.rangeSubmits()}">456</span> 个 Peers。</p>-->
-<!--        </div>-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">特征发现</p>-->
-<!--            <p>共发现 <span th:text="${btnMetrics.allTimeClientDiscovery()}">123</span> 个不同客户端特征。</p>-->
-<!--            <p>最近 <span th:text="${btnMetrics.rangeInterval()}">14</span> 天，共发现<span-->
-<!--                    th:text="${btnMetrics.rangeClientDiscovery()}">456</span> 个不同客户端特征。</p>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</div>-->
-<!--<div class="container" style="margin: 10px auto; text-align: center">-->
-<!--    <p class="h1">公共 Tracker 服务</p>-->
-<!--</div>-->
-<!--<div class="container">-->
-<!--    <div class="row">-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">追踪 Torrents</p>-->
-<!--            <p th:text="${trackerMetrics.torrents()}"></p>-->
-<!--        </div>-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">当前在线</p>-->
-<!--            <p th:text="${trackerMetrics.peers()}"></p>-->
-<!--        </div>-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">做种中</p>-->
-<!--            <p th:text="${trackerMetrics.seeders()}"></p>-->
-<!--        </div>-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">下载中</p>-->
-<!--            <p th:text="${trackerMetrics.leechers()}"></p>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--    <div class="row">-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">有上传的 Peers 数量</p>-->
-<!--            <p th:text="${trackerMetrics.haveUploadPeers()}"></p>-->
-<!--        </div>-->
-<!--        <div class="col-sm">-->
-<!--            <p class="h2">无上传的 Peers 数量</p>-->
-<!--            <p th:text="${trackerMetrics.noUploadPeers()}"></p>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</div>-->
 <div th:replace="~{components/common::footer}"></div>
 </body>
 </html>

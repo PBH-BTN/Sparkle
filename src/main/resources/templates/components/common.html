@@ -11,37 +11,48 @@
 </head>
 
 <nav th:fragment="navbar" class="navbar navbar-expand-lg bg-body-tertiary">
-<div class="container-fluid">
-    <a class="navbar-brand" href="#">Sparkle</a>
-    <button class="navbar-toggler" type="button"
-            data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false"
-            aria-label="切换导航栏">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/}">首页</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/userapp/}">用户应用程序</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true" href="#">封禁记录</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true" href="#">提交记录</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true" href="#">特征发现</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Tracker</a>
-            </li>
-        </ul>
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Sparkle</a>
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="切换导航栏">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/}">首页</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/userapp/}">用户应用程序</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" aria-disabled="true" href="#">封禁记录</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" aria-disabled="true" href="#">提交记录</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" aria-disabled="true">特征发现</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" aria-disabled="true">Tracker</a>
+                </li>
+            </ul>
+            <!-- 添加头像和昵称 -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item d-flex align-items-center">
+                    <a class="nav-link" th:href="@{/user/profile}">
+                        <!--/*@thymesVar id="user" type="com.ghostchu.btn.sparkle.module.user.UserDto"*/-->
+                        <img th:src="${user.getAvatar()}" alt="头像" class="rounded-circle"
+                             style="width: 32px; height: 32px; object-fit: cover; margin-right: 8px;">
+                        <span th:text="${user.getNickname()}">昵称</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
-</div>
 </nav>
 <div th:fragment="footer">
 <p style="text-align: center; color: gray; font-size: 10px">这是一个页脚，以后也许能放点东西</p>
