@@ -168,42 +168,43 @@ public class AnalyseService {
     public List<AnalysedRule> getHighRiskIps() {
         return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IP);
     }
-
-    @Transactional
-    @Modifying
-    @Lock(LockModeType.READ)
-    @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
-    public void cronHighRiskIPV6Identity() throws InterruptedException {
-        try {
-            DatabaseCare.generateParallel.acquire();
-            var startAt = System.currentTimeMillis();
-            final var ipTries = new DualIPv4v6Tries();
-            banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
-                if (query != null)
-                    query.distinct(true);
-                return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpv6IdentityOffset), nowTimestamp()),
-                        criteriaBuilder.equal(root.get("module"), PCB_MODULE_NAME),
-                        criteriaBuilder.or(
-                                criteriaBuilder.like(root.get("peerIp").as(String.class), "%::1"),
-                                criteriaBuilder.like(root.get("peerIp").as(String.class), "%::2")
-                        ));
-            }, page -> page.forEach(rule -> {
-                try {
-                    ipTries.add(IPUtil.toIPAddress(rule.getPeerIp().getHostAddress()));
-                } catch (Exception e) {
-                    log.error("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
-                }
-            }));
-            var filtered = filterIP(ipTries);
-            var ips = ipMerger.merge(filtered).stream().map(ip -> new AnalysedRule(null, ip, HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString()))
-                    .toList();
-            analysedRuleRepository.replaceAll(HIGH_RISK_IPV6_IDENTITY, ips);
-            meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
-            log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
-        } finally {
-            DatabaseCare.generateParallel.release();
-        }
-    }
+//
+//    @Transactional
+//    @Modifying
+//    @Lock(LockModeType.READ)
+//    @Scheduled(fixedRateString = "${analyse.highriskipv6identity.interval}")
+//    public void cronHighRiskIPV6Identity() throws InterruptedException {
+//        try {
+//            DatabaseCare.generateParallel.acquire();
+//            var startAt = System.currentTimeMillis();
+//            final var ipTries = new DualIPv4v6Tries();
+//            banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
+//                if (query != null)
+//                    query.distinct(true);
+//
+//                return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpv6IdentityOffset), nowTimestamp()),
+//                        criteriaBuilder.equal(root.get("module"), PCB_MODULE_NAME),
+//                        criteriaBuilder.or(
+//                                criteriaBuilder.like(criteriaBuilder.function("CAST", String.class, root.get("peerIp"), criteriaBuilder.like("text")), "%::1"),
+//                                criteriaBuilder.like(criteriaBuilder.function("CAST", String.class, root.get("peerIp"), criteriaBuilder.literal("text")), "%::2")
+//                        ));
+//            }, page -> page.forEach(rule -> {
+//                try {
+//                    ipTries.add(IPUtil.toIPAddress(rule.getPeerIp().getHostAddress()));
+//                } catch (Exception e) {
+//                    log.error("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
+//                }
+//            }));
+//            var filtered = filterIP(ipTries);
+//            var ips = ipMerger.merge(filtered).stream().map(ip -> new AnalysedRule(null, ip, HIGH_RISK_IPV6_IDENTITY, "Generated at " + MsgUtil.getNowDateTimeString()))
+//                    .toList();
+//            analysedRuleRepository.replaceAll(HIGH_RISK_IPV6_IDENTITY, ips);
+//            meterRegistry.gauge("sparkle_analyse_high_risk_ipv6_identity", Collections.emptyList(), ips.size());
+//            log.info("High risk IPV6 identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
+//        } finally {
+//            DatabaseCare.generateParallel.release();
+//        }
+//    }
 
     public List<AnalysedRule> getHighRiskIPV6Identity() {
         return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IPV6_IDENTITY);
@@ -225,7 +226,9 @@ public class AnalyseService {
             try {
                 clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
                 if (peerInfo.getUserAgent().contains("curl/")
-                        || (peerInfo.getUserAgent().contains("Transmission") && !peerId.startsWith("-TR"))
+                        || ((peerInfo.getUserAgent().contains("Transmission") == peerId.startsWith("-TR")))
+                        || ((peerInfo.getUserAgent().contains("qBittorrent") == peerId.startsWith("-qB")))
+                        || ((peerInfo.getUserAgent().contains("aria2") == peerId.startsWith("A2")))
                 ) {
                     ipTries.add(IPUtil.toIPAddress(peerInfo.getIp().getClientIp().toByteArray()));
                 }
@@ -270,6 +273,7 @@ public class AnalyseService {
     public List<AnalysedRule> getTrackerHighRisk() {
         return analysedRuleRepository.findByModuleOrderByIpAsc(TRACKER_HIGH_RISK);
     }
+
 
     @Transactional
     @Modifying

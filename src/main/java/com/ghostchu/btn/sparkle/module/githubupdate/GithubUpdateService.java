@@ -65,7 +65,7 @@ public class GithubUpdateService {
             updateFile(repository, "untrusted-ips.txt", () -> generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
             updateFile(repository, "high-risk-ips.txt", () -> generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
             updateFile(repository, "overdownload-ips.txt", () -> generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "strange_ipv6_block.txt", () -> generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
+            //updateFile(repository, "strange_ipv6_block.txt", () -> generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
             updateFile(repository, "random-peerid.txt", () -> generateGopeedDev().getBytes(StandardCharsets.UTF_8));
             updateFile(repository, "hp_torrent.txt", () -> generateHpTorrents().getBytes(StandardCharsets.UTF_8));
             updateFile(repository, "dt_torrent.txt", () -> generateDtTorrents().getBytes(StandardCharsets.UTF_8));
@@ -110,11 +110,11 @@ public class GithubUpdateService {
         return strJoiner.toString();
     }
 
-    private String generateStrangeIPV6() {
-        var strJoiner = new StringJoiner("\n");
-        analyseService.getHighRiskIPV6Identity().forEach(r -> strJoiner.add(r.getIp()));
-        return strJoiner.toString();
-    }
+//    private String generateStrangeIPV6() {
+//        var strJoiner = new StringJoiner("\n");
+//        analyseService.getHighRiskIPV6Identity().forEach(r -> strJoiner.add(r.getIp()));
+//        return strJoiner.toString();
+//    }
 
     private String generateGopeedDev() {
         var strJoiner = new StringJoiner("\n");
