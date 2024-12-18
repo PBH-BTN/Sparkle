@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<div th:insert="~{components/common::header}"></div>
+<body>
+<div th:insert="~{components/common::navbar}"></div>
+
+<h1>Github OAuth 登录过程失败</h1>
+<p>Sparkle 在与 Github API 通信以验证您的身份时出现了错误。</p>
+
+<div class="container">
+    <h2>错误信息如下：</h2>
+    <p th:text="${error.getMessage()}"></p>
+    <p th:if="${error.isRetryable()}">这通常是一个暂时性的错误，您可以<a href="auth/oauth2/github/login">点击此处重试</a>
+    </p>
+</div>
+<div th:replace="~{components/common::footer}"></div>
+</body>
+</html>

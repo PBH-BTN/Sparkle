@@ -158,7 +158,6 @@ public class PingService {
                 identitySet.clear();
             }
         }
-
         banHistoryService.saveBanHistories(banHistoryList);
         meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
         clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);

@@ -8,8 +8,6 @@ import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.user.internal.User;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
@@ -21,9 +19,11 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
@@ -34,13 +34,12 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-@RestController
+@Controller
 @RequestMapping("/auth/oauth2/github")
 @Slf4j
 public class OAuthController extends SparkleController {
-    private static final Cache<String, String> IP_STATE_MAPPING = CacheBuilder.newBuilder()
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build();
+    @Autowired
+    private RedisTemplate<String, String> generalRedisTemplate;
     @Value("${oauth2.github.client-id}")
     private String clientId;
     @Value("${oauth2.github.client-secret}")
@@ -64,6 +63,7 @@ public class OAuthController extends SparkleController {
 
     @GetMapping("/login")
     public void loginToGithub() throws IOException {
+        String key = "github_oauth_state:" + ip(req);
         String state = UUID.randomUUID().toString();
         String jumpBack = UriComponentsBuilder.fromHttpUrl(serverRootUrl)
                 .pathSegment("auth", "oauth2", "github", "callback")
@@ -73,21 +73,26 @@ public class OAuthController extends SparkleController {
                 .queryParam("redirect_uri", jumpBack)
                 .queryParam("scope", scope)
                 .queryParam("state", state).toUriString();
-        IP_STATE_MAPPING.put(ip(req), state);
+        // add key
+        generalRedisTemplate.opsForValue().set(key, state, 5, TimeUnit.MINUTES);
         resp.sendRedirect(userUri);
     }
 
     @GetMapping("/callback")
     @Transactional
-    public void callback() throws IOException {
-//        String state = IP_STATE_MAPPING.getIfPresent(peerIp);
-//        if (state == null) {
-//            throw new IllegalStateException("Seems you didn't login to this BTN instance via login entrypoint but received login callback. Cross-site attack? Try again!");
-//        }
-        IP_STATE_MAPPING.invalidate(ip(req));
+    public String callback(Model model) throws IOException {
+        String key = "github_oauth_state:" + ip(req);
+        // check if key still exists
+        if (!generalRedisTemplate.hasKey(key)) {
+            model.addAttribute("error", new LoginError("Sparkle 登录安全保护已取消本次登录：未经授权的 OAuth2 登录回调。您没有从 Sparkle 开始登录流程或者完成登录流程的时间过长，为了阻止未授权的第三方登陆行为，本次登录已自动取消。", false));
+            return "oauth/req_github_failed";
+        }
+        // remove key
+        generalRedisTemplate.unlink(key);
         String code = req.getParameter("code");
         if (code == null) {
-            throw new IllegalStateException("The login callback didn't contains code field.");
+            model.addAttribute("error", new LoginError("登录回调查询参数中未包含 code 字段，您是否正在手动访问 OAuth2 回调端点？", true));
+            return "oauth/req_github_failed";
         }
         HttpResponse<String> re = unirest.post("https://github.com/login/oauth/access_token")
                 .field("client_id", clientId)
@@ -96,20 +101,22 @@ public class OAuthController extends SparkleController {
                 .accept("application/json")
                 .asString();
         if (!re.isSuccess()) {
-            throw new IllegalStateException("The login callback returns incorrect response: " + re.getStatus() + " - " + re.getStatusText() + " : " + re.getBody());
+            model.addAttribute("error", new LoginError("Github API 端点 /login/oauth/access_token 返回了未预期的响应: " + re.getStatus() + " - " + re.getStatusText() + " : " + re.getBody(), true));
+            return "oauth/req_github_failed";
         }
         GithubAccessTokenCallback callback;
         try {
             callback = objectMapper.readValue(re.getBody(), GithubAccessTokenCallback.class);
         } catch (Exception e) {
-            log.warn("Unable parse response: {}", re.getBody(), e);
-            throw e;
+            model.addAttribute("error", new LoginError("Github API 端点 /login/oauth/access_token 返回了未预期的响应: " + re.getStatus() + " - " + re.getBody(), true));
+            return "oauth/req_github_failed";
         }
         HttpResponse<String> authResp = unirest.get("https://api.github.com/user")
                 .header("Authorization", "Bearer " + callback.getAccessToken())
                 .asString();
         if (!authResp.isSuccess() && re.getStatus() != 200) {
-            throw new IllegalStateException("An error occurred when requesting user Github profile via access token: " + re.getStatus() + " - " + re.getStatusText() + " : " + re.getBody());
+            model.addAttribute("error", new LoginError("无法从 Github API 端点获取数据，这可能是因为 access_token 已过期或无效: " + re.getStatus() + " - " + re.getBody(), true));
+            return "oauth/req_github_failed";
         }
         GithubUserProfile userProfile = objectMapper.readValue(authResp.getBody(), GithubUserProfile.class);
         HttpResponse<String> emailResp = unirest.get("https://api.github.com/user/emails")
@@ -120,10 +127,11 @@ public class OAuthController extends SparkleController {
             });
             String emailSelected = userEmailList.stream().filter(GithubUserEmail::getPrimary).findFirst().orElse(new GithubUserEmail(userProfile.getLogin() + "@github-users.com", true, true)).getEmail();
             userLogin(userProfile, emailSelected);
-            resp.sendRedirect("/");
+            return "redirect:/";
         } catch (Exception e) {
-            log.error("Unable to parse email response: {}", emailResp.getBody(), e);
-            throw e;
+            model.addAttribute("error", new LoginError("无法获取 Github 账户正在使用的邮件地址已完成与 Sparkle 账户的关联绑定: " + re.getStatus() + " - " + re.getBody(), true));
+            log.error("无法获取 Github 账户正在使用的邮件地址已完成与 Sparkle 账户的关联绑定: " + re.getStatus() + " - " + re.getBody(), e);
+            return "oauth/req_github_failed";
         }
     }
 
@@ -159,6 +167,14 @@ public class OAuthController extends SparkleController {
         auditService.log(req, "USER_LOGIN", true, audit);
         StpUtil.login(user.getId());
         log.info("用户 {} (ID={}, GHLogin={}, GHUID={}) 已从 {} 登录", user.getNickname(), user.getId(), profile.getLogin(), profile.getId(), ip(req));
+    }
+
+    @NoArgsConstructor
+    @Data
+    @AllArgsConstructor
+    public static class LoginError {
+        private String message;
+        private boolean retryable;
     }
 
     @NoArgsConstructor

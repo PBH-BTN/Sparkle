@@ -71,23 +71,23 @@ public class PingController extends SparkleController {
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
-//        var cred = cred();
-//        var audit = new LinkedHashMap<String, Object>();
-//        audit.put("appId", cred.getAppId());
-//        if (isCredBanned(cred)) {
-//            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Peers 数据：(AppId={}, AppSecret={}, UA={})",
-//                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
-//            audit.put("error", "UserApplication Banned");
-//            auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
-//            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
-//        }
-//        IPAddress ip = new IPAddressString(ip(req)).getAddress();
-//        var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
-//        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 Peers 信息：(AppId={}, UA={})",
-//                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
-//        audit.put("peers_size", ping.getPeers().size());
-//        audit.put("peers_handled", handled);
-//        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
+        var cred = cred();
+        var audit = new LinkedHashMap<String, Object>();
+        audit.put("appId", cred.getAppId());
+        if (isCredBanned(cred)) {
+            log.warn("[BANNED] [Ping] [{}] 正在以遭到封禁的 UserApplication 请求提交 Peers 数据：(AppId={}, AppSecret={}, UA={})",
+                    ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
+            audit.put("error", "UserApplication Banned");
+            auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
+            return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
+        }
+        IPAddress ip = IPUtil.toIPAddress(ip(req));
+        var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
+        log.info("[OK] [Ping] [{}] 已提交 {} 个 Peers 信息：(AppId={}, UA={})",
+                ip(req), handled, cred.getAppId(), ua(req));
+        audit.put("peers_size", ping.getPeers().size());
+        audit.put("peers_handled", handled);
+        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
 
@@ -105,8 +105,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handlePeerHistories(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 PeerHistory 信息：(AppId={}, UA={})",
-                ip(req), ping.getPeers().size(), handled, cred.getAppId(), ua(req));
+        log.info("[OK] [Ping] [{}] 已提交 {} 个 PeerHistory 信息：(AppId={}, UA={})",
+                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
         audit.put("peers_handled", handled);
         auditService.log(req, "BTN_HISTORY_SUBMIT", true, audit);
@@ -127,8 +127,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {}/{} 个 封禁信息：(AppId={}, UA={})",
-                ip(req), ping.getBans().size(), handled, cred.getAppId(), ua(req));
+        log.info("[OK] [Ping] [{}] 已提交 {} 个 封禁信息：(AppId={}, UA={})",
+                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
         audit.put("bans_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
@@ -217,7 +217,7 @@ public class PingController extends SparkleController {
 //            log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
 //                    ip(req), cred.appId(), cred.appSecret());
             throw new AccessDeniedException("UserApplication 鉴权失败：指定的用户应用程序不存在，这可能是因为：" +
-                                            "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
+                    "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
         }
         return userAppOptional.get();
     }
