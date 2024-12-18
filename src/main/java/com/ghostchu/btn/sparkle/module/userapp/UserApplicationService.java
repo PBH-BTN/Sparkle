@@ -73,7 +73,6 @@ public class UserApplicationService {
         userApplication.setComment(comment);
         userApplication.setCreatedAt(createdAt);
         userApplication.setUser(user);
-        userApplication.setBanned(false);
         return userApplicationRepository.save(userApplication);
     }
 

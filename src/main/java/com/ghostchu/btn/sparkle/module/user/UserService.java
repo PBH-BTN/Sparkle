@@ -55,7 +55,6 @@ public class UserService {
             user.setNickname("[SYS] " + moduleName);
             user.setLastSeenAt(OffsetDateTime.now());
             user.setLastAccessAt(OffsetDateTime.now());
-            user.setBanned(false);
             return userRepository.save(user);
         });
     }
@@ -121,7 +120,6 @@ public class UserService {
                 .nickname(user.getNickname())
                 .registerAt(user.getRegisterAt().toEpochSecond() * 1000)
                 .lastSeenAt(user.getLastSeenAt().toEpochSecond() * 1000)
-                .banned(user.getBanned())
                 .build();
     }
 }

@@ -163,7 +163,6 @@ public class OAuthController extends SparkleController {
         user.setNickname(profile.getName() == null ? profile.getLogin() : profile.getName());
         user.setLastSeenAt(OffsetDateTime.now());
         user.setLastAccessAt(OffsetDateTime.now());
-        user.setBanned(false);
         user = userService.saveUser(user);
         if (user.getId() <= 0) {
             throw new IllegalStateException("用户注册失败，请联系系统管理员。");
