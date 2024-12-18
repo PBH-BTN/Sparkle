@@ -37,10 +37,12 @@ public class User {
     private OffsetDateTime lastAccessAt;
     @Column(nullable = false)
     private String githubLogin;
-    @Column(nullable = true)
+    @Column()
     private Long githubUserId;
-    @Column(nullable = false)
-    private Boolean banned;
+    @Column()
+    private OffsetDateTime bannedAt;
+    @Column()
+    private String bannedReason;
     @Column(nullable = false)
     private Integer randomGroup;
 

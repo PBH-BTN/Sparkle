@@ -83,8 +83,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {} 个 Peers 信息：(AppId={}, UA={})",
-                ip(req), handled, cred.getAppId(), ua(req));
+//        log.info("[OK] [Ping] [{}] 已提交 {} 个 Peers 信息：(AppId={}, UA={})",
+//                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
         audit.put("peers_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
@@ -105,8 +105,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handlePeerHistories(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {} 个 PeerHistory 信息：(AppId={}, UA={})",
-                ip(req), handled, cred.getAppId(), ua(req));
+//        log.info("[OK] [Ping] [{}] 已提交 {} 个 PeerHistory 信息：(AppId={}, UA={})",
+//                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
         audit.put("peers_handled", handled);
         auditService.log(req, "BTN_HISTORY_SUBMIT", true, audit);
@@ -127,8 +127,8 @@ public class PingController extends SparkleController {
         }
         IPAddress ip = IPUtil.toIPAddress(ip(req));
         var handled = service.handleBans(ip.toInetAddress(), cred, ping);
-        log.info("[OK] [Ping] [{}] 已提交 {} 个 封禁信息：(AppId={}, UA={})",
-                ip(req), handled, cred.getAppId(), ua(req));
+//        log.info("[OK] [Ping] [{}] 已提交 {} 个 封禁信息：(AppId={}, UA={})",
+//                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
         audit.put("bans_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
@@ -185,13 +185,13 @@ public class PingController extends SparkleController {
         BtnRule btn = service.generateBtnRule();
         String rev = Hashing.goodFastHash(32).hashString(objectMapper.writeValueAsString(btn), StandardCharsets.UTF_8).toString();
         if (rev.equals(version)) {
-            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, UA={})",
-                    ip(req), cred.getAppId(), ua(req));
+//            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, UA={})",
+//                    ip(req), cred.getAppId(), ua(req));
             return ResponseEntity.status(204).build();
         }
         btn.setVersion(rev);
-        log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, UA={})",
-                ip(req), version, rev, cred.getAppId(), ua(req));
+//        log.info("[OK] [Rule] [{}] 已发送新的规则 {} -> {} (AppId={}, UA={})",
+//                ip(req), version, rev, cred.getAppId(), ua(req));
         audit.put("from", version);
         audit.put("to", rev);
         auditService.log(req, "BTN_RULES_RETRIEVE", true, audit);
@@ -203,14 +203,14 @@ public class PingController extends SparkleController {
     }
 
     public boolean isCredBanned(UserApplication userApplication) {
-        return userApplication.getBanned() || userApplication.getUser().getBanned();
+        return userApplication.getBannedAt() != null || userApplication.getUser().getBannedAt() != null;
     }
 
     private UserApplication cred() throws AccessDeniedException {
         ClientAuthenticationCredential cred = ServletUtil.getAuthenticationCredential(req);
         if (!cred.isValid()) {
             log.warn("[FAIL] [UserApp] [{}] Credential not provided.", ip(req));
-            throw new AccessDeniedException("UserApplication 鉴权失败：请求中未包含凭据信息。");
+            throw new AccessDeniedException("UserApplication 鉴权失败：请求中未包含凭据信息，是否是非 BTN 客户端正在进行访问？");
         }
         var userAppOptional = userApplicationService.getUserApplication(cred.appId(), cred.appSecret());
         if (userAppOptional.isEmpty()) {
