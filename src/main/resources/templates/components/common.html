@@ -41,7 +41,7 @@
                 </li>
             </ul>
             <!-- 添加头像和昵称，靠右对齐 -->
-            <ul class="navbar-nav ml-auto">
+            <ul class="navbar-nav ml-auto" th:if="${user != null}">
                 <li class="nav-item d-flex align-items-center">
                     <a class="nav-link d-flex align-items-center" th:href="@{/user/profile}">
                         <img th:src="${user.getAvatar()}" alt="头像" class="rounded-circle"
