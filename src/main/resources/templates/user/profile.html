@@ -21,11 +21,11 @@
         <div class="profile-details">
             <p>
                 <strong>注册时间：</strong>
-                <span th:text="${#dates.format(user.registerAt, 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
+                <span th:text="${#temporals.format(user.getRegisterAt(), 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
             </p>
             <p>
                 <strong>最后访问时间：</strong>
-                <span th:text="${#dates.format(user.lastSeenAt, 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
+                <span th:text="${#temporals.format(user.getLastSeenAt(), 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
             </p>
             <p>
                 <strong>账户状态：</strong>

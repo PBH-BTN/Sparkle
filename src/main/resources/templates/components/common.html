@@ -40,11 +40,10 @@
                     <a class="nav-link disabled" aria-disabled="true">Tracker</a>
                 </li>
             </ul>
-            <!-- 添加头像和昵称 -->
-            <ul class="navbar-nav ms-auto">
+            <!-- 添加头像和昵称，靠右对齐 -->
+            <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-flex align-items-center">
-                    <a class="nav-link" th:href="@{/user/profile}">
-                        <!--/*@thymesVar id="user" type="com.ghostchu.btn.sparkle.module.user.UserDto"*/-->
+                    <a class="nav-link d-flex align-items-center" th:href="@{/user/profile}">
                         <img th:src="${user.getAvatar()}" alt="头像" class="rounded-circle"
                              style="width: 32px; height: 32px; object-fit: cover; margin-right: 8px;">
                         <span th:text="${user.getNickname()}">昵称</span>
@@ -54,6 +53,7 @@
         </div>
     </div>
 </nav>
+
 <div th:fragment="footer">
 <p style="text-align: center; color: gray; font-size: 10px">这是一个页脚，以后也许能放点东西</p>
 </div>
