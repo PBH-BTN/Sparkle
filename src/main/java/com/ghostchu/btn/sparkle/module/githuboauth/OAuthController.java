@@ -63,8 +63,9 @@ public class OAuthController extends SparkleController {
 
     @GetMapping("/login")
     public String loginToGithub() throws IOException {
-        String key = "github_oauth_state:" + ip(req);
         String state = UUID.randomUUID().toString();
+        String key = "github_oauth_ip:" + ip(req);
+        String stateKey = "github_oauth_state:" + state;
         String jumpBack = UriComponentsBuilder.fromHttpUrl(serverRootUrl)
                 .pathSegment("auth", "oauth2", "github", "callback")
                 .toUriString();
@@ -74,17 +75,24 @@ public class OAuthController extends SparkleController {
                 .queryParam("scope", scope)
                 .queryParam("state", state).toUriString();
         // add key
-        generalRedisTemplate.opsForValue().set(key, state, 5, TimeUnit.MINUTES);
+        generalRedisTemplate.opsForValue().set(key, ip(req), 5, TimeUnit.MINUTES);
+        generalRedisTemplate.opsForValue().set(stateKey, ip(req), 5, TimeUnit.MINUTES);
         return "redirect:" + userUri;
     }
 
     @GetMapping("/callback")
     @Transactional
     public String callback(Model model) throws IOException {
-        String key = "github_oauth_state:" + ip(req);
+        String key = "github_oauth_ip:" + ip(req);
+        String stateKey = "github_oauth_state:" + req.getParameter("state");
         // check if key still exists
         if (!generalRedisTemplate.hasKey(key)) {
-            model.addAttribute("error", new LoginError("Sparkle 登录安全保护已取消本次登录：未经授权的 OAuth2 登录回调。您没有从 Sparkle 开始登录流程或者完成登录流程的时间过长，为了阻止未授权的第三方登陆行为，本次登录已自动取消。", false));
+            if (generalRedisTemplate.hasKey(stateKey)) {
+                var ip = generalRedisTemplate.opsForValue().get(stateKey);
+                model.addAttribute("error", new LoginError("Sparkle 登录安全保护已取消本次登录：非原始来源 OAuth2 登录回调。初始化登录的 IP 地址：" + ip + "，当前 IP 地址：" + ip(req) + "。为了阻止未授权的第三方登陆行为，本次登录已自动取消。", false));
+            } else {
+                model.addAttribute("error", new LoginError("Sparkle 登录安全保护已取消本次登录：未经授权的 OAuth2 登录回调。您没有从 Sparkle 开始登录流程或者完成登录流程的时间过长，为了阻止未授权的第三方登陆行为，本次登录已自动取消。", false));
+            }
             return "oauth/req_github_failed";
         }
         // remove key
