@@ -390,7 +390,7 @@ public class AnalyseService {
             List<AnalysedRule> rules = new ArrayList<>();
             ipMerger.merge(ipTries).forEach(i -> rules.add(new AnalysedRule(null, i, OVER_DOWNLOAD,
                     "Generated at " + MsgUtil.getNowDateTimeString())));
-            analysedRuleRepository.replaceAll(OVER_DOWNLOAD);
+            analysedRuleRepository.replaceAll(OVER_DOWNLOAD, rules);
             meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
             log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
         } finally {
