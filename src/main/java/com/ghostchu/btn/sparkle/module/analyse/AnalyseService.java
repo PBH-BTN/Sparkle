@@ -267,62 +267,6 @@ public class AnalyseService {
         }
     }
 
-
-//    @Transactional
-//    @Modifying
-//    @Lock(LockModeType.READ)
-//    @Scheduled(fixedRateString = "${analyse.trackerunion.interval}")
-//    public void cronUpdateTrackerUnion() throws InterruptedException {
-//        try{
-//            generateParallel.acquire();
-//            var startAt = System.currentTimeMillis();
-//            var query = entityManager.createNativeQuery("""
-//                    SELECT DISTINCT bh.peer_ip, bh.peer_id, bh.peer_client_name, tp.user_agent, tp.peer_id_human_readable
-//                    FROM banhistory bh
-//                    INNER JOIN (
-//                        SELECT DISTINCT ON (peer_ip) *
-//                        FROM tracker_peers
-//                        ORDER BY peer_ip, last_time_seen DESC
-//                    ) tp ON bh.peer_ip = tp.peer_ip
-//                    WHERE module LIKE ? AND bh.insert_time >= ?
-//                    ORDER BY bh.peer_ip ASC;
-//                    """);
-//        }finally {
-//            generateParallel.release();
-//        }
-//    }
-
-//    @Transactional
-//    @Modifying
-//    @Lock(LockModeType.READ)
-//    @Scheduled(fixedRateString = "${analyse.trackerhighrisk.interval}")
-//    public void cronUpdateTrackerHighRisk() throws InterruptedException {
-//        try {
-//            DatabaseCare.generateParallel.acquire();
-//            var startAt = System.currentTimeMillis();
-//            Set<TrackedPeer> peers = new HashSet<>(redisTrackedPeerRepository.scanPeersWithCondition((peer) -> {
-//                if (peer.getUserAgent().contains("curl/")) {
-//                    return true;
-//                }
-//                if (peer.getUserAgent().contains("Transmission") && !peer.getPeerId().startsWith("-TR")) {
-//                    return true;
-//                }
-//                return peer.getUserAgent().contains("qBittorrent") && !peer.getPeerId().startsWith("-qB");
-//            }));
-//            var ipList = ipMerger.merge(peers.stream().map(TrackedPeer::getPeerIp).toList());
-//            // 这里不用 PeerIP，因为 PeerIP 可以被用户操纵
-//            var ips = filterIP(ipList.stream().map(IPUtil::toIPAddress).toList()).stream()
-//                    .filter(Objects::nonNull)
-//                    .map(ip -> new AnalysedRule(null, ip.toString(), TRACKER_HIGH_RISK, "Generated at " + MsgUtil.getNowDateTimeString())).toList();
-//            analysedRuleRepository.deleteAllByModule(TRACKER_HIGH_RISK);
-//            meterRegistry.gauge("sparkle_analyse_tracker_high_risk", Collections.emptyList(), ips.size());
-//            analysedRuleRepository.saveAll(ips);
-//            log.info("Tracker high risk IPs: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
-//        } finally {
-//            DatabaseCare.generateParallel.release();
-//        }
-//    }
-
     public List<AnalysedRule> getTrackerHighRisk() {
         return analysedRuleRepository.findByModuleOrderByIpAsc(TRACKER_HIGH_RISK);
     }
