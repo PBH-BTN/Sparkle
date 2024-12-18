@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<div th:insert="~{components/common::header}"></div>
+<body>
+<div th:insert="~{components/common::navbar}"></div>
+
+
+<div class="container">
+    <h1>个人资料</h1>
+    <div class="profile-card">
+        <div class="profile-header">
+            <img class="profile-avatar" th:src="${user.avatar}" alt="用户头像">
+            <div class="profile-info">
+                <h2 th:text="${user.nickname}">昵称</h2>
+                <p>
+                    <strong>电子邮件：</strong>
+                    <span th:text="${user.email}">user@example.com</span>
+                </p>
+            </div>
+        </div>
+        <div class="profile-details">
+            <p>
+                <strong>注册时间：</strong>
+                <span th:text="${#dates.format(user.registerAt, 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
+            </p>
+            <p>
+                <strong>最后访问时间：</strong>
+                <span th:text="${#dates.format(user.lastSeenAt, 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
+            </p>
+            <p>
+                <strong>账户状态：</strong>
+                <span th:if="${user.bannedAt == null}" class="status-normal">
+                        <i class="fa-solid fa-check"></i> 正常
+                    </span>
+                <span th:if="${user.bannedAt != null}" class="status-banned"
+                      th:title="${'暂停原因：' + user.bannedReason}">
+                        <i class="fa-solid fa-ban"></i> 已暂停
+                    </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{components/common::footer}"></div>
+</body>
+</html>

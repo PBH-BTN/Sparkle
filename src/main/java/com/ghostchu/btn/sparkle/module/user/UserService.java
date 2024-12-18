@@ -122,6 +122,7 @@ public class UserService {
                 .lastSeenAt(user.getLastSeenAt())
                 .bannedAt(user.getBannedAt())
                 .bannedReason(user.getBannedReason())
+                .email(user.getEmail())
                 .build();
     }
 }

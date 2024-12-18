@@ -19,6 +19,7 @@ public class UserDto implements Serializable {
     private Long id;
     private String avatar;
     private String nickname;
+    private String email;
     private OffsetDateTime registerAt;
     private OffsetDateTime lastSeenAt;
     private OffsetDateTime bannedAt;
