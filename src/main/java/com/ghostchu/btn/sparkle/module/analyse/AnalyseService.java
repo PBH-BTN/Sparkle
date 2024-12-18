@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.analyse;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.analyse.proto.Peer;
+import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
@@ -139,7 +140,7 @@ public class AnalyseService {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             final var ipTries = new DualIPv4v6Tries();
-            analysedRuleRepository.findAllByPaging((Specification<AnalysedRule>) (root, query, criteriaBuilder) -> {
+            banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
                 if (query != null)
                     query.distinct(true);
                 return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpsOffset), nowTimestamp()),
@@ -147,9 +148,9 @@ public class AnalyseService {
                         criteriaBuilder.like(root.get("peerClientName"), "aria2/%"));
             }, page -> page.forEach(rule -> {
                 try {
-                    ipTries.add(IPUtil.toIPAddress(rule.getIp()));
+                    ipTries.add(IPUtil.toIPAddress(rule.getPeerIp().getHostAddress()));
                 } catch (Exception e) {
-                    log.error("Unable to convert IP address: {}", rule.getIp(), e);
+                    log.error("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
                 }
             }));
             var filtered = filterIP(ipTries);
@@ -177,7 +178,7 @@ public class AnalyseService {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             final var ipTries = new DualIPv4v6Tries();
-            analysedRuleRepository.findAllByPaging((Specification<AnalysedRule>) (root, query, criteriaBuilder) -> {
+            banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
                 if (query != null)
                     query.distinct(true);
                 return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpv6IdentityOffset), nowTimestamp()),
@@ -188,9 +189,9 @@ public class AnalyseService {
                         ));
             }, page -> page.forEach(rule -> {
                 try {
-                    ipTries.add(IPUtil.toIPAddress(rule.getIp()));
+                    ipTries.add(IPUtil.toIPAddress(rule.getPeerIp().getHostAddress()));
                 } catch (Exception e) {
-                    log.error("Unable to convert IP address: {}", rule.getIp(), e);
+                    log.error("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
                 }
             }));
             var filtered = filterIP(ipTries);
