@@ -22,4 +22,6 @@ public interface SparkleCommonRepository<T, ID> extends CrudRepository<T, ID>, J
             }
         }
     }
+
+
 }

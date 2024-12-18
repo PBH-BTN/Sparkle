@@ -15,4 +15,6 @@ public interface PeerHistoryRepository extends SparkleCommonRepository<PeerHisto
 
     // 删除 N 天前的数据
     long deleteByInsertTimeBefore(OffsetDateTime insertTime);
+
+    long deleteAllByInsertTimeBefore(OffsetDateTime offsetDateTime);
 }

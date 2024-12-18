@@ -9,4 +9,6 @@ import java.time.OffsetDateTime;
 public interface AuditRepository extends SparkleCommonRepository<Audit, Long> {
 
     long deleteByTimestampBefore(OffsetDateTime offsetDateTime);
+
+    long deleteAllByTimestampBefore(OffsetDateTime offsetDateTime);
 }

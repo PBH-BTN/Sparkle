@@ -23,4 +23,6 @@ public interface ClientDiscoveryRepository extends SparkleCommonRepository<Clien
     Page<ClientDiscovery> findByOrderByFoundAtDesc(Pageable pageable);
 
     long countByFoundAtBetween(OffsetDateTime foundAtStart, OffsetDateTime foundAtEnd);
+
+    long deleteAllByClientNameLike(String clientName);
 }

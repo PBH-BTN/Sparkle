@@ -14,4 +14,6 @@ public interface SnapshotRepository extends SparkleCommonRepository<Snapshot, Lo
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
     long deleteByInsertTimeBefore(OffsetDateTime offsetDateTime);
+
+    long deleteAllByInsertTimeBefore(OffsetDateTime offsetDateTime);
 }
