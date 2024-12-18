@@ -4,9 +4,6 @@ package com.ghostchu.btn.sparkle.util.ipdb;
 import com.ghostchu.btn.sparkle.util.HTTPUtil;
 import com.github.mizosoft.methanol.Methanol;
 import com.github.mizosoft.methanol.MutableRequest;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.maxmind.db.CHMCache;
 import com.maxmind.db.MaxMindDbConstructor;
 import com.maxmind.db.MaxMindDbParameter;
 import com.maxmind.db.Reader;
@@ -19,6 +16,7 @@ import com.maxmind.geoip2.record.Country;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,16 +30,9 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class IPDB implements AutoCloseable {
-    private final Cache<InetAddress, IPGeoData> MINI_CACHE = CacheBuilder.newBuilder()
-            .maximumSize(10000)
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .softValues()
-            .build();
     private final long updateInterval = 2592000000L; // 30天
     private final File directory;
     private final File mmdbCityFile;
@@ -78,26 +69,20 @@ public class IPDB implements AutoCloseable {
         loadMMDB();
     }
 
+    @Cacheable(cacheNames = {"geoip#600000"}, key = "#address.hostAddress")
     public IPGeoData query(InetAddress address) {
-        try {
-            return MINI_CACHE.get(address, () -> {
-                IPGeoData geoData = new IPGeoData();
-                queryAS(address, geoData);
-                queryCountry(address, geoData);
-                queryCity(address, geoData);
-                if (geoData.getCountryIso() != null) {
-                    String iso = geoData.getCountryIso();
-                    if (iso.equalsIgnoreCase("CN") || iso.equalsIgnoreCase("TW")
-                        || iso.equalsIgnoreCase("HK") || iso.equalsIgnoreCase("MO")) {
-                        queryGeoCN(address, geoData);
-                    }
-                }
-                return geoData;
-            });
-        } catch (ExecutionException e) {
-            return new IPGeoData();
+        IPGeoData geoData = new IPGeoData();
+        queryAS(address, geoData);
+        queryCountry(address, geoData);
+        queryCity(address, geoData);
+        if (geoData.getCountryIso() != null) {
+            String iso = geoData.getCountryIso();
+            if (iso.equalsIgnoreCase("CN") || iso.equalsIgnoreCase("TW")
+                    || iso.equalsIgnoreCase("HK") || iso.equalsIgnoreCase("MO")) {
+                queryGeoCN(address, geoData);
+            }
         }
-
+        return geoData;
     }
 
 
@@ -184,10 +169,8 @@ public class IPDB implements AutoCloseable {
     private void loadMMDB() throws IOException {
         this.languageTag = List.of("zh", "zh-CN", "en");
         this.mmdbCity = new DatabaseReader.Builder(mmdbCityFile)
-                .withCache(new CHMCache())
                 .locales(languageTag).build();
         this.mmdbASN = new DatabaseReader.Builder(mmdbASNFile)
-                .withCache(new CHMCache())
                 .locales(languageTag).build();
         this.geoCN = new Reader(mmdbGeoCNFile);
     }
