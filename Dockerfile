@@ -1,4 +1,4 @@
-FROM docker.io/eclipse-temurin:23-noble
+FROM bellsoft/liberica-openjdk-alpine:23
 LABEL maintainer="https://github.com/PBH-BTN/Sparkle"
 USER 0
 ENV TZ=UTC
