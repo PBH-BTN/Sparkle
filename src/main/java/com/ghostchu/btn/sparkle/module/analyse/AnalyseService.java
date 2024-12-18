@@ -184,8 +184,8 @@ public class AnalyseService {
                 return criteriaBuilder.and(criteriaBuilder.between(root.get("insertTime"), pastTimestamp(highRiskIpv6IdentityOffset), nowTimestamp()),
                         criteriaBuilder.equal(root.get("module"), PCB_MODULE_NAME),
                         criteriaBuilder.or(
-                                criteriaBuilder.like(criteriaBuilder.function("CAST", String.class, root.get("peerIp")), "%::1"),
-                                criteriaBuilder.like(criteriaBuilder.function("CAST", String.class, root.get("peerIp")), "%::2")
+                                criteriaBuilder.like(criteriaBuilder.function("CAST", String.class, root.get("peerIp"), criteriaBuilder.literal("VARCHAR")), "%::1"),
+                                criteriaBuilder.like(criteriaBuilder.function("CAST", String.class, root.get("peerIp"), criteriaBuilder.literal("VARCHAR")), "%::2")
                         ));
             }, page -> page.forEach(rule -> {
                 try {
