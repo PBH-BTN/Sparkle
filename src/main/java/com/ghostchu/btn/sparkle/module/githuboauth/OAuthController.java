@@ -62,7 +62,7 @@ public class OAuthController extends SparkleController {
     private AuditService auditService;
 
     @GetMapping("/login")
-    public void loginToGithub() throws IOException {
+    public String loginToGithub() throws IOException {
         String key = "github_oauth_state:" + ip(req);
         String state = UUID.randomUUID().toString();
         String jumpBack = UriComponentsBuilder.fromHttpUrl(serverRootUrl)
@@ -75,7 +75,7 @@ public class OAuthController extends SparkleController {
                 .queryParam("state", state).toUriString();
         // add key
         generalRedisTemplate.opsForValue().set(key, state, 5, TimeUnit.MINUTES);
-        resp.sendRedirect(userUri);
+        return "redirect:" + userUri;
     }
 
     @GetMapping("/callback")
