@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 
 @Data
 @AllArgsConstructor
@@ -16,6 +17,9 @@ public class UserApplicationDto implements Serializable {
     private Long id;
     private String appId;
     private String comment;
-    private Long createdAt;
+    private OffsetDateTime createdAt;
     private UserDto user;
+    private OffsetDateTime bannedAt;
+    private String bannedReason;
+
 }

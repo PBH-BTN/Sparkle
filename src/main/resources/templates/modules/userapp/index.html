@@ -22,10 +22,15 @@
         </thead>
         <tbody>
         <tr th:each="app : ${userapps}">
-            <th scope="row" th:text="${app.getId()}">1</th>
+            <th scope="row" th:text="${app.getId()}">
+                <i class="fa-solid fa-check" th:if="${app.getBannedAt() == null}" title="状态正常"></i>
+                <i class="fa-solid fa-ban" th:if="${app.getBannedAt() != null}"
+                   th:title="'已暂停：' + ${app.getBannedReason()}"></i>
+            </th>
             <td th:text="${app.getAppId()}">000000000000000</td>
             <td th:text="${app.getComment()}">测试</td>
-            <td><a th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}">删除</a> <a th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}">重置 AppSecret</a></td>
+            <td><a th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}">删除</a> <a
+                    th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}">重置 AppSecret</a></td>
         </tr>
     </table>
 </div>

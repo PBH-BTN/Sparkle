@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 
 @Data
 @AllArgsConstructor
@@ -17,6 +18,6 @@ public class UserApplicationVerboseDto implements Serializable {
     private String appId;
     private String appSecret;
     private String comment;
-    private Long createdAt;
+    private OffsetDateTime createdAt;
     private UserDto user;
 }

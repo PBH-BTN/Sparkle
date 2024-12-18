@@ -118,7 +118,9 @@ public class UserApplicationService {
                 .user(userService.toDto(userApplication.getUser()))
                 .comment(userApplication.getComment())
                 .appId(userApplication.getAppId())/**/
-                .createdAt(userApplication.getCreatedAt().toEpochSecond() * 1000)
+                .createdAt(userApplication.getCreatedAt())
+                .bannedAt(userApplication.getBannedAt())
+                .bannedReason(userApplication.getBannedReason())
                 .build();
     }
 
@@ -130,7 +132,7 @@ public class UserApplicationService {
                 .comment(userApplication.getComment())
                 .appId(userApplication.getAppId())
                 .appSecret(userApplication.getAppSecret())
-                .createdAt(userApplication.getCreatedAt().toEpochSecond() * 1000)
+                .createdAt(userApplication.getCreatedAt())
                 .build();
     }
 }

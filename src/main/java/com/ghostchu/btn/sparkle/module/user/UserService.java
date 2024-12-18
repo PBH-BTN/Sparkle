@@ -118,8 +118,10 @@ public class UserService {
                 .id(user.getId())
                 .avatar(user.getAvatar())
                 .nickname(user.getNickname())
-                .registerAt(user.getRegisterAt().toEpochSecond() * 1000)
-                .lastSeenAt(user.getLastSeenAt().toEpochSecond() * 1000)
+                .registerAt(user.getRegisterAt())
+                .lastSeenAt(user.getLastSeenAt())
+                .bannedAt(user.getBannedAt())
+                .bannedReason(user.getBannedReason())
                 .build();
     }
 }
