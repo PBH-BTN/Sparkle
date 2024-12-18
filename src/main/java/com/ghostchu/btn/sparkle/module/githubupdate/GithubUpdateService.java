@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.githubupdate;
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
 import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
+import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.DatabaseCare;
 import com.ghostchu.btn.sparkle.util.IPUtil;
@@ -13,6 +14,7 @@ import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
 
@@ -117,46 +118,34 @@ public class GithubUpdateService {
 
     private String generateGopeedDev() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
-                        pastTimestamp(),
-                        nowTimestamp(),
-                        "Gopeed dev%"
-                ).stream()
-                .filter(banHistory -> !banHistory.getPeerId().toLowerCase(Locale.ROOT).startsWith("-gp"))
-                .map(history -> IPUtil.toString(history.getPeerIp()))
-                .sorted()
-                .distinct()
-                .forEach(strJoiner::add);
+        banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
+            if (query != null)
+                query.distinct(true);
+            return criteriaBuilder.or(
+                    criteriaBuilder.like(root.get("peerClientName"), "Gopeed dev%"),
+                    criteriaBuilder.like(root.get("peerId"), "-gp%")
+            );
+        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
         return strJoiner.toString();
     }
 
     private String generate123pan() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
-                        pastTimestamp(),
-                        nowTimestamp(),
-                        "offline-download (devel) (anacrolix/torrent unknown)%"
-                )
-                .stream()
-                .map(history -> IPUtil.toString(history.getPeerIp()))
-                .sorted()
-                .distinct()
-                .forEach(strJoiner::add);
+        banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
+            if (query != null)
+                query.distinct(true);
+            return criteriaBuilder.like(root.get("peerClientName"), "offline-download (devel) (anacrolix/torrent unknown)%");
+        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
         return strJoiner.toString();
     }
 
     private String generateDeadBeef() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByInsertTimeBetweenAndPeerClientNameLike(
-                        pastTimestamp(),
-                        nowTimestamp(),
-                        "ޭ__%"
-                )
-                .stream()
-                .map(history -> IPUtil.toString(history.getPeerIp()))
-                .sorted()
-                .distinct()
-                .forEach(strJoiner::add);
+        banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
+            if (query != null)
+                query.distinct(true);
+            return criteriaBuilder.like(root.get("peerClientName"), "ޭ__%");
+        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
         return strJoiner.toString();
     }
 
@@ -178,32 +167,27 @@ public class GithubUpdateService {
 
     private String generateDtTorrents() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerIdLikeOrPeerClientNameLike(
-                        pastTimestamp(),
-                        nowTimestamp(),
-                        "-DT%",
-                        "dt/torrent%"
-                ).stream()
-                .map(history -> IPUtil.toString(history.getPeerIp()))
-                .sorted()
-                .distinct()
-                .forEach(strJoiner::add);
+        banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
+            if (query != null)
+                query.distinct(true);
+            return criteriaBuilder.or(
+                    criteriaBuilder.like(root.get("peerClientName"), "dt/torrent%"),
+                    criteriaBuilder.like(root.get("peerId"), "-DT%")
+            );
+        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
         return strJoiner.toString();
     }
 
     private String generateHpTorrents() {
         var strJoiner = new StringJoiner("\n");
-        banHistoryRepository.findDistinctByPeerIdLikeOrPeerClientNameLike(
-                        pastTimestamp(),
-                        nowTimestamp(),
-                        "-HP%",
-                        "hp/torrent%"
-                )
-                .stream()
-                .map(history -> IPUtil.toString(history.getPeerIp()))
-                .sorted()
-                .distinct()
-                .forEach(strJoiner::add);
+        banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {
+            if (query != null)
+                query.distinct(true);
+            return criteriaBuilder.or(
+                    criteriaBuilder.like(root.get("peerClientName"), "hp/torrent%"),
+                    criteriaBuilder.like(root.get("peerId"), "-HP%")
+            );
+        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
         return strJoiner.toString();
     }
 
@@ -229,7 +213,7 @@ public class GithubUpdateService {
                     .content(content)
                     .commit();
             var commit = commitResponse.getCommit();
-            log.info("GitHub 同步规则 “{}” 更新结果：Sha: {}", file, commit.getSHA1());
+            log.info("GitHub 同步规则 “{}” 更新结果：Sha: {} 新的文件行数: {}", file, commit.getSHA1(), file.lines().count());
         } catch (Throwable e) {
             log.error("无法完成数据更新操作", e);
         }
