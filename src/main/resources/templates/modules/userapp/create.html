@@ -4,9 +4,8 @@
 <body>
 <div th:insert="~{components/common::navbar}"></div>
 
-<h1>创建新的用户应用程序</h1>
-
 <div class="container">
+    <h1>创建新的用户应用程序</h1>
     <form th:action="@{/userapp/create}" method="post">
         <div>
             <label for="comment">名称: </label>
