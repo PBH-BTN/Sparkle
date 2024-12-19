@@ -103,6 +103,7 @@ public class AnalyseService {
                                     Duration.ofMinutes(30)
                             )
                             .stream()
+                            .distinct()
                             .map(IPUtil::toString)
                             .collect(Collectors.toList()))
                     .stream().map(IPUtil::toIPAddress)
