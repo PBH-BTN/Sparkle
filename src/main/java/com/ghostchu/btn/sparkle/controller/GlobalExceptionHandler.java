@@ -49,7 +49,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void asyncReqNotUsable(AsyncRequestNotUsableException e) {
-        log.warn("Unable to complete async request because: [{}], async request not usable.", e.getMessage());
+        //log.warn("Unable to complete async request because: [{}], async request not usable.", e.getMessage());
+        // not my issue
     }
 
 
