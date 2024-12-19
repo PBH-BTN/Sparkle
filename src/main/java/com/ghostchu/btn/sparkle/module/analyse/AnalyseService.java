@@ -219,8 +219,6 @@ public class AnalyseService {
         var startAt = System.currentTimeMillis();
         final var ipTries = new DualIPv4v6Tries();
         Set<ClientIdentity> clientDiscoveries = new HashSet<>();
-        var user = userService.getSystemUser("Tracker");
-
         scanFile(peerInfo -> {
             var peerId = new String(peerInfo.getPeerId().toByteArray(), StandardCharsets.ISO_8859_1);
             try {
@@ -233,7 +231,7 @@ public class AnalyseService {
                     ipTries.add(IPUtil.toIPAddress(peerInfo.getIp().getClientIp().toByteArray()));
                 }
             } catch (Exception e) {
-                log.error("Unable to handle PeerInfo check: {}", peerInfo, e);
+                log.error("Unable to handle PeerInfo check: {}, clientIp is {}", peerInfo, Arrays.toString(peerInfo.getIp().getClientIp().toByteArray()), e);
             } finally {
                 if (clientDiscoveries.size() > 500) {
                     clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
