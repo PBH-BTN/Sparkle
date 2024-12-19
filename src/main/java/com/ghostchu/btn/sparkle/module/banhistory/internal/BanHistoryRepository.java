@@ -15,7 +15,7 @@ import java.util.List;
 @Repository
 public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory, Long> {
     @Query("""
-                SELECT DISTINCT ban.peerIp
+                SELECT ban.peerIp
                        FROM BanHistory ban
                        WHERE
                           ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND ban.module LIKE '%ProgressCheatBlocker%'
