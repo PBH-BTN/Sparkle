@@ -103,7 +103,6 @@ public class AnalyseService {
                                     Duration.ofMinutes(30)
                             )
                             .stream()
-                            .distinct()
                             .map(IPUtil::toString)
                             .collect(Collectors.toList()))
                     .stream().map(IPUtil::toIPAddress)
@@ -284,54 +283,46 @@ public class AnalyseService {
             var startAt = System.currentTimeMillis();
             var query = entityManager.createNativeQuery("""
                     WITH LatestSnapshots AS (
-                                            SELECT
-                                                s.id,
-                                                s.torrent,
-                                                s.peer_ip,
-                                                s.user_application,
-                                                s.to_peer_traffic,
-                                                s.last_time_seen,
-                                                time_bucket('1 day', s.last_time_seen) AS day_bucket  -- 按天分桶
-                                            FROM
-                                                public.peer_history s
-                                            WHERE
-                                                s.last_time_seen >= ?
-                                                AND s.to_peer_traffic > 0
-                                        ),
-                                        AggregatedUploads AS (
-                                            SELECT
-                                                ls.torrent,
-                                                ls.peer_ip,
-                                                SUM(ls.to_peer_traffic) AS total_uploaded,
-                                                ls.day_bucket
-                                            FROM
-                                                LatestSnapshots ls
-                                            GROUP BY
-                                                ls.torrent, ls.peer_ip, ls.day_bucket  -- 按时间分桶后进行聚合
-                                            HAVING
-                                                SUM(ls.to_peer_traffic) > 0
-                                        )
-                                        SELECT
-                                            au.torrent,
-                                            au.peer_ip,
-                                            au.total_uploaded,
-                                            t.size,
-                                            (au.total_uploaded / t.size::float) * 100 AS upload_percentage
-                                        FROM
-                                            AggregatedUploads au
-                                        JOIN
-                                            public.torrent t ON au.torrent = t.id
-                                        WHERE
-                                            t.size::float > 0
-                                            AND au.total_uploaded > t.size::float * ?
-                                            AND EXISTS (
-                                                SELECT 1
-                                                FROM public.peer_history ph
-                                                WHERE ph.peer_ip = au.peer_ip
-                                                AND ph.last_time_seen >= ?
-                                            )
-                                        ORDER BY
-                                            upload_percentage DESC;
+                        SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
+                            s.id,
+                            s.torrent,
+                            s.peer_ip,
+                            s.user_application,
+                            s.to_peer_traffic,
+                            s.last_time_seen
+                        FROM
+                            public.peer_history s
+                        WHERE
+                            s.last_time_seen >= ? AND s.to_peer_traffic > 0
+                        ORDER BY
+                            s.torrent, s.peer_ip, s.user_application, s.last_time_seen DESC
+                    ),
+                    AggregatedUploads AS (
+                        SELECT
+                            ls.torrent,
+                            ls.peer_ip,
+                            SUM(ls.to_peer_traffic) AS total_uploaded
+                        FROM
+                            LatestSnapshots ls
+                        GROUP BY
+                            ls.torrent, ls.peer_ip
+                        HAVING
+                            SUM(ls.to_peer_traffic) > 0
+                    )
+                    SELECT
+                        au.torrent,
+                        au.peer_ip,
+                        au.total_uploaded,
+                        t.size,
+                        (au.total_uploaded / t.size::float) * 100 AS upload_percentage
+                    FROM
+                        AggregatedUploads au
+                    JOIN
+                        public.torrent t ON au.torrent = t.id
+                    WHERE
+                        t.size::float > 0 AND au.total_uploaded > t.size::float * ?
+                    ORDER BY
+                        upload_percentage DESC;
                                         
                     """);
             query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
