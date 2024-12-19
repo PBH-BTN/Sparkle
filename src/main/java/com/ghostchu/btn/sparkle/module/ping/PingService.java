@@ -94,7 +94,7 @@ public class PingService {
             it.remove();
             if (identitySet.size() >= 500 || snapshotList.size() >= 500) {
                 snapshotService.saveSnapshots(snapshotList);
-                clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+                clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
                 processed += snapshotList.size();
                 snapshotList.clear();
@@ -103,7 +103,7 @@ public class PingService {
         }
         snapshotService.saveSnapshots(snapshotList);
         meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
-        clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+        clientDiscoveryService.handleIdentities(now, now, identitySet);
         processed += snapshotList.size();
         return processed;
     }
@@ -151,7 +151,7 @@ public class PingService {
             it.remove();
             if (identitySet.size() >= 500 || banHistoryList.size() >= 500) {
                 banHistoryService.saveBanHistories(banHistoryList);
-                clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+                clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
                 processed += banHistoryList.size();
                 banHistoryList.clear();
@@ -160,7 +160,7 @@ public class PingService {
         }
         banHistoryService.saveBanHistories(banHistoryList);
         meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
-        clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+        clientDiscoveryService.handleIdentities(now, now, identitySet);
         processed += banHistoryList.size();
         return processed;
     }
@@ -215,7 +215,7 @@ public class PingService {
             it.remove();
             if (identitySet.size() >= 500 || peerHistoryList.size() >= 500) {
                 peerHistoryService.saveHistories(peerHistoryList);
-                clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+                clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_histories_processed").increment(peerHistoryList.size());
                 processed += peerHistoryList.size();
                 peerHistoryList.clear();
@@ -223,7 +223,7 @@ public class PingService {
             }
         }
         peerHistoryService.saveHistories(peerHistoryList);
-        clientDiscoveryService.handleIdentities(userApplication.getUser(), now, now, identitySet);
+        clientDiscoveryService.handleIdentities(now, now, identitySet);
         meterRegistry.counter("sparkle_ping_histories_processed").increment(peerHistoryList.size());
         processed += peerHistoryList.size();
         return processed;

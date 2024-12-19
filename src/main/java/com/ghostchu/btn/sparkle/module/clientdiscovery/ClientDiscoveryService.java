@@ -3,7 +3,6 @@ package com.ghostchu.btn.sparkle.module.clientdiscovery;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscovery;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryRepository;
 import com.ghostchu.btn.sparkle.module.user.UserService;
-import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -18,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -36,28 +33,23 @@ public class ClientDiscoveryService {
 
     @Transactional
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    public void handleIdentities(User user, OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
+    public void handleIdentities(OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
         meterRegistry.counter("sparkle_client_discovery_processed").increment();
-        clientDiscoveryRepository.updateLastSeen(clientIdentities.stream().map(ClientIdentity::hash).toList(), timeForLastSeenAt, user);
-        var found = clientDiscoveryRepository.findAllById(clientIdentities.stream().map(ClientIdentity::hash).toList());
-        List<Long> hashInDatabase = new ArrayList<>();
-        found.forEach(clientDiscoveryEntity -> hashInDatabase.add(clientDiscoveryEntity.getHash()));
-        var notInDatabase = clientIdentities.stream()
-                .filter(c -> !hashInDatabase.contains(c.hash()))
+        var pendingSave = clientIdentities.stream()
                 .map(ci -> new ClientDiscovery(
                         ci.hash(),
                         ByteUtil.filterUTF8(ci.getClientName()),
-                        ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, user, timeForLastSeenAt, user))
+                        ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, timeForLastSeenAt))
                 .toList();
-        meterRegistry.counter("sparkle_client_discovery_created").increment(notInDatabase.size());
-        clientDiscoveryRepository.saveAll(notInDatabase);
+        meterRegistry.counter("sparkle_client_discovery_created").increment(pendingSave.size());
+        clientDiscoveryRepository.saveAll(pendingSave);
     }
 
     @Cacheable(value = "clientDiscoveryMetrics#1800000", key = "#from+'-'+#to")
     public ClientDiscoveryMetrics getMetrics(OffsetDateTime from, OffsetDateTime to) {
         return new ClientDiscoveryMetrics(
                 clientDiscoveryRepository.count(),
-                clientDiscoveryRepository.countByFoundAtBetween(from,to)
+                clientDiscoveryRepository.countByFoundAtBetween(from, to)
         );
     }
 
@@ -66,10 +58,8 @@ public class ClientDiscoveryService {
                 .hash(clientDiscovery.getHash())
                 .clientName(clientDiscovery.getClientName())
                 .peerId(clientDiscovery.getPeerId())
-                .foundAt(clientDiscovery.getFoundAt().toEpochSecond() * 1000)
-                .foundBy(userService.toDto(clientDiscovery.getFoundBy()))
-                .lastSeenAt(clientDiscovery.getLastSeenAt().toEpochSecond() * 1000)
-                .lastSeenBy(userService.toDto(clientDiscovery.getLastSeenBy()))
+                .foundAt(clientDiscovery.getFoundAt())
+                .lastSeenAt(clientDiscovery.getLastSeenAt())
                 .build();
     }
 

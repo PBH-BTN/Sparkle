@@ -1,7 +1,9 @@
 package com.ghostchu.btn.sparkle.module.clientdiscovery.internal;
 
-import com.ghostchu.btn.sparkle.module.user.internal.User;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -25,12 +27,6 @@ public class ClientDiscovery {
     private String peerId;
     @Column(nullable = false)
     private OffsetDateTime foundAt;
-    @JoinColumn(name = "foundBy")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User foundBy;
     @Column(nullable = false)
     private OffsetDateTime lastSeenAt;
-    @JoinColumn(name = "lastSeenBy")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User lastSeenBy;
 }

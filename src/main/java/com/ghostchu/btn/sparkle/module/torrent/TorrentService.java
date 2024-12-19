@@ -17,7 +17,7 @@ public class TorrentService {
     }
 
     @Modifying
-    @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    @Transactional(Transactional.TxType.SUPPORTS)
     @Cacheable(value = "torrent#600000", key = "#torrentIdentifier+'-'+#torrentSize")
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize) {
         var torrentOptional = torrentRepository.findByIdentifierAndSize(torrentIdentifier, torrentSize);

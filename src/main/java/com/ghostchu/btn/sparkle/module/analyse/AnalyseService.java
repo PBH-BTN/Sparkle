@@ -236,7 +236,7 @@ public class AnalyseService {
                 log.error("Unable to handle PeerInfo check: {}", peerInfo, e);
             } finally {
                 if (clientDiscoveries.size() > 500) {
-                    clientDiscoveryService.handleIdentities(user, OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
+                    clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
                     clientDiscoveries.clear();
                 }
             }
