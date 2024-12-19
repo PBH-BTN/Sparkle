@@ -2,10 +2,11 @@ package com.ghostchu.btn.sparkle.module.torrent;
 
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.module.torrent.internal.TorrentRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TorrentService {
@@ -17,7 +18,7 @@ public class TorrentService {
     }
 
     @Modifying
-    @Transactional(Transactional.TxType.SUPPORTS)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @Cacheable(value = "torrent#600000", key = "#torrentIdentifier+'-'+#torrentSize")
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize) {
         var torrentOptional = torrentRepository.findByIdentifierAndSize(torrentIdentifier, torrentSize);

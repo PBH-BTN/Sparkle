@@ -6,13 +6,13 @@ import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.LockModeType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
@@ -31,8 +31,8 @@ public class ClientDiscoveryService {
         this.userService = userService;
     }
 
-    @Transactional
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Modifying
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void handleIdentities(OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
         meterRegistry.counter("sparkle_client_discovery_processed").increment();
         var pendingSave = clientIdentities.stream()
