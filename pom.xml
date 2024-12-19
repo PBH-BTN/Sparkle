@@ -275,12 +275,27 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-classes-epoll</artifactId>
             <version>4.1.116.Final</version>
+            <classifier>linux-x86_64</classifier>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.netty/netty-transport-classes-kqueue -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-classes-kqueue</artifactId>
             <version>4.1.116.Final</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-classes-epoll</artifactId>
+            <version>4.1.116.Final</version>
+            <classifier>linux-aarch_64</classifier>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-transport-classes-kqueue -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-classes-kqueue</artifactId>
+            <version>4.1.116.Final</version>
+            <classifier>linux-aarch_644</classifier>
         </dependency>
 
         <dependency>
