@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.DynamicUpdate;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -18,7 +19,7 @@ import java.time.OffsetDateTime;
 @Getter
 @Setter
 @DynamicUpdate
-public class User {
+public class User implements Serializable {
     @Id
     @GeneratedValue
     @Column(nullable = false, unique = true)
