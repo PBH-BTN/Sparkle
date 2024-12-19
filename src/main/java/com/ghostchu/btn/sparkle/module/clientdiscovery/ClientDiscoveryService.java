@@ -3,17 +3,13 @@ package com.ghostchu.btn.sparkle.module.clientdiscovery;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscovery;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryRepository;
 import com.ghostchu.btn.sparkle.module.user.UserService;
-import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -31,18 +27,18 @@ public class ClientDiscoveryService {
         this.userService = userService;
     }
 
-    @Modifying
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    //    @Modifying
+//    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void handleIdentities(OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
-        meterRegistry.counter("sparkle_client_discovery_processed").increment();
-        var pendingSave = clientIdentities.stream()
-                .map(ci -> new ClientDiscovery(
-                        ci.hash(),
-                        ByteUtil.filterUTF8(ci.getClientName()),
-                        ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, timeForLastSeenAt))
-                .toList();
-        meterRegistry.counter("sparkle_client_discovery_created").increment(pendingSave.size());
-        clientDiscoveryRepository.saveAll(pendingSave);
+        //        meterRegistry.counter("sparkle_client_discovery_processed").increment();
+//        var pendingSave = clientIdentities.stream()
+//                .map(ci -> new ClientDiscovery(
+//                        ci.hash(),
+//                        ByteUtil.filterUTF8(ci.getClientName()),
+//                        ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, timeForLastSeenAt))
+//                .toList();
+//        meterRegistry.counter("sparkle_client_discovery_created").increment(pendingSave.size());
+//        clientDiscoveryRepository.saveAll(pendingSave);
     }
 
     @Cacheable(value = "clientDiscoveryMetrics#1800000", key = "#from+'-'+#to")
