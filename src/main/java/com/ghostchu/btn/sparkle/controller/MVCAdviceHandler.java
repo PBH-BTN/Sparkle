@@ -1,5 +1,6 @@
 package com.ghostchu.btn.sparkle.controller;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.module.user.UserDto;
 import com.ghostchu.btn.sparkle.module.user.UserService;
@@ -16,7 +17,11 @@ public class MVCAdviceHandler {
 
     @ModelAttribute("user")
     public UserDto addUserToModel() {
-        var optional = userService.getUser((StpUtil.getLoginIdAsLong()));
-        return optional.map(userService::toDto).orElse(null);
+        try {
+            var optional = userService.getUser((StpUtil.getLoginIdAsLong()));
+            return optional.map(userService::toDto).orElse(null);
+        } catch (NotLoginException e) {
+            return null;
+        }
     }
 }
