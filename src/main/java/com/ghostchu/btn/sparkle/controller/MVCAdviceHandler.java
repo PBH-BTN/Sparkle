@@ -5,13 +5,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.module.user.UserDto;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.time.OffsetDateTime;
 
-@ControllerAdvice(annotations = Controller.class)
+@ControllerAdvice
 public class MVCAdviceHandler {
     private final UserService userService;
 
