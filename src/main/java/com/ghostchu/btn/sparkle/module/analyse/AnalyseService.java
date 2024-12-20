@@ -89,8 +89,8 @@ public class AnalyseService {
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedRateString = "${analyse.untrustip.interval}")
-    public void cronUntrustedIPAddresses() throws InterruptedException {
+    @Scheduled(cron = "${analyse.untrustip.interval}")
+    public void cronUntrustedIPAddresses() {
         var startAt = System.currentTimeMillis();
         var ipTries = new DualIPv4v6Tries();
             /*
