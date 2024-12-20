@@ -34,7 +34,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -95,19 +94,30 @@ public class AnalyseService {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             var ipTries = new DualIPv4v6Tries();
-            ipMerger.merge(banHistoryRepository
-                            .generateUntrustedIPAddresses(
-                                    TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
-                                    OffsetDateTime.now(),
-                                    untrustedIpAddressGenerateThreshold,
-                                    Duration.ofMinutes(30)
-                            )
-                            .stream()
-                            .distinct()
-                            .map(IPUtil::toString)
-                            .collect(Collectors.toList()))
-                    .stream().map(IPUtil::toIPAddress)
-                    .forEach(ipTries::add);
+            var query = entityManager.createNativeQuery("""
+                    SELECT peer_ip, SUM(app_count) AS untrust_count
+                    FROM progress_cheat_blocker_agg_view
+                    WHERE bucket >= ? AND bucket <= ?
+                    GROUP BY peer_ip
+                    HAVING SUM(app_count) > ?
+                    ORDER BY untrust_count DESC;
+                    """);
+            query.setParameter(1, new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset));
+            query.setParameter(2, new Timestamp(System.currentTimeMillis()));
+            query.setParameter(3, untrustedIpAddressGenerateThreshold);
+            List<Object[]> queryResult = query.getResultList();
+            for (Object[] arr : queryResult) {
+                var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[2]).getHostAddress());
+                ipTries.add(ipAddr);
+            }
+//            banHistoryRepository
+//                    .generateUntrustedIPAddresses(
+//                            TimeUtil.toUTC(System.currentTimeMillis() - untrustedIpAddressGenerateOffset),
+//                            OffsetDateTime.now(),
+//                            untrustedIpAddressGenerateThreshold,
+//                            Duration.ofMinutes(30)
+//                    )
+            ipMerger.merge(ipTries);
             List<AnalysedRule> untrustedIps = new ArrayList<>();
             filterIP(ipTries).forEach(ip -> untrustedIps.add(new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())));
             analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
