@@ -179,7 +179,7 @@ schedule_interval => INTERVAL '1 hour');
                 try {
                     ipTries.add(IPUtil.toIPAddress(rule.getPeerIp().getHostAddress()));
                 } catch (Exception e) {
-                    log.debug("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
+                    log.warn("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
                 }
             }));
             var filtered = filterIP(ipTries);
@@ -260,7 +260,7 @@ schedule_interval => INTERVAL '1 hour');
                     ipTries.add(IPUtil.toIPAddress(peerInfo.getIp().getClientIp().toByteArray()));
                 }
             } catch (Exception e) {
-                log.error("Unable to handle PeerInfo check: {}, clientIp is {}", peerInfo, Arrays.toString(peerInfo.getIp().getClientIp().toByteArray()), e);
+                log.debug("Unable to handle PeerInfo check: {}, clientIp is {}", peerInfo, Arrays.toString(peerInfo.getIp().getClientIp().toByteArray()), e);
             } finally {
                 if (clientDiscoveries.size() > 500) {
                     clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
