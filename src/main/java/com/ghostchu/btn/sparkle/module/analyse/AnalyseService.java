@@ -125,7 +125,7 @@ schedule_interval => INTERVAL '1 hour');
             query.setParameter(3, untrustedIpAddressGenerateThreshold);
             List<Object[]> queryResult = query.getResultList();
             for (Object[] arr : queryResult) {
-                var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[2]).getHostAddress());
+                var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[0]).getHostAddress());
                 ipTries.add(ipAddr);
             }
 //            banHistoryRepository
@@ -179,7 +179,7 @@ schedule_interval => INTERVAL '1 hour');
                 try {
                     ipTries.add(IPUtil.toIPAddress(rule.getPeerIp().getHostAddress()));
                 } catch (Exception e) {
-                    log.error("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
+                    log.debug("Unable to convert IP address: {}", rule.getPeerIp().getHostAddress(), e);
                 }
             }));
             var filtered = filterIP(ipTries);
