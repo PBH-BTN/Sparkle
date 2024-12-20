@@ -5,7 +5,6 @@ import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
-import com.ghostchu.btn.sparkle.util.DatabaseCare;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import jakarta.transaction.Transactional;
 import lombok.Cleanup;
@@ -60,22 +59,17 @@ public class GithubUpdateService {
             throw new IllegalArgumentException("Organization " + orgName + " not found");
         }
         var repository = organization.getRepository(repoName);
-        try {
-            DatabaseCare.generateParallel.acquire();
-            updateFile(repository, "untrusted-ips.txt", () -> generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "high-risk-ips.txt", () -> generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "overdownload-ips.txt", () -> generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
-            //updateFile(repository, "strange_ipv6_block.txt", () -> generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "random-peerid.txt", () -> generateGopeedDev().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "hp_torrent.txt", () -> generateHpTorrents().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "dt_torrent.txt", () -> generateDtTorrents().getBytes(StandardCharsets.UTF_8));
-            //updateFile(repository, "go.torrent dev 20181121.txt", () -> generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "0xde-0xad-0xbe-0xef.txt", () -> generateDeadBeef().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "123pan.txt", () -> generate123pan().getBytes(StandardCharsets.UTF_8));
-            updateFile(repository, "tracker-high-risk-ips.txt", () -> generateTrackerHighRiskIps().getBytes(StandardCharsets.UTF_8));
-        } finally {
-            DatabaseCare.generateParallel.release();
-        }
+        updateFile(repository, "untrusted-ips.txt", () -> generateUntrustedIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "high-risk-ips.txt", () -> generateHighRiskIps().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "overdownload-ips.txt", () -> generateOverDownloadIps().getBytes(StandardCharsets.UTF_8));
+        //updateFile(repository, "strange_ipv6_block.txt", () -> generateStrangeIPV6().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "random-peerid.txt", () -> generateGopeedDev().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "hp_torrent.txt", () -> generateHpTorrents().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "dt_torrent.txt", () -> generateDtTorrents().getBytes(StandardCharsets.UTF_8));
+        //updateFile(repository, "go.torrent dev 20181121.txt", () -> generateBaiduNetdisk().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "0xde-0xad-0xbe-0xef.txt", () -> generateDeadBeef().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "123pan.txt", () -> generate123pan().getBytes(StandardCharsets.UTF_8));
+        updateFile(repository, "tracker-high-risk-ips.txt", () -> generateTrackerHighRiskIps().getBytes(StandardCharsets.UTF_8));
     }
 
     private String generateTrackerHighRiskIps() {
