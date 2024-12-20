@@ -159,7 +159,7 @@ schedule_interval => INTERVAL '1 hour');
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedRateString = "${analyse.highriskips.interval}")
+    @Scheduled(cron = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() throws InterruptedException {
         var startAt = System.currentTimeMillis();
         final var ipTries = new DualIPv4v6Tries();
@@ -233,7 +233,7 @@ schedule_interval => INTERVAL '1 hour');
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedRateString = "${analyse.trackerhighrisk.interval}")
+    @Scheduled(cron = "${analyse.trackerhighrisk.interval}")
     public void cronUpdateTrunkerFile() {
         // Trunker, A BitTorrent Tracker, not a typo but a name
         var startAt = System.currentTimeMillis();
@@ -301,7 +301,7 @@ schedule_interval => INTERVAL '1 hour');
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    //@Scheduled(fixedRateString = "${analyse.overdownload.interval}")
+    @Scheduled(cron = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() throws InterruptedException {
         var startAt = System.currentTimeMillis();
         var query = entityManager.createNativeQuery("""

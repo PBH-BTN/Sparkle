@@ -49,7 +49,7 @@ public class GithubUpdateService {
     }
 
 
-    @Scheduled(fixedRateString = "${service.githubruleupdate.interval}")
+    @Scheduled(cron = "${service.githubruleupdate.interval}")
     @Transactional
     public void githubRuleUpdate() throws IOException, InterruptedException {
         log.info("开始更新 GitHub 同步规则存储库...");
