@@ -311,7 +311,7 @@ schedule_interval => INTERVAL '1 hour');
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
-    @Scheduled(fixedRateString = "${analyse.overdownload.interval}")
+    //@Scheduled(fixedRateString = "${analyse.overdownload.interval}")
     public void cronUpdateOverDownload() throws InterruptedException {
         try {
             DatabaseCare.generateParallel.acquire();
