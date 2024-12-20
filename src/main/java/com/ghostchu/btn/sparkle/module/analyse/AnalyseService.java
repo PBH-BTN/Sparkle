@@ -94,6 +94,24 @@ public class AnalyseService {
             DatabaseCare.generateParallel.acquire();
             var startAt = System.currentTimeMillis();
             var ipTries = new DualIPv4v6Tries();
+            /*
+            CREATE MATERIALIZED VIEW progress_cheat_blocker_agg_view
+WITH (timescaledb.continuous) AS
+SELECT
+    time_bucket(INTERVAL '1 hour', insert_time) AS bucket,
+    peer_ip,
+    COUNT(DISTINCT user_application) AS app_count
+FROM banhistory
+WHERE module = 'com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker'
+GROUP BY bucket, peer_ip
+WITH NO DATA;
+
+
+SELECT add_continuous_aggregate_policy('progress_cheat_blocker_agg_view',
+start_offset => INTERVAL '7 day',
+end_offset => INTERVAL '1 minute',
+schedule_interval => INTERVAL '1 hour');
+             */
             var query = entityManager.createNativeQuery("""
                     SELECT peer_ip, SUM(app_count) AS untrust_count
                     FROM progress_cheat_blocker_agg_view
