@@ -97,7 +97,7 @@ public class PingService {
                     .build());
             identitySet.add(new ClientIdentity(peerId, peerClientName));
             it.remove();
-            if (identitySet.size() >= 500 || snapshotList.size() >= 500) {
+            if (identitySet.size() >= 5000 || snapshotList.size() >= 5000) {
                 snapshotService.saveSnapshots(snapshotList);
                 clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
@@ -157,7 +157,7 @@ public class PingService {
                     .build());
             identitySet.add(new ClientIdentity(peerId, peerClientName));
             it.remove();
-            if (identitySet.size() >= 500 || banHistoryList.size() >= 500) {
+            if (identitySet.size() >= 5000 || banHistoryList.size() >= 5000) {
                 banHistoryService.saveBanHistories(banHistoryList);
                 clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
@@ -223,7 +223,7 @@ public class PingService {
             identitySet.add(new ClientIdentity(peerId, peerClientName));
             // 避免爆内存，必须及时清理
             it.remove();
-            if (identitySet.size() >= 1000 || peerHistoryList.size() >= 1000) {
+            if (identitySet.size() >= 5000 || peerHistoryList.size() >= 5000) {
                 peerHistoryService.saveHistories(peerHistoryList);
                 clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_histories_processed").increment(peerHistoryList.size());
