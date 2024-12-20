@@ -41,6 +41,7 @@ public class UserApplicationService {
      * @param appSecret AppSecret
      * @return UserApplicationDto
      */
+
     public Optional<UserApplication> getUserApplication(String appId, String appSecret) {
         return userApplicationRepository.findByAppIdAndAppSecret(appId, appSecret);
     }

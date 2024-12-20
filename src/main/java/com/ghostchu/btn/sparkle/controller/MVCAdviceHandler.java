@@ -4,7 +4,6 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.module.user.UserDto;
 import com.ghostchu.btn.sparkle.module.user.UserService;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -19,7 +18,6 @@ public class MVCAdviceHandler {
     }
 
     @ModelAttribute("user")
-    @Transactional
     public UserDto addUserToModel() {
         try {
             var optional = userService.getUser((StpUtil.getLoginIdAsLong()));

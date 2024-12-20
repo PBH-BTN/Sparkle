@@ -21,7 +21,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -67,6 +69,9 @@ public class PingController extends SparkleController {
     private GeoIPManager geoIPManager;
     @Autowired
     private SubmitHistoriesAbility submitHistoriesAbility;
+    @Qualifier("redisTemplate")
+    @Autowired
+    private RedisTemplate redisTemplate;
 
 
     @PostMapping("/peers/submit")
@@ -212,6 +217,10 @@ public class PingController extends SparkleController {
             log.warn("[FAIL] [UserApp] [{}] Credential not provided.", ip(req));
             throw new AccessDeniedException("UserApplication 鉴权失败：请求中未包含凭据信息，是否是非 BTN 客户端正在进行访问？");
         }
+        var cache = redisTemplate.opsForValue().get("ping_cred_cache:" + cred.appId() + "@" + cred.appSecret());
+        if (cache != null) {
+            return (UserApplication) cache;
+        }
         var userAppOptional = userApplicationService.getUserApplication(cred.appId(), cred.appSecret());
         if (userAppOptional.isEmpty()) {
 //            log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
@@ -219,6 +228,7 @@ public class PingController extends SparkleController {
             throw new AccessDeniedException("UserApplication 鉴权失败：指定的用户应用程序不存在，这可能是因为：" +
                     "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
         }
+        redisTemplate.opsForValue().setIfAbsent("ping_cred_cache:" + cred.appId() + "@" + cred.appSecret(), userAppOptional.get());
         return userAppOptional.get();
     }
 }
