@@ -25,12 +25,18 @@ public class IPUtil {
     }
 
     public static InetAddress toInet(String ip) {
-        var address = new IPAddressString(ip).getAddress();
-        if (address == null) {
+        try {
+            return InetAddress.getByName(ip);
+        } catch (UnknownHostException e) {
             log.error("Unable convert {} to IPAddressString (toInet)", ip);
             return new IPAddressString(INVALID_FALLBACK_ADDRESS).getAddress().toInetAddress();
         }
-        return address.toInetAddress();
+//        var address = new IPAddressString(ip).getAddress();
+//        if (address == null) {
+//            log.error("Unable convert {} to IPAddressString (toInet)", ip);
+//            return new IPAddressString(INVALID_FALLBACK_ADDRESS).getAddress().toInetAddress();
+//        }
+//        return address.toInetAddress();
     }
 
     public static String toString(InetAddress inet) { // 压缩一下 :0:0:0

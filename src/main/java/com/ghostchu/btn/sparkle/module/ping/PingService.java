@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
@@ -59,27 +60,31 @@ public class PingService {
 
     @Modifying
     @Transactional
-    public long handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
+    @Async
+    public void handlePeers(InetAddress submitterIp, UserApplication userApplication, BtnPeerPing ping) {
         meterRegistry.counter("sparkle_ping_peers").increment();
         OffsetDateTime now = OffsetDateTime.now();
-        var usr = userApplication.getUser();
-        usr.setLastAccessAt(now);
-        userService.saveUser(usr);
+//        var usr = userApplication.getUser();
+//        usr.setLastAccessAt(now);
+//        userService.saveUser(usr);
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<Snapshot> snapshotList = new ArrayList<>();
         long processed = 0;
         var it = ping.getPeers().iterator();
+        var submitId = UUID.randomUUID().toString();
         while (it.hasNext()) {
             var peer = it.next();
+            var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
+            var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             snapshotList.add(Snapshot.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
                     .userApplication(userApplication)
-                    .submitId(UUID.randomUUID().toString())
+                    .submitId(submitId)
                     .peerIp(IPUtil.toInet(peer.getIpAddress()))
                     .peerPort(peer.getPeerPort())
-                    .peerId(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())))
-                    .peerClientName(ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))
+                    .peerId(peerId)
+                    .peerClientName(peerClientName)
                     .torrent(torrentService.createOrGetTorrent(peer.getTorrentIdentifier(), peer.getTorrentSize()))
                     .fromPeerTraffic(peer.getDownloaded())
                     .fromPeerTrafficSpeed(peer.getRtDownloadSpeed())
@@ -90,7 +95,7 @@ public class PingService {
                     .flags(peer.getPeerFlag())
                     .submitterIp(submitterIp)
                     .build());
-            identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()), PeerUtil.cutClientName(peer.getClientName())));
+            identitySet.add(new ClientIdentity(peerId, peerClientName));
             it.remove();
             if (identitySet.size() >= 500 || snapshotList.size() >= 500) {
                 snapshotService.saveSnapshots(snapshotList);
@@ -105,33 +110,36 @@ public class PingService {
         meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
         clientDiscoveryService.handleIdentities(now, now, identitySet);
         processed += snapshotList.size();
-        return processed;
     }
 
     @Modifying
     @Transactional
-    public long handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
+    @Async
+    public void handleBans(InetAddress submitterIp, UserApplication userApplication, BtnBanPing ping) {
         meterRegistry.counter("sparkle_ping_bans").increment();
         OffsetDateTime now = OffsetDateTime.now();
-        var usr = userApplication.getUser();
-        usr.setLastAccessAt(now);
-        userService.saveUser(usr);
+//        var usr = userApplication.getUser();
+//        usr.setLastAccessAt(now);
+//        userService.saveUser(usr);
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<BanHistory> banHistoryList = new ArrayList<>();
         long processed = 0;
         var it = ping.getBans().iterator();
+        var submitId = UUID.randomUUID().toString();
         while (it.hasNext()) {
             var ban = it.next();
             var peer = ban.getPeer();
+            var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
+            var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             banHistoryList.add(BanHistory.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
                     .userApplication(userApplication)
-                    .submitId(UUID.randomUUID().toString())
+                    .submitId(submitId)
                     .peerIp(IPUtil.toInet(peer.getIpAddress()))
                     .peerPort(peer.getPeerPort())
-                    .peerId(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())))
-                    .peerClientName(ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))
+                    .peerId(peerId)
+                    .peerClientName(peerClientName)
                     .torrent(torrentService.createOrGetTorrent(peer.getTorrentIdentifier(), peer.getTorrentSize()))
                     .fromPeerTraffic(peer.getDownloaded())
                     .fromPeerTrafficSpeed(peer.getRtDownloadSpeed())
@@ -147,7 +155,7 @@ public class PingService {
                     .banUniqueId(ByteUtil.filterUTF8(ban.getBanUniqueId()))
                     .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
                     .build());
-            identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()), PeerUtil.cutClientName(peer.getClientName())));
+            identitySet.add(new ClientIdentity(peerId, peerClientName));
             it.remove();
             if (identitySet.size() >= 500 || banHistoryList.size() >= 500) {
                 banHistoryService.saveBanHistories(banHistoryList);
@@ -162,7 +170,6 @@ public class PingService {
         meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
         clientDiscoveryService.handleIdentities(now, now, identitySet);
         processed += banHistoryList.size();
-        return processed;
     }
 
     @Cacheable({"btnRule#60000"})
@@ -183,23 +190,26 @@ public class PingService {
     public long handlePeerHistories(InetAddress inetAddress, UserApplication userApplication, BtnPeerHistoryPing ping) {
         meterRegistry.counter("sparkle_peer_histories").increment();
         OffsetDateTime now = OffsetDateTime.now();
-        var usr = userApplication.getUser();
-        usr.setLastAccessAt(now);
-        userService.saveUser(usr);
+//        var usr = userApplication.getUser();
+//        usr.setLastAccessAt(now);
+//        userService.saveUser(usr);
         Set<ClientIdentity> identitySet = new HashSet<>();
         List<PeerHistory> peerHistoryList = new ArrayList<>();
         long processed = 0;
         var it = ping.getPeers().iterator();
+        var submitId = UUID.randomUUID().toString();
         while (it.hasNext()) {
             var peer = it.next();
+            var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
+            var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             peerHistoryList.add(PeerHistory.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
                     .userApplication(userApplication)
-                    .submitId(UUID.randomUUID().toString())
+                    .submitId(submitId)
                     .peerIp(IPUtil.toInet(peer.getIpAddress()))
-                    .peerId(ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId())))
-                    .peerClientName(ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName())))
+                    .peerId(peerId)
+                    .peerClientName(peerClientName)
                     .torrent(torrentService.createOrGetTorrent(peer.getTorrentIdentifier(), peer.getTorrentSize()))
                     .fromPeerTraffic(peer.getDownloaded())
                     .fromPeerTrafficOffset(peer.getDownloadedOffset())
@@ -210,10 +220,10 @@ public class PingService {
                     .lastTimeSeen(TimeUtil.toUTC(peer.getLastTimeSeen().getTime()))
                     .submitterIp(inetAddress)
                     .build());
-            identitySet.add(new ClientIdentity(PeerUtil.cutPeerId(peer.getPeerId()), PeerUtil.cutClientName(peer.getClientName())));
+            identitySet.add(new ClientIdentity(peerId, peerClientName));
             // 避免爆内存，必须及时清理
             it.remove();
-            if (identitySet.size() >= 500 || peerHistoryList.size() >= 500) {
+            if (identitySet.size() >= 1000 || peerHistoryList.size() >= 1000) {
                 peerHistoryService.saveHistories(peerHistoryList);
                 clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_histories_processed").increment(peerHistoryList.size());

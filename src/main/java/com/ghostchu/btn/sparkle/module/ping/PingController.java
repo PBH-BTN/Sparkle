@@ -12,18 +12,14 @@ import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnRule;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
-import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.Hashing;
-import inet.ipaddr.IPAddress;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -69,13 +65,9 @@ public class PingController extends SparkleController {
     private GeoIPManager geoIPManager;
     @Autowired
     private SubmitHistoriesAbility submitHistoriesAbility;
-    @Qualifier("redisTemplate")
-    @Autowired
-    private RedisTemplate redisTemplate;
-
 
     @PostMapping("/peers/submit")
-    public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException {
+    public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
@@ -86,18 +78,17 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        IPAddress ip = IPUtil.toIPAddress(ip(req));
-        var handled = service.handlePeers(ip.toInetAddress(), cred, ping);
+        service.handlePeers(InetAddress.getByName(ip(req)), cred, ping);
 //        log.info("[OK] [Ping] [{}] 已提交 {} 个 Peers 信息：(AppId={}, UA={})",
 //                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
-        audit.put("peers_handled", handled);
+        // audit.put("peers_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
 
     @PostMapping("/histories/submit")
-    public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException {
+    public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
@@ -108,8 +99,7 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_HISTORY_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        IPAddress ip = IPUtil.toIPAddress(ip(req));
-        var handled = service.handlePeerHistories(ip.toInetAddress(), cred, ping);
+        var handled = service.handlePeerHistories(InetAddress.getByName(ip(req)), cred, ping);
 //        log.info("[OK] [Ping] [{}] 已提交 {} 个 PeerHistory 信息：(AppId={}, UA={})",
 //                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("peers_size", ping.getPeers().size());
@@ -119,7 +109,7 @@ public class PingController extends SparkleController {
     }
 
     @PostMapping("/bans/submit")
-    public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException {
+    public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
@@ -130,12 +120,10 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_BANS_SUBMIT", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        IPAddress ip = IPUtil.toIPAddress(ip(req));
-        var handled = service.handleBans(ip.toInetAddress(), cred, ping);
+        service.handleBans(InetAddress.getByName(ip(req)), cred, ping);
 //        log.info("[OK] [Ping] [{}] 已提交 {} 个 封禁信息：(AppId={}, UA={})",
 //                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
-        audit.put("bans_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
