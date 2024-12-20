@@ -150,7 +150,7 @@ public class PingController extends SparkleController {
         rootObject.put("ability", abilityObject);
         //abilityObject.put("submit_peers", submitPeersAbility);
         abilityObject.put("submit_bans", submitBansAbility);
-        abilityObject.put("submit_histories", submitHistoriesAbility);
+        //abilityObject.put("submit_histories", submitHistoriesAbility);
         abilityObject.put("reconfigure", reconfigureAbility);
         abilityObject.put("rules", cloudRuleAbility);
         auditService.log(req, "BTN_CONFIG", true, audit);

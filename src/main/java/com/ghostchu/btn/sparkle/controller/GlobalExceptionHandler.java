@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-@RestControllerAdvice
+@RestControllerAdvice(annotations = RestControllerAdvice.class)
 @Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)

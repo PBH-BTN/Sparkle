@@ -4,12 +4,13 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import com.ghostchu.btn.sparkle.module.user.UserDto;
 import com.ghostchu.btn.sparkle.module.user.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.time.OffsetDateTime;
 
-@ControllerAdvice
+@ControllerAdvice(annotations = ControllerAdvice.class)
 public class MVCAdviceHandler {
     private final UserService userService;
 
@@ -18,7 +19,7 @@ public class MVCAdviceHandler {
     }
 
     @ModelAttribute("user")
-    public UserDto addUserToModel() {
+    public UserDto addUserToModel(HttpServletRequest request) {
         try {
             var optional = userService.getUser((StpUtil.getLoginIdAsLong()));
             // 同时更新最后访问时间
