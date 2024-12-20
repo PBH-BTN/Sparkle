@@ -37,6 +37,7 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -248,7 +249,10 @@ schedule_interval => INTERVAL '1 hour');
         var startAt = System.currentTimeMillis();
         final var ipTries = new DualIPv4v6Tries();
         Set<ClientIdentity> clientDiscoveries = new HashSet<>();
+        AtomicLong count = new AtomicLong(0);
+        AtomicLong success = new AtomicLong(0);
         scanFile(peerInfo -> {
+            count.incrementAndGet();
             var peerId = new String(peerInfo.getPeerId().toByteArray(), StandardCharsets.ISO_8859_1);
             try {
                 clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
@@ -259,6 +263,7 @@ schedule_interval => INTERVAL '1 hour');
                 ) {
                     ipTries.add(IPUtil.toIPAddress(peerInfo.getIp().getClientIp().toByteArray()));
                 }
+                success.incrementAndGet();
             } catch (Exception e) {
                 log.debug("Unable to handle PeerInfo check: {}, clientIp is {}", peerInfo, Arrays.toString(peerInfo.getIp().getClientIp().toByteArray()), e);
             } finally {
@@ -274,7 +279,7 @@ schedule_interval => INTERVAL '1 hour');
                 .toList();
         analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, ips);
         meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), ips.size());
-        log.info("Tracker HighRisk identity: {}, tooked {} ms", ips.size(), System.currentTimeMillis() - startAt);
+        log.info("Tracker HighRisk identity: {}, tooked {} ms; success: {}/{}.", ips.size(), System.currentTimeMillis() - startAt, success.get(), count.get());
     }
 
     private void scanFile(Consumer<Peer.PeerInfo> predicate) {
@@ -283,6 +288,7 @@ schedule_interval => INTERVAL '1 hour');
             log.error("Tracker dump file not found: {}", dumpFilePath);
             return;
         }
+
         try (FileInputStream fis = new FileInputStream(file);
              FileLock ignored = fis.getChannel().lock(0L, Long.MAX_VALUE, true)) {
             LargeFileReader reader = new LargeFileReader(fis.getChannel());
