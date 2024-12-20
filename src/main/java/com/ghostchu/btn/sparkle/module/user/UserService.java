@@ -6,9 +6,6 @@ import com.ghostchu.btn.sparkle.module.user.internal.UserRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
@@ -37,8 +34,7 @@ public class UserService {
 //        return (UserDto) StpUtil.getLoginId();
 //    }
 
-    @Cacheable(value = "sparkle_system_user", key = "#moduleName")
-    @Transactional(propagation = Propagation.SUPPORTS)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public User getSystemUser(String moduleName) {
         return userRepository.findByEmail(moduleName.toLowerCase(Locale.ROOT) + "@sparkle.system").orElseGet(() -> {
             User user = new User();
@@ -56,26 +52,22 @@ public class UserService {
         });
     }
 
-    @Cacheable(value = "user_by_email#30000", key = "#email")
-    @Transactional(propagation = Propagation.SUPPORTS)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<User> getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    @Cacheable(value = "user_by_id#30000", key = "#id")
-    @Transactional(propagation = Propagation.SUPPORTS)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<User> getUser(long id) {
         return userRepository.findById(id);
     }
 
-    @Cacheable(value = "user_by_github_login#30000", key = "#githubLogin")
-    @Transactional(propagation = Propagation.SUPPORTS)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<User> getUserByGithubLogin(String githubLogin) {
         return userRepository.findByGithubLogin(githubLogin);
     }
 
-    @Cacheable(value = "user_by_github_uid#30000", key = "#githubLogin")
-    @Transactional(propagation = Propagation.SUPPORTS)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<User> getUserByGithubUserId(Long githubLogin) {
         return userRepository.findByGithubUserId(githubLogin);
     }
@@ -98,12 +90,6 @@ public class UserService {
     @Modifying
     @Transactional
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Caching(evict = {
-            @CacheEvict(value = "user_by_email", key = "#user.email"),
-            @CacheEvict(value = "user_by_id", key = "#user.id"),
-            @CacheEvict(value = "user_by_github_login", key = "#user.githubLogin"),
-            @CacheEvict(value = "user_by_github_uid", key = "#user.githubUserId")
-    })
     public User saveUser(User user) {
         if (user.isSystemAccount()) {
             throw new IllegalArgumentException("User email cannot ends with @sparkle.system, it's reserved by Sparkle system.");
@@ -117,12 +103,6 @@ public class UserService {
     @Modifying
     @Transactional
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Caching(evict = {
-            @CacheEvict(value = "user_by_email", key = "#user.email"),
-            @CacheEvict(value = "user_by_id", key = "#user.id"),
-            @CacheEvict(value = "user_by_github_login", key = "#user.githubLogin"),
-            @CacheEvict(value = "user_by_github_uid", key = "#user.githubUserId")
-    })
     public User saveSystemUser(User user) {
         if (!user.isSystemAccount()) {
             throw new IllegalArgumentException("System account email must ends with @sparkle.system");
