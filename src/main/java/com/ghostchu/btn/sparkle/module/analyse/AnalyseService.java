@@ -137,21 +137,23 @@ schedule_interval => INTERVAL '1 hour');
         ipMerger.merge(ipTries);
         List<AnalysedRule> untrustedIps = new ArrayList<>();
         filterIP(ipTries).forEach(ip -> untrustedIps.add(new AnalysedRule(null, ip.toString(), UNTRUSTED_IP, "Generated at " + MsgUtil.getNowDateTimeString())));
+        analysedRuleRepository.deleteAllByModule(UNTRUSTED_IP);
         meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), untrustedIps.size());
-        analysedRuleRepository.replaceAll(UNTRUSTED_IP, untrustedIps);
+        analysedRuleRepository.saveAll(untrustedIps);
         log.info("Untrusted IPs: {}, tooked {} ms", untrustedIps.size(), System.currentTimeMillis() - startAt);
     }
 
-    public Set<AnalysedRule> getAnalysedRules() {
+    @Transactional
+    public List<AnalysedRule> getAnalysedRules() {
         return analysedRuleRepository.findAll();
     }
 
-    public Set<AnalysedRule> getUntrustedIPAddresses() {
-        return analysedRuleRepository.findAllByModule(UNTRUSTED_IP);
+    public List<AnalysedRule> getUntrustedIPAddresses() {
+        return analysedRuleRepository.findByModuleOrderByIpAsc(UNTRUSTED_IP);
     }
 
-    public Set<AnalysedRule> getOverDownloadIPAddresses() {
-        return analysedRuleRepository.findAllByModule(OVER_DOWNLOAD);
+    public List<AnalysedRule> getOverDownloadIPAddresses() {
+        return analysedRuleRepository.findByModuleOrderByIpAsc(OVER_DOWNLOAD);
     }
 
     @Transactional
@@ -183,8 +185,8 @@ schedule_interval => INTERVAL '1 hour');
         log.info("High risk IPs: {}, tooked {} ms", highRiskIps.size(), System.currentTimeMillis() - startAt);
     }
 
-    public Set<AnalysedRule> getHighRiskIps() {
-        return analysedRuleRepository.findAllByModule(HIGH_RISK_IP);
+    public List<AnalysedRule> getHighRiskIps() {
+        return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IP);
     }
 //
 //    @Transactional
@@ -224,8 +226,8 @@ schedule_interval => INTERVAL '1 hour');
 //        }
 //    }
 
-    public Set<AnalysedRule> getHighRiskIPV6Identity() {
-        return analysedRuleRepository.findAllByModule(HIGH_RISK_IPV6_IDENTITY);
+    public List<AnalysedRule> getHighRiskIPV6Identity() {
+        return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IPV6_IDENTITY);
     }
 
     @Transactional
@@ -291,8 +293,8 @@ schedule_interval => INTERVAL '1 hour');
         }
     }
 
-    public Set<AnalysedRule> getTrackerHighRisk() {
-        return analysedRuleRepository.findAllByModule(TRACKER_HIGH_RISK);
+    public List<AnalysedRule> getTrackerHighRisk() {
+        return analysedRuleRepository.findByModuleOrderByIpAsc(TRACKER_HIGH_RISK);
     }
 
 
