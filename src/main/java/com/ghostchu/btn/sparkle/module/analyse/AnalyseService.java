@@ -246,8 +246,8 @@ schedule_interval => INTERVAL '1 hour');
             var peerId = new String(peerInfo.getPeerId().toByteArray(), StandardCharsets.ISO_8859_1);
             try {
                 clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
-                if (peerInfo.getUserAgent().contains("curl/")
-                        || ((peerInfo.getUserAgent().contains("Transmission") == peerId.startsWith("-TR")))
+                if (//peerInfo.getUserAgent().contains("curl/")
+                        ((peerInfo.getUserAgent().contains("Transmission") == peerId.startsWith("-TR")))
                         || ((peerInfo.getUserAgent().contains("qBittorrent") == peerId.startsWith("-qB")))
                         || ((peerInfo.getUserAgent().contains("aria2") == peerId.startsWith("A2")))
                 ) {
