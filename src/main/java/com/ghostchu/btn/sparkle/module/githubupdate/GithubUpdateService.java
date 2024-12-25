@@ -77,8 +77,9 @@ public class GithubUpdateService {
         analyseService.getTrackerHighRisk()
                 .stream()
                 .map(AnalysedRule::getIp)
+                .sorted()
                 .distinct()
-                .forEach(strJoiner::add);;
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -87,6 +88,7 @@ public class GithubUpdateService {
         analyseService.getUntrustedIPAddresses()
                 .stream()
                 .map(AnalysedRule::getIp)
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -111,6 +113,7 @@ public class GithubUpdateService {
         analyseService.getHighRiskIps()
                 .stream()
                 .map(AnalysedRule::getIp)
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add);
         return strJoiner.toString();
@@ -134,6 +137,7 @@ public class GithubUpdateService {
         }, (page) -> page
                 .stream()
                 .map(ban -> ban.getPeerIp().getHostAddress())
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add));
         return strJoiner.toString();
@@ -148,6 +152,7 @@ public class GithubUpdateService {
         }, (page) -> page
                 .stream()
                 .map(ban -> ban.getPeerIp().getHostAddress())
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add));
         return strJoiner.toString();
@@ -162,6 +167,7 @@ public class GithubUpdateService {
         }, (page) -> page
                 .stream()
                 .map(ban -> ban.getPeerIp().getHostAddress())
+                .sorted()
                 .distinct()
                 .forEach(strJoiner::add));
         return strJoiner.toString();
