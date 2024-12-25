@@ -74,13 +74,21 @@ public class GithubUpdateService {
 
     private String generateTrackerHighRiskIps() {
         var strJoiner = new StringJoiner("\n");
-        analyseService.getTrackerHighRisk().forEach(r -> strJoiner.add(r.getIp()));
+        analyseService.getTrackerHighRisk()
+                .stream()
+                .map(AnalysedRule::getIp)
+                .distinct()
+                .forEach(strJoiner::add);;
         return strJoiner.toString();
     }
 
     private String generateUntrustedIps() {
         var strJoiner = new StringJoiner("\n");
-        analyseService.getUntrustedIPAddresses().forEach(r -> strJoiner.add(r.getIp()));
+        analyseService.getUntrustedIPAddresses()
+                .stream()
+                .map(AnalysedRule::getIp)
+                .distinct()
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -100,7 +108,11 @@ public class GithubUpdateService {
 
     private String generateHighRiskIps() {
         var strJoiner = new StringJoiner("\n");
-        analyseService.getHighRiskIps().forEach(r -> strJoiner.add(r.getIp()));
+        analyseService.getHighRiskIps()
+                .stream()
+                .map(AnalysedRule::getIp)
+                .distinct()
+                .forEach(strJoiner::add);
         return strJoiner.toString();
     }
 
@@ -119,7 +131,11 @@ public class GithubUpdateService {
                     criteriaBuilder.like(root.get("peerClientName"), "Gopeed dev%"),
                     criteriaBuilder.like(root.get("peerId"), "-gp%")
             );
-        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
+        }, (page) -> page
+                .stream()
+                .map(ban -> ban.getPeerIp().getHostAddress())
+                .distinct()
+                .forEach(strJoiner::add));
         return strJoiner.toString();
     }
 
@@ -129,7 +145,11 @@ public class GithubUpdateService {
             if (query != null)
                 query.distinct(true);
             return criteriaBuilder.like(root.get("peerClientName"), "offline-download (devel) (anacrolix/torrent unknown)%");
-        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
+        }, (page) -> page
+                .stream()
+                .map(ban -> ban.getPeerIp().getHostAddress())
+                .distinct()
+                .forEach(strJoiner::add));
         return strJoiner.toString();
     }
 
@@ -139,7 +159,11 @@ public class GithubUpdateService {
             if (query != null)
                 query.distinct(true);
             return criteriaBuilder.like(root.get("peerClientName"), "ޭ__%");
-        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
+        }, (page) -> page
+                .stream()
+                .map(ban -> ban.getPeerIp().getHostAddress())
+                .distinct()
+                .forEach(strJoiner::add));
         return strJoiner.toString();
     }
 
@@ -168,7 +192,12 @@ public class GithubUpdateService {
                     criteriaBuilder.like(root.get("peerClientName"), "dt/torrent%"),
                     criteriaBuilder.like(root.get("peerId"), "-DT%")
             );
-        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
+        }, (page) -> page
+                .stream()
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
+                .distinct()
+                .forEach(strJoiner::add));
         return strJoiner.toString();
     }
 
@@ -181,7 +210,12 @@ public class GithubUpdateService {
                     criteriaBuilder.like(root.get("peerClientName"), "hp/torrent%"),
                     criteriaBuilder.like(root.get("peerId"), "-HP%")
             );
-        }, (page) -> page.forEach(ban -> strJoiner.add(ban.getPeerIp().getHostAddress())));
+        }, (page) -> page
+                .stream()
+                .map(history -> IPUtil.toString(history.getPeerIp()))
+                .sorted()
+                .distinct()
+                .forEach(strJoiner::add));
         return strJoiner.toString();
     }
 
