@@ -205,6 +205,9 @@ public class PingController extends SparkleController {
             log.warn("[FAIL] [UserApp] [{}] Credential not provided.", ip(req));
             throw new AccessDeniedException("UserApplication 鉴权失败：请求中未包含凭据信息，是否是非 BTN 客户端正在进行访问？");
         }
+        if (cred.appId().startsWith("example") && cred.appSecret().startsWith("example")) {
+            throw new AccessDeniedException("UserApplication 鉴权失败：您正在使用默认的示例凭据登录，请更改默认示例凭据为您的真实凭据，不要闭眼照抄。");
+        }
         var userAppOptional = userApplicationService.getUserApplication(cred.appId(), cred.appSecret());
         if (userAppOptional.isEmpty()) {
 //            log.warn("[FAIL] [UserApp] [{}] UserApplication (AppId={}, AppSecret={}) are not exists.",
