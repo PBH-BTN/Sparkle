@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.controller.SparkleController;
 import com.ghostchu.btn.sparkle.exception.AccessDeniedException;
 import com.ghostchu.btn.sparkle.module.audit.AuditService;
-import com.ghostchu.btn.sparkle.module.ping.ability.impl.*;
+import com.ghostchu.btn.sparkle.module.ping.ability.impl.CloudRuleAbility;
+import com.ghostchu.btn.sparkle.module.ping.ability.impl.ReconfigureAbility;
+import com.ghostchu.btn.sparkle.module.ping.ability.impl.SubmitBansAbility;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnBanPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerHistoryPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
@@ -29,6 +31,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -46,8 +49,6 @@ public class PingController extends SparkleController {
     @Autowired
     private PingService pingService;
     @Autowired
-    private SubmitPeersAbility submitPeersAbility;
-    @Autowired
     private SubmitBansAbility submitBansAbility;
     @Autowired
     private ReconfigureAbility reconfigureAbility;
@@ -63,8 +64,6 @@ public class PingController extends SparkleController {
     private String sparkleRootChina;
     @Autowired
     private GeoIPManager geoIPManager;
-    @Autowired
-    private SubmitHistoriesAbility submitHistoriesAbility;
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {
@@ -142,11 +141,11 @@ public class PingController extends SparkleController {
         }
         log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
                 ip(req), cred.getAppId(), ua(req));
-        Map<String, Object> rootObject = new LinkedHashMap<>();
+        Map<String, Object> rootObject = new HashMap<>();
         rootObject.put("min_protocol_version", pingService.getMinProtocolVersion());
         rootObject.put("max_protocol_version", pingService.getMaxProtocolVersion());
 
-        Map<String, Object> abilityObject = new LinkedHashMap<>();
+        Map<String, Object> abilityObject = new HashMap<>();
         rootObject.put("ability", abilityObject);
         //abilityObject.put("submit_peers", submitPeersAbility);
         abilityObject.put("submit_bans", submitBansAbility);
@@ -189,10 +188,6 @@ public class PingController extends SparkleController {
         audit.put("to", rev);
         auditService.log(req, "BTN_RULES_RETRIEVE", true, audit);
         return ResponseEntity.status(200).contentType(MediaType.APPLICATION_JSON).body(objectMapper.writeValueAsString(btn));
-    }
-
-    private void checkIfInvalidPBH() throws AccessDeniedException {
-        String ua = req.getHeader("User-Agent");
     }
 
     public boolean isCredBanned(UserApplication userApplication) {

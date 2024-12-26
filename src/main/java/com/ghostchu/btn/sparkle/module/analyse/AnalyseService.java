@@ -7,7 +7,6 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
-import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import com.ghostchu.btn.sparkle.util.LargeFileReader;
@@ -82,8 +81,6 @@ public class AnalyseService {
     private EntityManager entityManager;
     @Autowired
     private MeterRegistry meterRegistry;
-    @Autowired
-    private UserService userService;
     @Autowired
     private ClientDiscoveryService clientDiscoveryService;
 //    @Autowired
@@ -163,7 +160,7 @@ schedule_interval => INTERVAL '1 hour');
     @Modifying
     @Lock(LockModeType.READ)
     @Scheduled(cron = "${analyse.highriskips.interval}")
-    public void cronHighRiskIps() throws InterruptedException {
+    public void cronHighRiskIps() {
         var startAt = System.currentTimeMillis();
         final var ipTries = new DualIPv4v6Tries();
         banHistoryRepository.findAllByPaging((Specification<BanHistory>) (root, query, criteriaBuilder) -> {

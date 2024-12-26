@@ -20,6 +20,7 @@ public class MVCAdviceHandler {
 
     @ModelAttribute("user")
     public UserDto addUserToModel(HttpServletRequest request) {
+        if (!StpUtil.isLogin()) return null;
         try {
             var optional = userService.getUser((StpUtil.getLoginIdAsLong()));
             // 同时更新最后访问时间

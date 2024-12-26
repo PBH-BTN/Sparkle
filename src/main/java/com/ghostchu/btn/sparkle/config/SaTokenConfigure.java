@@ -1,18 +1,11 @@
 package com.ghostchu.btn.sparkle.config;
 
-import com.ghostchu.btn.sparkle.module.user.UserService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class SaTokenConfigure implements WebMvcConfigurer {
-    private final UserService userService;
-
-    public SaTokenConfigure(UserService userService) {
-        this.userService = userService;
-    }
-
     // 注册拦截器
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

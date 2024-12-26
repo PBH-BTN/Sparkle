@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<StdResp<Void>> illegalArgument(IllegalArgumentException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new StdResp<>(false, "IllegalArgument: " + e.getMessage(), null));
+                .body(new StdResp<>(false, "无效参数: " + e.getMessage(), null));
     }
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)

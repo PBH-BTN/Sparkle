@@ -10,9 +10,8 @@
 
 <div class="alert alert-warning" role="alert">
     <b><i class="fa-solid fa-clock"></i> 运行受限</b> 由于 BTN 网络目前正面临巨大的负载，我们暂时禁用了 BTN
-    网络的部分自动分析功能，直至负载问题得到解决。过量下载分析功能当前处于禁用状态。
+    网络的部分自动分析功能，直至负载问题得到解决。
 </div>
-
 
 <div class="alert alert-danger" role="alert" th:if="${user.getBannedAt() != null}">
     <b><i class="fa-solid fa-ban"></i> 账户暂停</b> 您的 BTN 账户已被管理员停用，原因： <span
