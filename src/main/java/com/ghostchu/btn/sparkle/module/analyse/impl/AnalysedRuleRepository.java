@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.analyse.impl;
 import com.ghostchu.btn.sparkle.module.repository.SparkleCommonRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -14,7 +15,7 @@ public interface AnalysedRuleRepository extends SparkleCommonRepository<Analysed
 
     List<AnalysedRule> findAll();
 
-    default void replaceAll(String module, List<AnalysedRule> rules) {
+    default void replaceAll(String module, Collection<AnalysedRule> rules) {
         deleteAllByModule(module);
         saveAll(rules);
     }
