@@ -446,7 +446,7 @@ schedule_interval => INTERVAL '1 hour');
                 .map(ip -> {
                     try {
                         if (ip.getPrefixLength() == null && ip.isIPv6()) {
-                            ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
+                            ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength);
                         }
                     } catch (Exception e) {
                         log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
@@ -463,7 +463,7 @@ schedule_interval => INTERVAL '1 hour');
             if (!ip.isLocal() && !ip.isLoopback()) {
                 try {
                     if (ip.getPrefixLength() == null && ip.isIPv6()) {
-                        ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength).toZeroHost();
+                        ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength);
                     }
                     dualIPv4v6Tries.add(ip);
                 } catch (Exception e) {
