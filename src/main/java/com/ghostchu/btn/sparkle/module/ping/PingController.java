@@ -65,6 +65,7 @@ public class PingController extends SparkleController {
     private String sparkleRootChina;
     @Autowired
     private GeoIPManager geoIPManager;
+    @Autowired
     private SubmitHistoriesAbility submitHistoriesAbility;
 
     @PostMapping("/peers/submit")
