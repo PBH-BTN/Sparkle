@@ -142,8 +142,8 @@ public class PingController extends SparkleController {
             auditService.log(req, "BTN_CONFIG", false, audit);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
-        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
-                ip(req), cred.getAppId(), ua(req));
+//        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
+//                ip(req), cred.getAppId(), ua(req));
         Map<String, Object> rootObject = new HashMap<>();
         rootObject.put("min_protocol_version", pingService.getMinProtocolVersion());
         rootObject.put("max_protocol_version", pingService.getMaxProtocolVersion());

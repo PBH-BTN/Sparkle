@@ -5,11 +5,14 @@ import com.ghostchu.btn.sparkle.exception.BusinessException;
 import com.ghostchu.btn.sparkle.exception.UserBannedException;
 import com.ghostchu.btn.sparkle.wrapper.StdResp;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -45,6 +48,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<StdResp<Void>> illegalArgument(IllegalArgumentException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new StdResp<>(false, "无效参数: " + e.getMessage(), null));
+    }
+
+    @ExceptionHandler(MethodNotAllowedException.class)
+    public ResponseEntity<StdResp<Void>> methodNotAllowed(MethodNotAllowedException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new StdResp<>(false, "不允许的请求方式: " + e.getMessage(), null));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<StdResp<Void>> httpMessageNotReadable(HttpMessageNotReadableException e) {
+        int loop = 0;
+        Throwable exception = e;
+        while (exception.getCause() != null) {
+            loop++;
+            if (loop > 30) break;
+            exception = exception.getCause();
+            if (exception instanceof ClientAbortException) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new StdResp<>(false, "客户端已放弃请求: " + e.getMessage(), null));
+            }
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new StdResp<>(false, "不可读的 HTTP 消息: " + e.getMessage(), null));
     }
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)
