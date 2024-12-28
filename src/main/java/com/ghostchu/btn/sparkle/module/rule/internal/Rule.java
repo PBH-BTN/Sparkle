@@ -22,7 +22,7 @@ public class Rule {
     private Long id;
     @Column(nullable = false)
     private String category;
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     @Column(nullable = false)
     private String type;
