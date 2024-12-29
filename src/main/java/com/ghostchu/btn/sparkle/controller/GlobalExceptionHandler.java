@@ -9,10 +9,10 @@ import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
-import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -50,8 +50,8 @@ public class GlobalExceptionHandler {
                 .body(new StdResp<>(false, "无效参数: " + e.getMessage(), null));
     }
 
-    @ExceptionHandler(MethodNotAllowedException.class)
-    public ResponseEntity<StdResp<Void>> methodNotAllowed(MethodNotAllowedException e) {
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<StdResp<Void>> methodNotAllowed(HttpRequestMethodNotSupportedException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new StdResp<>(false, "不允许的请求方式: " + e.getMessage(), null));
     }
