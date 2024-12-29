@@ -36,10 +36,10 @@
         <h1 class="text-center mb-4">创建新的用户应用程序</h1>
         <form th:action="@{/userapp/create}" method="post" class="needs-validation">
             <div class="form-group">
-                <label for="comment">名称:</label>
+                <label for="comment">备注:</label>
                 <input type="text" class="form-control" id="comment" name="comment" required>
                 <div class="invalid-feedback">
-                    请输入应用程序名称。
+                    请输入应用程序备注。
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">创建</button>
