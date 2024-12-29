@@ -1,46 +1,115 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<div th:replace="~{components/common::header}"></div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户资料</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f8fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+        .profile-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .profile-avatar {
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            margin-right: 20px;
+        }
+        .profile-info h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .profile-info p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .profile-details p {
+            margin: 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .status-normal {
+            color: #28a745;
+        }
+        .status-banned {
+            color: #d73a49;
+        }
+        .status-banned i {
+            margin-right: 5px;
+        }
+    </style>
+</head>
 <body>
-<div th:replace="~{components/common::navbar}"></div>
+    <div th:replace="~{components/common::header}"></div>
+    <div th:replace="~{components/common::navbar}"></div>
 
-
-<div class="container">
-    <h1>个人资料</h1>
-    <div class="profile-card">
-        <div class="profile-header">
-            <img class="profile-avatar" th:src="${user.avatar}" alt="用户头像">
-            <div class="profile-info">
-                <h2 th:text="${user.nickname}">昵称</h2>
+    <div class="container">
+        <h1>个人资料</h1>
+        <div class="profile-card">
+            <div class="profile-header">
+                <img class="profile-avatar" th:src="${user.avatar}" alt="用户头像">
+                <div class="profile-info">
+                    <h2 th:text="${user.nickname}">昵称</h2>
+                    <p>
+                        <strong>电子邮件：</strong>
+                        <span th:text="${user.email}">user@example.com</span>
+                    </p>
+                </div>
+            </div>
+            <div class="profile-details">
                 <p>
-                    <strong>电子邮件：</strong>
-                    <span th:text="${user.email}">user@example.com</span>
+                    <strong>注册时间：</strong>
+                    <span th:text="${#temporals.format(user.getRegisterAt(), 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
+                </p>
+                <p>
+                    <strong>最后访问时间：</strong>
+                    <span th:text="${#temporals.format(user.getLastSeenAt(), 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
+                </p>
+                <p>
+                    <strong>账户状态：</strong>
+                    <span th:if="${user.bannedAt == null}" class="status-normal">
+                            <i class="fas fa-check"></i> 正常
+                        </span>
+                    <span th:if="${user.bannedAt != null}" class="status-banned"
+                          th:title="${'暂停原因：' + user.bannedReason}">
+                            <i class="fas fa-ban"></i> 已暂停
+                        </span>
                 </p>
             </div>
         </div>
-        <div class="profile-details">
-            <p>
-                <strong>注册时间：</strong>
-                <span th:text="${#temporals.format(user.getRegisterAt(), 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
-            </p>
-            <p>
-                <strong>最后访问时间：</strong>
-                <span th:text="${#temporals.format(user.getLastSeenAt(), 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
-            </p>
-            <p>
-                <strong>账户状态：</strong>
-                <span th:if="${user.bannedAt == null}" class="status-normal">
-                        <i class="fa-solid fa-check"></i> 正常
-                    </span>
-                <span th:if="${user.bannedAt != null}" class="status-banned"
-                      th:title="${'暂停原因：' + user.bannedReason}">
-                        <i class="fa-solid fa-ban"></i> 已暂停
-                    </span>
-            </p>
-        </div>
     </div>
-</div>
 
-<div th:replace="~{components/common::footer}"></div>
+    <div th:replace="~{components/common::footer}"></div>
 </body>
 </html>

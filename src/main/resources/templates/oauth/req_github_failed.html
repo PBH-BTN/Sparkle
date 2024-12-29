@@ -1,17 +1,69 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<div th:replace="~{components/common::header}"></div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Error</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #d9534f;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            font-size: 18px;
+            color: #d9534f;
+            background-color: #fcf8e3;
+            border: 1px solid #faebcc;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .retry-link {
+            color: #5cb85c;
+            text-decoration: none;
+            border-bottom: 1px dashed #5cb85c;
+        }
+        .retry-link:hover {
+            color: #4cae4c;
+            border-bottom-color: #4cae4c;
+        }
+    </style>
+</head>
 <body>
-<div th:replace="~{components/common::navbar}"></div>
+    <div th:replace="~{components/common::header}"></div>
+    <div th:replace="~{components/common::navbar}"></div>
 
-<div class="container">
-    <h1>Github OAuth 登录过程失败</h1>
-    <p>Sparkle 在与 Github API 通信以验证您的身份时出现了错误。</p>
-    <h2>错误信息如下：</h2>
-    <p th:text="${error.getMessage()}"></p>
-    <p th:if="${error.isRetryable()}">这通常是一个暂时性的错误，您可以<a href="auth/oauth2/github/login">点击此处重试</a>
-    </p>
-</div>
-<div th:replace="~{components/common::footer}"></div>
+    <div class="container">
+        <h1>Github OAuth 登录过程失败</h1>
+        <p>Sparkle 在与 Github API 通信以验证您的身份时出现了错误。</p>
+        <div class="error-message">
+            <h2>错误信息如下：</h2>
+            <p th:text="${error.getMessage()}"></p>
+        </div>
+        <p th:if="${error.isRetryable()}">
+            这通常是一个暂时性的错误，您可以<a href="auth/oauth2/github/login" class="retry-link">点击此处重试</a>
+        </p>
+    </div>
+    <div th:replace="~{components/common::footer}"></div>
 </body>
 </html>
