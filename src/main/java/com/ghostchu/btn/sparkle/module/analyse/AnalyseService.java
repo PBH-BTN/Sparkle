@@ -297,6 +297,8 @@ schedule_interval => INTERVAL '1 hour');
     }
 
     @Scheduled(cron = "${analyse.overdownload.refreshviews.interval}")
+    @Transactional
+    @Modifying
     public void cronRefreshMaterializedViews() {
         var startAt = System.currentTimeMillis();
         var refreshSnapshots = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW overdownload_latest_snapshots;");
