@@ -296,16 +296,19 @@ schedule_interval => INTERVAL '1 hour');
         return analysedRuleRepository.findByModuleOrderByIpAsc(TRACKER_HIGH_RISK);
     }
 
-
-    @Transactional
-    @Modifying
-    @Lock(LockModeType.READ)
-    @Scheduled(cron = "${analyse.overdownload.interval}")
-    public void cronUpdateOverDownload() {
+    @Scheduled(cron = "${analyse.overdownload.refreshviews.interval}")
+    public void cronRefreshMaterializedViews() {
         var startAt = System.currentTimeMillis();
-        var query = entityManager.createNativeQuery("""
-                WITH LatestSnapshots AS (
-                    SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
+        var refreshSnapshots = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW overdownload_latest_snapshots;");
+        refreshSnapshots.executeUpdate();
+        var refreshAggregated = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW overdownload_aggregated_uploads;");
+        refreshAggregated.executeUpdate();
+        log.info("Refreshed materialized views for overdownload analyse, tooked {} ms", System.currentTimeMillis() - startAt);
+    }
+
+    /*
+    CREATE MATERIALIZED VIEW overdownload_latest_snapshots AS
+SELECT DISTINCT ON (s.torrent, s.peer_ip, s.user_application)
                         s.id,
                         s.torrent,
                         s.peer_ip,
@@ -315,40 +318,53 @@ schedule_interval => INTERVAL '1 hour');
                     FROM
                         public.peer_history s
                     WHERE
-                        s.last_time_seen >= ? AND s.to_peer_traffic > 0
+                        s.last_time_seen >= NOW() - INTERVAL '7 days' AND s.to_peer_traffic > 0
                     ORDER BY
                         s.torrent, s.peer_ip, s.user_application, s.last_time_seen DESC
-                ),
-                AggregatedUploads AS (
-                    SELECT
+
+WITH NO DATA
+
+
+CREATE MATERIALIZED VIEW overdownload_aggregated_uploads AS
+SELECT
                         ls.torrent,
                         ls.peer_ip,
-                        SUM(ls.to_peer_traffic) AS total_uploaded
+                        SUM(ls.to_peer_traffic) AS total_uploaded,
+						 t.size AS torrent_size
                     FROM
-                        LatestSnapshots ls
+                        overdownload_latest_snapshots ls
+					LEFT JOIN
+                    	torrent t ON ls.torrent = t.id
                     GROUP BY
-                        ls.torrent, ls.peer_ip
+                        ls.torrent, ls.peer_ip, t.size
                     HAVING
-                        SUM(ls.to_peer_traffic) > 0
-                )
+                        SUM(ls.to_peer_traffic) > t.size
+WITH NO DATA
+
+     */
+
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.READ)
+    @Scheduled(cron = "${analyse.overdownload.interval}")
+    public void cronUpdateOverDownload() {
+        var startAt = System.currentTimeMillis();
+        var query = entityManager.createNativeQuery("""
                 SELECT
                     au.torrent,
                     au.peer_ip,
                     au.total_uploaded,
-                    t.size,
-                    (au.total_uploaded / t.size::float) * 100 AS upload_percentage
+                    au.torrent_size,
+                    (au.total_uploaded / au.torrent_size::float) * 100 AS upload_percentage
                 FROM
-                    AggregatedUploads au
-                JOIN
-                    public.torrent t ON au.torrent = t.id
+                    overdownload_aggregated_uploads au
                 WHERE
-                    t.size::float > 0 AND au.total_uploaded > t.size::float * ?
+                    au.torrent_size::float > 0 AND au.total_uploaded > au.torrent_size::float * ?
                 ORDER BY
                     upload_percentage DESC;
-                                    
                 """);
-        query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
-        query.setParameter(2, overDownloadGenerateThreshold);
+//        query.setParameter(1, new Timestamp(System.currentTimeMillis() - overDownloadGenerateOffset));
+        query.setParameter(1, overDownloadGenerateThreshold);
         List<Object[]> queryResult = query.getResultList();
         var ipTries = new DualIPv4v6Tries();
         for (Object[] arr : queryResult) {
