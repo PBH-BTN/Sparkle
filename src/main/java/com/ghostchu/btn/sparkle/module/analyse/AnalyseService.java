@@ -112,13 +112,20 @@ SELECT add_continuous_aggregate_policy('progress_cheat_blocker_agg_view',
 start_offset => INTERVAL '7 day',
 end_offset => INTERVAL '1 minute',
 schedule_interval => INTERVAL '1 hour');
+
+
+CREATE MATERIALIZED VIEW untrustip_agg
+WITH (timescaledb.continuous) AS
+SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT user_application) FROM banhistory
+                WHERE
+                    "module" LIKE '%ProgressCheatBlocker%'
+
+                GROUP BY bucket, peer_ip ORDER BY count DESC
              */
         var query = entityManager.createNativeQuery("""
-                SELECT peer_ip, SUM(app_count) AS untrust_count
-                FROM progress_cheat_blocker_agg_view
-                WHERE bucket >= ? AND bucket <= ?
-                GROUP BY peer_ip
-                HAVING SUM(app_count) > ?
+                SELECT bucket, peer_ip, count
+                FROM untrustip_agg
+                WHERE bucket >= ? AND bucket <= ? AND app_count >= ?
                 ORDER BY untrust_count DESC;
                 """);
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset));
