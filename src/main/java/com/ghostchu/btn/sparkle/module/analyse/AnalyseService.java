@@ -133,7 +133,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         query.setParameter(3, untrustedIpAddressGenerateThreshold);
         List<Object[]> queryResult = query.getResultList();
         for (Object[] arr : queryResult) {
-            var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[0]).getHostAddress());
+            var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[1]).getHostAddress());
             ipTries.add(ipAddr);
         }
 //            banHistoryRepository
