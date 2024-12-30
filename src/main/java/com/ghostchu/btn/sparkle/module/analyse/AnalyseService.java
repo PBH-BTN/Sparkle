@@ -125,7 +125,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         var query = entityManager.createNativeQuery("""
                 SELECT bucket, peer_ip, count
                 FROM untrustip_agg
-                WHERE bucket >= ? AND bucket <= ? AND app_count >= ?
+                WHERE bucket >= ? AND bucket <= ? AND count >= ?
                 ORDER BY untrust_count DESC;
                 """);
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset));
