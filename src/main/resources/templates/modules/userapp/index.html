@@ -71,9 +71,11 @@
                     </td>
                     <td class="action-links">
                         <a href="#" class="btn btn-danger btn-sm"
-                           th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}">删除</a>
+                           th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}"
+                           onclick="return confirm('确定要删除此应用程序吗？此操作不可撤销。')">删除</a>
                         <a href="#" class="btn btn-warning btn-sm"
-                           th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}">重置 AppSecret</a>
+                           th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}"
+                           onclick="return confirm('确定要重置 AppSecret 吗？当前的 AppSecret 将立即失效。')">重置 AppSecret</a>
                     </td>
                 </tr>
                 </tbody>
