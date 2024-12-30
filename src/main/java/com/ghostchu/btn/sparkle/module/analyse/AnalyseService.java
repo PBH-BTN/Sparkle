@@ -126,7 +126,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 SELECT bucket, peer_ip, count
                 FROM untrustip_agg
                 WHERE bucket >= ? AND bucket <= ? AND count >= ?
-                ORDER BY untrust_count DESC;
+                ORDER BY count DESC;
                 """);
         query.setParameter(1, new Timestamp(System.currentTimeMillis() - untrustedIpAddressGenerateOffset));
         query.setParameter(2, new Timestamp(System.currentTimeMillis()));
