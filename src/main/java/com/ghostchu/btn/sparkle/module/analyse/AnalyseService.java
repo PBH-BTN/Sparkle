@@ -7,7 +7,10 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
-import com.ghostchu.btn.sparkle.util.*;
+import com.ghostchu.btn.sparkle.util.IPMerger;
+import com.ghostchu.btn.sparkle.util.IPUtil;
+import com.ghostchu.btn.sparkle.util.PeerUtil;
+import com.ghostchu.btn.sparkle.util.TimeUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.format.util.DualIPv4v6Tries;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -265,13 +268,11 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
             log.error("Tracker dump file not found: {}", dumpFilePath);
             return;
         }
-
         try (FileInputStream fis = new FileInputStream(file); FileLock ignored = fis.getChannel().lock(0L, Long.MAX_VALUE, true)) {
-            LargeFileReader reader = new LargeFileReader(fis.getChannel());
-            while (reader.available() > 0) {
-                int sizeInIntNeedToFix = ByteBuffer.wrap(reader.read(4)).order(ByteOrder.LITTLE_ENDIAN).getInt();
+            while (fis.available() > 0) {
+                int sizeInIntNeedToFix = ByteBuffer.wrap(fis.readNBytes(4)).order(ByteOrder.LITTLE_ENDIAN).getInt();
                 long remainingToRead = Integer.toUnsignedLong(sizeInIntNeedToFix);
-                byte[] buffer = reader.read((int) remainingToRead);
+                byte[] buffer = fis.readNBytes((int) remainingToRead);
                 var peerInfo = Peer.PeerInfo.parseFrom(buffer);
                 service.submit(() -> predicate.accept(peerInfo));
             }
