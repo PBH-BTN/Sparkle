@@ -77,8 +77,8 @@ public class PingService {
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             if (peerClientName.length() > 250) {
-                peerClientName = peerClientName.substring(0, 250);
-                log.warn("Client name too long: {}", peerClientName);
+                // get the first 64 chars and append "..." and append last 64 chars
+                peerClientName = peerClientName.substring(0, 64) + "[...]" + peerClientName.substring(peerClientName.length() - 64);
             }
             snapshotList.add(Snapshot.builder()
                     .insertTime(now)
@@ -136,8 +136,7 @@ public class PingService {
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             if (peerClientName.length() > 250) {
-                peerClientName = peerClientName.substring(0, 250);
-                log.warn("Client name too long: {}", peerClientName);
+                peerClientName = peerClientName.substring(0, 64) + "[...]" + peerClientName.substring(peerClientName.length() - 64);
             }
             banHistoryList.add(BanHistory.builder()
                     .insertTime(now)
