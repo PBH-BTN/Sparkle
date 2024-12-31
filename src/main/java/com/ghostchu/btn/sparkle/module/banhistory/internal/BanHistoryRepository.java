@@ -20,7 +20,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                        WHERE
                           ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND ban.module = 'com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker'
                        GROUP BY ban.peerIp, time_bucket(?4, ban.insertTime)
-                       HAVING COUNT(DISTINCT ban.userApplication.appId) >= ?3
+                       HAVING COUNT(DISTINCT ban.userApplication) >= ?3
             """)
     @Transactional
     List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold, Duration timeBucket);
