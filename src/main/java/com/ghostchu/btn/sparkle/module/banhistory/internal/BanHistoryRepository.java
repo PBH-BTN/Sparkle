@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.net.InetAddress;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -19,11 +18,11 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                        FROM BanHistory ban
                        WHERE
                           ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND ban.module = 'com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker'
-                       GROUP BY ban.peerIp, time_bucket(?4, ban.insertTime)
+                       GROUP BY ban.peerIp
                        HAVING COUNT(DISTINCT ban.userApplication) >= ?3
             """)
     @Transactional
-    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold, Duration timeBucket);
+    List<InetAddress> generateUntrustedIPAddresses(OffsetDateTime from, OffsetDateTime to, int threshold);
 
 
     //    @Query("""
