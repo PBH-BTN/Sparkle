@@ -76,6 +76,10 @@ public class PingService {
             var peer = it.next();
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
+            if (peerClientName.length() > 250) {
+                peerClientName = peerClientName.substring(0, 250);
+                log.warn("Client name too long: {}", peerClientName);
+            }
             snapshotList.add(Snapshot.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
@@ -131,6 +135,10 @@ public class PingService {
             var peer = ban.getPeer();
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
+            if (peerClientName.length() > 250) {
+                peerClientName = peerClientName.substring(0, 250);
+                log.warn("Client name too long: {}", peerClientName);
+            }
             banHistoryList.add(BanHistory.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
