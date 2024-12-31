@@ -209,6 +209,10 @@ public class PingService {
             var peer = it.next();
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
+            if (peerClientName.length() > 250) {
+                // get the first 64 chars and append "..." and append last 64 chars
+                peerClientName = peerClientName.substring(0, 64) + "[...]" + peerClientName.substring(peerClientName.length() - 64);
+            }
             peerHistoryList.add(PeerHistory.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
