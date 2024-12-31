@@ -6,6 +6,7 @@ import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
 import jakarta.transaction.Transactional;
+import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
 
@@ -180,6 +182,15 @@ public class GithubUpdateService {
             var oldFile = repository.getFileContent(file);
             var sha = oldFile != null ? oldFile.getSha() : null;
             var content = contentSupplier.get();
+            if (oldFile != null) {
+                @Cleanup
+                var is = oldFile.read();
+                var oldData = is.readAllBytes();
+                if (Arrays.equals(content, oldData)) {
+                    log.info("{}: 无需更新，跳过", file);
+                    return;
+                }
+            }
             var commitResponse = repository.createContent()
                     .path(file)
                     .branch(branchName)
