@@ -6,10 +6,8 @@ import com.ghostchu.btn.sparkle.module.analyse.proto.Peer;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
-import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
-import com.ghostchu.btn.sparkle.util.PeerUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.format.util.DualIPv4v6Tries;
@@ -150,6 +148,19 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
     @Transactional
     @Modifying
     @Lock(LockModeType.READ)
+    @Scheduled(cron = "${analyse.refreshanalyse.interval}")
+    public void cronRefreshAnalyse() {
+        var startAt = System.currentTimeMillis();
+        var refreshSnapshots = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW analyse_most_banned_peers_ip;");
+        refreshSnapshots.executeUpdate();
+        var refreshAggregated = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW analyse_most_banned_peers_ip_pcb;");
+        refreshAggregated.executeUpdate();
+        log.info("Refreshed materialized views for general analyse, tooked {} ms", System.currentTimeMillis() - startAt);
+    }
+
+    @Transactional
+    @Modifying
+    @Lock(LockModeType.READ)
     @Scheduled(cron = "${analyse.highriskips.interval}")
     public void cronHighRiskIps() {
         var startAt = System.currentTimeMillis();
@@ -212,6 +223,47 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
 //        }
 //    }
 
+    // CREATE MATERIALIZED VIEW analyse_recent_country_region_mdb_ban_trends
+    //WITH (timescaledb.continuous) AS
+    //SELECT
+    //  time_bucket('1 day', "insert_time") AS day,
+    //  geoip ->> 'countryIso' AS iso,
+    //  COUNT ( 1 ) AS ct,
+    //  COUNT ( DISTINCT peer_ip ) AS ct_ip
+    //FROM
+    //  banhistory
+    //WHERE
+    //  "module" = 'com.ghostchu.peerbanhelper.module.impl.rule.MultiDialingBlocker'
+    //GROUP BY
+    //  day, iso
+    //ORDER BY ct DESC
+    //WITH NO DATA
+
+
+    //CREATE MATERIALIZED VIEW analyse_most_banned_peers_ip_pcb AS
+    //SELECT
+    //  CASE
+    //    -- 对于 IPv4 地址，先设置 /24 前缀，再提取网络部分
+    //    WHEN family(peer_ip::inet) = 4 THEN network(set_masklen(peer_ip::cidr, 24))
+    //    -- 对于 IPv6 地址，先设置 /56 前缀，再提取网络部分
+    //    WHEN family(peer_ip::inet) = 6 THEN network(set_masklen(peer_ip::cidr, 56))
+    //  END AS peer_ip_cidr,
+    //  geoip ->> 'countryIso' AS iso,
+    //  geoip ->> 'cityName' AS city,
+    //  COUNT(peer_ip) AS ct
+    //FROM
+    //  banhistory
+    //WHERE
+    //  insert_time > NOW() - INTERVAL '7 days'
+    //  AND
+    //  module = 'com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker'
+    //GROUP BY
+    //  peer_ip_cidr, geoip ->> 'countryIso', geoip ->> 'cityName'
+    //ORDER BY
+    //  ct DESC
+    //LIMIT 100
+    //WITH DATA;
+
     public List<AnalysedRule> getHighRiskIPV6Identity() {
         return analysedRuleRepository.findByModuleOrderByIpAsc(HIGH_RISK_IPV6_IDENTITY);
     }
@@ -224,7 +276,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         // Trunker, A BitTorrent Tracker, not a typo but a name
         var startAt = System.currentTimeMillis();
         final var ipTries = new DualIPv4v6Tries();
-        Set<ClientIdentity> clientDiscoveries = Collections.synchronizedSet(new HashSet<>());
+        //Set<ClientIdentity> clientDiscoveries = Collections.synchronizedSet(new HashSet<>());
         AtomicLong count = new AtomicLong(0);
         AtomicLong success = new AtomicLong(0);
         try (var service = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors()))) {
@@ -232,9 +284,9 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 count.incrementAndGet();
                 var peerId = new String(peerInfo.getPeerId().toByteArray(), StandardCharsets.ISO_8859_1);
                 try {
-                    synchronized (clientDiscoveries) {
-                        clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
-                    }
+//                    synchronized (clientDiscoveries) {
+//                        clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
+//                    }
                     if (
                             ((peerInfo.getUserAgent().contains("Transmission") == peerId.startsWith("-TR")))
                                     || ((peerInfo.getUserAgent().contains("aria2") == peerId.startsWith("A2")))
@@ -245,12 +297,12 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 } catch (Exception e) {
                     log.debug("Unable to handle PeerInfo check: {}, clientIp is {}", peerInfo, Arrays.toString(peerInfo.getIp().getClientIp().toByteArray()), e);
                 } finally {
-                    synchronized (clientDiscoveries) {
-                        if (clientDiscoveries.size() > 5000) {
-                            clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
-                            clientDiscoveries.clear();
-                        }
-                    }
+//                    synchronized (clientDiscoveries) {
+//                        if (clientDiscoveries.size() > 5000) {
+//                            clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
+//                            clientDiscoveries.clear();
+//                        }
+//                    }
                 }
             }, service);
         }
@@ -482,5 +534,14 @@ WITH NO DATA
 
     private OffsetDateTime pastTimestamp(long offset) {
         return OffsetDateTime.now().minus(offset, ChronoUnit.MILLIS);
+    }
+
+    public record AnalysedAddressIsoCityCt(
+            String ip,
+            String iso,
+            String city,
+            long ct
+    ) {
+
     }
 }
