@@ -33,8 +33,8 @@ public class IPMerger {
         Set<String> createdCIDR = new TreeSet<>();
         IPAddress current = null;
         int counter = 0;
-        list.removeIf(str -> str.startsWith("#"));
         for (String rule : list) {
+            if (rule.startsWith("#")) continue;
             if (current == null) {
                 current = toCIDR(rule);
                 continue;
@@ -66,10 +66,9 @@ public class IPMerger {
                 }
             }
         }
-        List<String> finalSorted = list;
         createdCIDR.forEach(cidr -> {
             var base = toCIDR(cidr);
-            finalSorted.removeIf(ip -> {
+            ((List<String>) list).removeIf(ip -> {
                 IPAddress address = toIP(ip);
                 if (address == null) {
                     System.out.println("(Unresolved data) " + ip);
@@ -81,7 +80,7 @@ public class IPMerger {
         });
         return new ArrayList<>() {{
             this.addAll(createdCIDR);
-            this.addAll(finalSorted);
+            this.addAll(list);
         }};
     }
 
