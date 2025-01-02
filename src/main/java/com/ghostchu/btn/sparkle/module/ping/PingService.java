@@ -138,6 +138,10 @@ public class PingService {
             if (peerClientName.length() > 250) {
                 peerClientName = peerClientName.substring(0, 64) + "[...]" + peerClientName.substring(peerClientName.length() - 64);
             }
+            var rule = ban.getRule();
+            if (rule.length() > 250) {
+                rule = rule.substring(0, 64) + "[...]" + rule.substring(rule.length() - 64);
+            }
             banHistoryList.add(BanHistory.builder()
                     .insertTime(now)
                     .populateTime(TimeUtil.toUTC(ping.getPopulateTime()))
@@ -158,7 +162,7 @@ public class PingService {
                     .submitterIp(submitterIp)
                     .btnBan(ban.isBtnBan())
                     .module(ByteUtil.filterUTF8(ban.getModule()))
-                    .rule(ByteUtil.filterUTF8(ban.getRule()))
+                    .rule(ByteUtil.filterUTF8(rule))
                     .banUniqueId(ByteUtil.filterUTF8(ban.getBanUniqueId()))
                     .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
                     .build());
