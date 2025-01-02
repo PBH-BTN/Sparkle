@@ -126,7 +126,7 @@ public class PingController extends SparkleController {
 //        log.info("[OK] [Ping] [{}] 已提交 {} 个 封禁信息：(AppId={}, UA={})",
 //                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
-        auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
+        auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
         return ResponseEntity.status(200).build();
     }
 
