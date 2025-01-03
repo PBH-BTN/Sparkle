@@ -1,13 +1,17 @@
 package com.ghostchu.btn.sparkle.util;
 
-import inet.ipaddr.IPAddress;
-import inet.ipaddr.IPAddressString;
 import inet.ipaddr.format.util.DualIPv4v6Tries;
+import inet.ipaddr.ipv4.IPv4Address;
+import inet.ipaddr.ipv6.IPv6Address;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -23,86 +27,52 @@ public class IPMerger {
 
     public List<String> merge(DualIPv4v6Tries tries) {
         List<String> list = new ArrayList<>();
-        tries.forEach(ip -> list.add(ip.toString()));
-        return merge(list);
+        mergeIPv4(tries.getIPv4Trie().asSet()).forEach(ip -> list.add(ip.toString()));
+        mergeIPv6(tries.getIPv6Trie().asSet()).forEach(ip -> list.add(ip.toString()));
+        return list;
     }
 
-    public List<String> merge(Collection<String> sorted) {
-        var list = new ArrayList<>(sorted);
-        list.sort(String::compareTo);
-        Set<String> createdCIDR = new TreeSet<>();
-        IPAddress current = null;
-        int counter = 0;
-        for (String rule : list) {
-            if (rule.startsWith("#")) continue;
-            if (current == null) {
-                current = toCIDR(rule);
-                continue;
-            }
-            var ip = toIP(rule);
-            if (ip == null) {
-                log.warn("(Unresolved IP) {}", rule);
-                continue;
-            }
-            if (ip.getPrefixLength() != null) {
-                createdCIDR.add(rule);
-                continue;
-            }
-
-            if (toCIDR(rule).equals(current)) {
-                counter++;
+    public List<IPv6Address> mergeIPv6(Collection<IPv6Address> ips) {
+        // ips 去重
+        ips = ips.stream().distinct().collect(Collectors.toList());
+        List<IPv6Address> merged = new ArrayList<>();
+        // 先从 ips 中将比 IPV4_PREFIX_LENGTH 小的 IP 地址过滤出来并从集合中移除
+        List<IPv6Address> lessThanPrefixLength = ips.stream().filter(ip -> ip.getNetworkPrefixLength() != null && ip.getNetworkPrefixLength() < IPV4_PREFIX_LENGTH).toList();
+        ips.removeAll(lessThanPrefixLength);
+        // 现在开始检查剩下的 IP 地址，如果有某个 IP 所在的 IPV4_PREFIX_LENGTH 网段中的 IP 数量大于 MERGE_TO_CIDR_AMOUNT_IPV4，则合并
+        Map<IPv6Address, List<IPv6Address>> ipMap = ips.stream().collect(Collectors.groupingBy(ip -> ip.toPrefixBlock(IPV6_PREFIX_LENGTH)));
+        ipMap.forEach((prefix, ipList) -> {
+            if (ipList.size() >= MERGE_TO_CIDR_AMOUNT_IPV6) {
+                merged.add(prefix);
             } else {
-                counter = 0;
-                current = toCIDR(rule);
-                continue;
+                merged.addAll(ipList);
             }
-            if (current.isIPv4()) {
-                if (counter >= MERGE_TO_CIDR_AMOUNT_IPV4) {
-                    createdCIDR.add(current.toString());
-                }
-            } else {
-                if (counter >= MERGE_TO_CIDR_AMOUNT_IPV6) {
-                    createdCIDR.add(current.toString());
-                }
-            }
-        }
-        createdCIDR.forEach(cidr -> {
-            var base = toCIDR(cidr);
-            ((List<String>) list).removeIf(ip -> {
-                IPAddress address = toIP(ip);
-                if (address == null) {
-                    System.out.println("(Unresolved data) " + ip);
-                    return true;
-                }
-                return base.contains(address);
-            });
-            //sorted.removeIf(ip -> base.equals(toCIDR(ip)));
         });
-        return new ArrayList<>() {{
-            this.addAll(createdCIDR);
-            this.addAll(list);
-        }};
+        // 如果结果集中包含可被 lessThanPrefixLength 中的 CIDR contains 的地址，这些就从最终结果中排除
+        merged.removeIf(ip -> lessThanPrefixLength.stream().anyMatch(less -> less.contains(ip)));
+        merged.addAll(lessThanPrefixLength);
+        return merged;
     }
 
-    private IPAddress toIP(String ip) {
-        try {
-            return new IPAddressString(ip).getAddress();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private IPAddress toCIDR(String cidr) {
-        IPAddress ipAddress = toIP(cidr);
-        if (ipAddress.getPrefixLength() != null) {
-            return ipAddress;
-        }
-        if (ipAddress.isIPv4()) {
-            ipAddress = ipAddress.setPrefixLength(IPV4_PREFIX_LENGTH);
-        } else {
-            ipAddress = ipAddress.setPrefixLength(IPV6_PREFIX_LENGTH);
-        }
-        return ipAddress.toZeroHost();
+    public List<IPv4Address> mergeIPv4(Collection<IPv4Address> ips) {
+        // ips 去重
+        ips = ips.stream().distinct().collect(Collectors.toList());
+        List<IPv4Address> merged = new ArrayList<>();
+        // 先从 ips 中将比 IPV4_PREFIX_LENGTH 小的 IP 地址过滤出来并从集合中移除
+        List<IPv4Address> lessThanPrefixLength = ips.stream().filter(ip -> ip.getNetworkPrefixLength() != null && ip.getNetworkPrefixLength() < IPV4_PREFIX_LENGTH).toList();
+        ips.removeAll(lessThanPrefixLength);
+        // 现在开始检查剩下的 IP 地址，如果有某个 IP 所在的 IPV4_PREFIX_LENGTH 网段中的 IP 数量大于 MERGE_TO_CIDR_AMOUNT_IPV4，则合并
+        Map<IPv4Address, List<IPv4Address>> ipMap = ips.stream().collect(Collectors.groupingBy(ip -> ip.toPrefixBlock(IPV4_PREFIX_LENGTH)));
+        ipMap.forEach((prefix, ipList) -> {
+            if (ipList.size() >= MERGE_TO_CIDR_AMOUNT_IPV4) {
+                merged.add(prefix);
+            } else {
+                merged.addAll(ipList);
+            }
+        });
+        // 如果结果集中包含可被 lessThanPrefixLength 中的 CIDR contains 的地址，这些就从最终结果中排除
+        merged.removeIf(ip -> lessThanPrefixLength.stream().anyMatch(less -> less.contains(ip)));
+        merged.addAll(lessThanPrefixLength);
+        return merged;
     }
 }

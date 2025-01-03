@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +46,7 @@ public class AuditService {
     }
 
     public void flush() {
-        var toWrite = new LinkedList<Audit>();
+        List<Audit> toWrite = new ArrayList<>();
         while (!auditQueue.isEmpty()) {
             toWrite.add(auditQueue.poll());
         }
