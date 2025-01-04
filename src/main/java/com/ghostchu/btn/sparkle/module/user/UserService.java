@@ -8,6 +8,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -91,7 +92,7 @@ public class UserService {
 
     @Transactional
     @Lock(LockModeType.OPTIMISTIC)
-    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
+    @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     public User saveUser(User user) {
         if (user.isSystemAccount()) {
             throw new IllegalArgumentException("User email cannot ends with @sparkle.system, it's reserved by Sparkle system.");
@@ -104,7 +105,7 @@ public class UserService {
 
     @Transactional
     @Lock(LockModeType.OPTIMISTIC)
-    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
+    @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     public User saveSystemUser(User user) {
         if (!user.isSystemAccount()) {
             throw new IllegalArgumentException("System account email must ends with @sparkle.system");

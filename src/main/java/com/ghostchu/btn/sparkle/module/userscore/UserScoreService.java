@@ -8,6 +8,7 @@ import com.ghostchu.btn.sparkle.module.userscore.internal.UserScoreRepository;
 import jakarta.persistence.LockModeType;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class UserScoreService {
         }
     }
 
-    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
+    @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     @Transactional
     @Lock(value = LockModeType.OPTIMISTIC)
     public void addUserScoreBytes(User user, long changes, String reason) {
