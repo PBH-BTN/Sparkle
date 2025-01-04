@@ -21,7 +21,7 @@ public interface ClientDiscoveryRepository extends SparkleCommonRepository<Clien
 
     @Modifying
     @Transactional
-    @Query(value = "INSERT into clientdiscovery (hash, clientName, peerId, foundAt) values (:hash, :clientName, :peerId, :foundAt) on conflict (hash) do nothing", nativeQuery = true)
+    @Query(value = "INSERT into clientdiscovery (hash, client_name, peer_id, found_at) values (:hash, :clientName, :peerId, :foundAt) on conflict (hash) do nothing", nativeQuery = true)
     void saveIgnoreConflict(
             @Param("hash") Long hash,
             @Param("clientName") String clientName,
