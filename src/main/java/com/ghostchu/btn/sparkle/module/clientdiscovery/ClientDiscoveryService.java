@@ -2,7 +2,7 @@ package com.ghostchu.btn.sparkle.module.clientdiscovery;
 
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscovery;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.internal.ClientDiscoveryRepository;
-import com.ghostchu.btn.sparkle.module.user.UserService;
+import com.ghostchu.btn.sparkle.util.ByteUtil;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,27 +18,18 @@ import java.util.Set;
 @Service
 public class ClientDiscoveryService {
     private final ClientDiscoveryRepository clientDiscoveryRepository;
-    private final UserService userService;
     @Autowired
     private MeterRegistry meterRegistry;
 
-    public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository, UserService userService) {
+    public ClientDiscoveryService(ClientDiscoveryRepository clientDiscoveryRepository) {
         this.clientDiscoveryRepository = clientDiscoveryRepository;
-        this.userService = userService;
     }
 
-    //    @Modifying
-//    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void handleIdentities(OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
-        //        meterRegistry.counter("sparkle_client_discovery_processed").increment();
-//        var pendingSave = clientIdentities.stream()
-//                .map(ci -> new ClientDiscovery(
-//                        ci.hash(),
-//                        ByteUtil.filterUTF8(ci.getClientName()),
-//                        ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt, timeForLastSeenAt))
-//                .toList();
-//        meterRegistry.counter("sparkle_client_discovery_created").increment(pendingSave.size());
-//        clientDiscoveryRepository.saveAll(pendingSave);
+        meterRegistry.counter("sparkle_client_discovery_processed").increment();
+        for (ClientIdentity ci : clientIdentities) {
+            clientDiscoveryRepository.saveIgnoreConflict(ci.hash(), ByteUtil.filterUTF8(ci.getClientName()), ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt);
+        }
     }
 
     @Cacheable(value = "clientDiscoveryMetrics#1800000", key = "#from+'-'+#to")
@@ -55,7 +46,6 @@ public class ClientDiscoveryService {
                 .clientName(clientDiscovery.getClientName())
                 .peerId(clientDiscovery.getPeerId())
                 .foundAt(clientDiscovery.getFoundAt())
-                .lastSeenAt(clientDiscovery.getLastSeenAt())
                 .build();
     }
 

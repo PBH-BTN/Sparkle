@@ -17,5 +17,4 @@ public class ClientDiscoveryDto implements Serializable {
     private String clientName;
     private String peerId;
     private OffsetDateTime foundAt;
-    private OffsetDateTime lastSeenAt;
 }
