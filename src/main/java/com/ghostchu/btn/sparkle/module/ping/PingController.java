@@ -15,6 +15,7 @@ import com.ghostchu.btn.sparkle.module.ping.dto.BtnPeerPing;
 import com.ghostchu.btn.sparkle.module.ping.dto.BtnRule;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
+import com.ghostchu.btn.sparkle.module.userscore.UserScoreService;
 import com.ghostchu.btn.sparkle.util.ServletUtil;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.Hashing;
@@ -67,6 +68,8 @@ public class PingController extends SparkleController {
     private GeoIPManager geoIPManager;
     @Autowired
     private SubmitHistoriesAbility submitHistoriesAbility;
+    @Autowired
+    private UserScoreService userScoreService;
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {

@@ -18,6 +18,7 @@ import com.ghostchu.btn.sparkle.module.snapshot.internal.Snapshot;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
+import com.ghostchu.btn.sparkle.module.userscore.UserScoreService;
 import com.ghostchu.btn.sparkle.util.*;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.BloomFilter;
@@ -59,6 +60,8 @@ public class PingService {
     private MeterRegistry meterRegistry;
     @Autowired
     private PeerHistoryService peerHistoryService;
+    @Autowired
+    private UserScoreService userScoreService;
 
     @Modifying
     @Transactional
@@ -114,6 +117,7 @@ public class PingService {
         }
         snapshotService.saveSnapshots(snapshotList);
         meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
+        userScoreService.addUserScoreBytes(userApplication.getUser(), Math.max(1, ping.getPeers().size() / 100), "提交瞬时快照数据");
         clientDiscoveryService.handleIdentities(now, now, identitySet);
         processed += snapshotList.size();
     }
@@ -182,6 +186,7 @@ public class PingService {
         banHistoryService.saveBanHistories(banHistoryList);
         meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
         clientDiscoveryService.handleIdentities(now, now, identitySet);
+        userScoreService.addUserScoreBytes(userApplication.getUser(), Math.max(1, ping.getBans().size() / 100), "提交增量封禁数据");
         processed += banHistoryList.size();
     }
 
@@ -259,6 +264,7 @@ public class PingService {
         clientDiscoveryService.handleIdentities(now, now, identitySet);
         meterRegistry.counter("sparkle_ping_histories_processed").increment(peerHistoryList.size());
         processed += peerHistoryList.size();
+        userScoreService.addUserScoreBytes(userApplication.getUser(), Math.max(1, ping.getPeers().size() / 5000), "提交连接历史数据");
         return processed;
     }
 }

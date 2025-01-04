@@ -8,9 +8,9 @@
     <b><i class="fa-solid fa-road-barrier"></i> 改版装修中</b> BTN 2.0 正在加紧施工中。由于缺乏前端人手，目前前端仅基本功能可用，不影响后端运行和上报收集等功能。
 </div>
 
-<div class="alert alert-warning" role="alert">
-    <b><i class="fa-solid fa-clock"></i> 运行受限</b> 由于 BTN 网络目前正面临巨大的负载，我们暂时禁用了 BTN
-    网络的部分自动分析功能，直至负载问题得到解决。
+<div class="alert alert-success" role="alert">
+    <b><i class="fa-solid fa-check"></i> 恢复正常运行</b> 我们已应用了缓解措施以应对性能下降，目前 BTN
+    的所有功能恢复正常运行。我们仍在观测程序稳定性并持续改进 Sparkle BTN。
 </div>
 
 <div class="alert alert-danger" role="alert" th:if="${user.getBannedAt() != null}">
@@ -25,6 +25,17 @@
     <p>连接到 BTN 网络，共享威胁情报，获取云端规则。</p>
     <a class="btn btn-primary btn-lg" th:href="@{/userapp/}" role="button">创建用户应用程序</a>
 </div>
+
+<div class="container-fluid">
+    <h2 style="text-align: center;">统计数据 (BETA)</h2>
+    <iframe style="width: 100%; height: 100vh; border: none;"
+            src="https://grafana.ghostchu-services.top/public-dashboards/eded9089491241099c9ab3e384d33595"></iframe>
+</div>
+<!-- <div class="container-fluid">
+    <h2 style="text-align: center;">查询面板 (BETA)</h2>
+    <iframe style="width: 100%; height: 100vh; border: none;" src="https://grafana.ghostchu-services.top/public-dashboards/56d23fd566f44eaebdf442120555c56c"></iframe>
+</div> -->
+
 <div th:replace="~{components/common::footer}"></div>
 </body>
 </html>
