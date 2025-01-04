@@ -49,7 +49,7 @@ public class PeerHistoryService {
     }
 
     @Transactional
-    @Lock(LockModeType.OPTIMISTIC)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
     public void saveHistories(List<PeerHistory> peerHistoryList) {
         peerHistoryRepository.saveAll(peerHistoryList);
