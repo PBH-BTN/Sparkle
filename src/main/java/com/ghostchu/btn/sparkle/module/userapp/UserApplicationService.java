@@ -135,6 +135,7 @@ public class UserApplicationService {
                 .createdAt(userApplication.getCreatedAt())
                 .bannedAt(userApplication.getBannedAt())
                 .bannedReason(userApplication.getBannedReason())
+                .lastAccessAt(userApplication.getLastAccessAt())
                 .build();
     }
 
