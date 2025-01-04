@@ -5,18 +5,19 @@
 <div th:replace="~{components/common::navbar}"></div>
 
 
-<div class="container">
+<div class="containe-fluidr">
     <h1 style="text-align: center">用户应用程序</h1>
     <a class="btn btn-outline-primary" th:href="@{/userapp/create}">创建新用户应用程序</a>
 </div>
 
-<div class="container">
+<div class="container-fluid">
     <table class="table">
         <thead>
         <tr>
             <th scope="col">ID</th>
             <th scope="col">AppId</th>
             <th scope="col">备注</th>
+            <th scope="col">上次连接</th>
             <th scope="col">状态</th>
             <th scope="col">操作</th>
         </tr>
@@ -27,9 +28,12 @@
             <!-- 合并图标到 th 的 text 里 -->
             <td th:text="${app.getAppId()}">000000000000000</td>
             <td th:text="${app.getComment()}">测试</td>
-            <th><i class="fa-solid fa-check" th:if="${app.getBannedAt() == null}" title="状态正常"></i>
+            <td th:text="${app.getLastAccessAt() != null ? #temporals.format(app.getLastAccessAt(), 'yyyy-MM-dd HH:mm:ss') : '<未使用过>'}">
+                测试
+            </td>
+            <th><i class="fa-solid fa-check" th:if="${app.getBannedAt() == null}" title="正常"></i>
                 <i class="fa-solid fa-ban" th:if="${app.getBannedAt() != null}"
-                   th:title="'已暂停：' + ${app.getBannedReason()}"></i>
+                   th:title="'已暂停：' + ${app.getBannedReason()} + '暂停状态下此 UserApp 无法继续提交数据，且在下次数据更新时，已提交的数据将被排除在外。'"></i>
             </th>
             <td><a th:href="@{/userapp/{appId}/delete(appId=${app.getAppId()})}">删除</a> <a
                     th:href="@{/userapp/{appId}/resetAppSecret(appId=${app.getAppId()})}">重置 AppSecret</a></td>
