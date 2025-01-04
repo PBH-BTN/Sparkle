@@ -18,6 +18,7 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
                        FROM BanHistory ban
                        WHERE
                           ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND ban.module = 'com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker'
+                          AND ban.userApplication.bannedAt IS NULL AND ban.userApplication.user.bannedAt IS NULL
                        GROUP BY ban.peerIp
                        HAVING COUNT(DISTINCT ban.userApplication) >= ?3
             """)
@@ -39,19 +40,6 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
     Page<BanHistory> findByOrderByInsertTimeDesc(Pageable pageable);
 
     long countByInsertTimeBetween(OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
-
-    @Query("""
-                SELECT DISTINCT ban FROM BanHistory ban
-                WHERE
-                    ban.insertTime >= ?1 AND ban.insertTime <= ?2 AND
-                    (ban.peerId LIKE ?3 OR ban.peerClientName LIKE ?4)
-            """)
-    @Transactional
-    List<BanHistory> findDistinctByPeerIdLikeOrPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerId, String peerClientName);
-
-    @Query(nativeQuery = true, value = "SELECT * from banhistory ban WHERE ban.insert_time >= ?2 AND ban.insert_time <= ?3 AND host(ban.peer_ip) LIKE ?1")
-    @Transactional
-    List<BanHistory> findByPeerIp(String peerIp, OffsetDateTime insertTimeStart, OffsetDateTime insertTimeEnd);
 
 
     List<BanHistory> findDistinctByInsertTimeBetweenAndPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerClientName);
