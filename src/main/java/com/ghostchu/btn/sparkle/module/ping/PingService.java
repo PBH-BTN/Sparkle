@@ -206,7 +206,7 @@ public class PingService {
 //        var usr = userApplication.getUser();
 //        usr.setLastAccessAt(now);
 //        userService.saveUser(usr);
-        Set<ClientIdentity> identitySet = new HashSet<>();
+        List<ClientIdentity> identitySet = new ArrayList<>();
         List<PeerHistory> peerHistoryList = new ArrayList<>();
         long processed = 0;
         var it = ping.getPeers().iterator();
