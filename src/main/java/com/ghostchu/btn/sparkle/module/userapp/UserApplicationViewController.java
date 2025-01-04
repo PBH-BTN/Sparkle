@@ -34,6 +34,7 @@ public class UserApplicationViewController {
         var list = userApplicationService.getUserApplications(
                         userService.getUser(StpUtil.getLoginIdAsLong()).orElseThrow())
                 .stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .map(userApplicationService::toDto).toList();
         model.addAttribute("userapps", list);
         return "modules/userapp/index";
