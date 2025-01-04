@@ -38,4 +38,9 @@ public class UserApplication {
     private String bannedReason;
     @Column
     private OffsetDateTime deletedAt;
+    @Column
+    private OffsetDateTime lastAccessAt;
+    @Column(nullable = false)
+    @Version
+    private long version;
 }

@@ -7,10 +7,15 @@ import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplicationRepository;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -111,6 +116,14 @@ public class UserApplicationService {
         var usrApp = userApplication.get();
         usrApp.setComment(comment);
         return userApplicationRepository.save(usrApp);
+    }
+
+    @Transactional
+    @Lock(value = LockModeType.OPTIMISTIC)
+    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
+    public void updateUserApplicationLastAccessTime(UserApplication userApplication) {
+        userApplication.setLastAccessAt(OffsetDateTime.now());
+        userApplicationRepository.save(userApplication);
     }
 
     public UserApplicationDto toDto(UserApplication userApplication) {
