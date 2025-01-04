@@ -12,7 +12,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
@@ -52,7 +51,6 @@ public class SnapshotService {
 //        });
     }
 
-    @Modifying
     @Transactional
     //@Lock(LockModeType.PESSIMISTIC_WRITE)
     public void saveSnapshots(List<Snapshot> snapshotList) {

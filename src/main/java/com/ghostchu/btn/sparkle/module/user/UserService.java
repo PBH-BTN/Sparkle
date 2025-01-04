@@ -6,8 +6,10 @@ import com.ghostchu.btn.sparkle.module.user.internal.UserRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,9 +89,9 @@ public class UserService {
         return optional.get();
     }
 
-    @Modifying
     @Transactional
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.OPTIMISTIC)
+    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
     public User saveUser(User user) {
         if (user.isSystemAccount()) {
             throw new IllegalArgumentException("User email cannot ends with @sparkle.system, it's reserved by Sparkle system.");
@@ -100,9 +102,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    @Modifying
     @Transactional
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.OPTIMISTIC)
+    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
     public User saveSystemUser(User user) {
         if (!user.isSystemAccount()) {
             throw new IllegalArgumentException("System account email must ends with @sparkle.system");

@@ -54,6 +54,9 @@ public class PeerHistory {
     private String flags;
     @Column(nullable = false)
     private InetAddress submitterIp;
+    @Version
+    @Column(nullable = false)
+    private long version;
 //    @Column( columnDefinition = "jsonb")
 //    @Type(JsonType.class)
 //    private IPGeoData geoIP;
