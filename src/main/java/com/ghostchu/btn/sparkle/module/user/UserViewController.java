@@ -26,8 +26,8 @@ public class UserViewController {
         var dto = userService.toDto(userService.getUser((StpUtil.getLoginIdAsLong())).get());
         model.addAttribute("user", dto);
         var userScore = userScoreService.getUserScoreBytes(userService.getUser((StpUtil.getLoginIdAsLong())).get());
-        model.addAttribute("userScoreBytes.display", FileUtils.byteCountToDisplaySize(userScore));
-        model.addAttribute("userScoreBytes.raw", userScore);
+        model.addAttribute("userScoreBytesDisplay", FileUtils.byteCountToDisplaySize(userScore));
+        model.addAttribute("userScoreBytesRaw", userScore);
         return "user/profile";
     }
 }
