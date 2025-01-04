@@ -11,7 +11,6 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "user_score_history",
-        uniqueConstraints = {@UniqueConstraint(columnNames = "user")},
         indexes = {@Index(columnList = "user")})
 @AllArgsConstructor
 @NoArgsConstructor
