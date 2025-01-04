@@ -13,8 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import java.util.Set;
-
+import java.util.Collection;
 @Service
 public class ClientDiscoveryService {
     private final ClientDiscoveryRepository clientDiscoveryRepository;
@@ -25,7 +24,7 @@ public class ClientDiscoveryService {
         this.clientDiscoveryRepository = clientDiscoveryRepository;
     }
 
-    public void handleIdentities(OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Set<ClientIdentity> clientIdentities) {
+    public void handleIdentities(OffsetDateTime timeForFoundAt, OffsetDateTime timeForLastSeenAt, Collection<ClientIdentity> clientIdentities) {
         meterRegistry.counter("sparkle_client_discovery_processed").increment();
         for (ClientIdentity ci : clientIdentities) {
             clientDiscoveryRepository.saveIgnoreConflict(ci.hash(), ByteUtil.filterUTF8(ci.getClientName()), ByteUtil.filterUTF8(ci.getPeerId()), timeForFoundAt);

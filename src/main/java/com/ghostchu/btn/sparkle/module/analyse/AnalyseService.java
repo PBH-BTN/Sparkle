@@ -6,9 +6,12 @@ import com.ghostchu.btn.sparkle.module.analyse.proto.Peer;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
+import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
 import com.ghostchu.btn.sparkle.util.IPMerger;
 import com.ghostchu.btn.sparkle.util.IPUtil;
+import com.ghostchu.btn.sparkle.util.PeerUtil;
 import com.ghostchu.btn.sparkle.util.TimeUtil;
+import com.google.common.hash.BloomFilter;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.format.util.DualIPv4v6Tries;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
@@ -283,17 +287,25 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         // Trunker, A BitTorrent Tracker, not a typo but a name
         var startAt = System.currentTimeMillis();
         final var ipTries = new DualIPv4v6Tries();
-        //Set<ClientIdentity> clientDiscoveries = Collections.synchronizedSet(new HashSet<>());
+        List<ClientIdentity> clientDiscoveries = new CopyOnWriteArrayList<>();
+        BloomFilter<String> bloomFilter = BloomFilter.create((from, into) -> into.putString(from, StandardCharsets.ISO_8859_1), 10_000_000, 0.01);
         AtomicLong count = new AtomicLong(0);
         AtomicLong success = new AtomicLong(0);
         try (var service = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors()))) {
             scanFile(peerInfo -> {
                 count.incrementAndGet();
                 var peerId = new String(peerInfo.getPeerId().toByteArray(), StandardCharsets.ISO_8859_1);
+                var peerClientName = peerInfo.getUserAgent();
+                if (peerClientName.length() > 250) {
+                    // get the first 64 chars and append "..." and append last 64 chars
+                    peerClientName = peerClientName.substring(0, 64) + "[...]" + peerClientName.substring(peerClientName.length() - 64);
+                }
                 try {
-//                    synchronized (clientDiscoveries) {
-//                        clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
-//                    }
+                    if (bloomFilter.put(peerId + "@@@" + peerClientName)) {
+                        synchronized (clientDiscoveries) {
+                            clientDiscoveries.add(new ClientIdentity(PeerUtil.cutPeerId(peerId), PeerUtil.cutClientName("[UA] " + peerInfo.getUserAgent())));
+                        }
+                    }
                     if (
                             ((peerInfo.getUserAgent().contains("Transmission") == peerId.startsWith("-TR")))
                                     || ((peerInfo.getUserAgent().contains("aria2") == peerId.startsWith("A2")))
@@ -315,12 +327,13 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 } catch (Exception e) {
                     log.debug("Unable to handle PeerInfo check: {}, clientIp is {}", peerInfo, Arrays.toString(peerInfo.getIp().getClientIp().toByteArray()), e);
                 } finally {
-//                    synchronized (clientDiscoveries) {
-//                        if (clientDiscoveries.size() > 5000) {
-//                            clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
-//                            clientDiscoveries.clear();
-//                        }
-//                    }
+                    if (clientDiscoveries.size() > 10000) {
+                        synchronized (clientDiscoveries) {
+                            clientDiscoveryService.handleIdentities(OffsetDateTime.now(), OffsetDateTime.now(), clientDiscoveries);
+                            clientDiscoveries.clear();
+                        }
+                    }
+
                 }
             }, service);
         }

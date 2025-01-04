@@ -20,6 +20,7 @@ import com.ghostchu.btn.sparkle.module.user.UserService;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.*;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
+import com.google.common.hash.BloomFilter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -32,6 +33,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -209,6 +211,7 @@ public class PingService {
         long processed = 0;
         var it = ping.getPeers().iterator();
         var submitId = UUID.randomUUID().toString();
+        BloomFilter<String> bloomFilter = BloomFilter.create((from, into) -> into.putString(from, StandardCharsets.ISO_8859_1), 10_000_000, 0.01);
         while (it.hasNext()) {
             var peer = it.next();
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
@@ -235,15 +238,20 @@ public class PingService {
                     .lastTimeSeen(TimeUtil.toUTC(peer.getLastTimeSeen().getTime()))
                     .submitterIp(inetAddress)
                     .build());
-            identitySet.add(new ClientIdentity(peerId, peerClientName));
+            if (bloomFilter.put(peerId + "@@@" + peerClientName)) {
+                identitySet.add(new ClientIdentity(peerId, peerClientName));
+            }
             // 避免爆内存，必须及时清理
             it.remove();
-            if (identitySet.size() >= 5000 || peerHistoryList.size() >= 5000) {
+            if (peerHistoryList.size() >= 5000) {
                 peerHistoryService.saveHistories(peerHistoryList);
-                clientDiscoveryService.handleIdentities(now, now, identitySet);
                 meterRegistry.counter("sparkle_ping_histories_processed").increment(peerHistoryList.size());
                 processed += peerHistoryList.size();
                 peerHistoryList.clear();
+            }
+
+            if (identitySet.size() > 5000) {
+                clientDiscoveryService.handleIdentities(now, now, identitySet);
                 identitySet.clear();
             }
         }
