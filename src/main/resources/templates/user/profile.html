@@ -1,26 +1,59 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <div th:replace="~{components/common::header}"></div>
+
 <body>
 <div th:replace="~{components/common::navbar}"></div>
 
 <style>
+    .profile-banner {
+        width: 100%;
+        height: 200px;
+        background-color: #24292e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+    }
+
     .profile-avatar {
-        width: 296px;
-        height: 296px;
-        object-fit: cover;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 5px solid white;
+        margin-top: -75px;
     }
 
     .profile-info {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        margin-left: 20px;
+        align-items: center;
+        margin-top: 20px;
     }
 
     .profile-header {
         display: flex;
+        flex-direction: column;
         align-items: center;
+    }
+
+    .profile-stats {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .profile-stats div {
+        margin: 0 10px;
+        text-align: center;
+    }
+
+    .profile-details {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
     }
 
     .score-section {
@@ -54,55 +87,72 @@
     }
 </style>
 
+<div class="profile-banner">
+    个人资料
+</div>
+
 <div class="container">
-    <h1>个人资料</h1>
-    <div class="profile-card">
-        <div class="profile-header">
-            <img class="profile-avatar" th:src="${user.avatar}" alt="用户头像">
-            <div class="profile-info">
-                <h2 th:text="${user.nickname}">昵称</h2>
-                <p>
-                    <strong>电子邮件：</strong>
-                    <span th:text="${user.email}">user@example.com</span>
-                </p>
-                <div class="score-section">
-                    <div>
-                        <strong>Bytes</strong>
-                        <div>--------------------</div>
-                        <div th:text="${userScoreBytes.display}">0 Bytes</div>
-                    </div>
-                    <div class="info-icon">
-                        <i class="fa-solid fa-info-circle"></i>
-                        <div class="tooltip">
-                            Bytes 是您在 Sparkle BTN 中活跃并作出贡献的证明，越高的 Bytes 代表您做出了越多的贡献。
-                        </div>
-                    </div>
-                </div>
+    <div class="profile-header">
+        <img class="profile-avatar" th:src="${user.avatar}" alt="用户头像">
+        <div class="profile-info">
+            <h2 th:text="${user.nickname}">昵称</h2>
+            <!-- <p th:text="${user.bio}">用户简介</p> -->
+        </div>
+    </div>
+
+    <!-- <div class="profile-stats">
+    <div>
+        <strong>仓库</strong>
+        <div th:text="${user.repoCount}">0</div>
+    </div>
+    <div>
+        <strong>关注者</strong>
+        <div th:text="${user.followerCount}">0</div>
+    </div>
+    <div>
+        <strong>关注中</strong>
+        <div th:text="${user.followingCount}">0</div>
+    </div>
+</div> -->
+
+    <div class="profile-details">
+        <!-- 现有代码 -->
+        <div class="user-score" style="float: right; margin-left: 20px;">
+            <div style="text-align: right;">
+                <h2 th:text="${userScoreBytesDisplay}" style="margin-bottom: -8px;">Bytes Here</h2>
+                <span style="font-size: 11px; color:#989595;">= <span th:text="${userScoreBytesRaw}"></span>
+                        bytes</span><br>
+                <span>我的 Bytes 积分</span>
+                <i class="fa-solid fa-circle-info" data-toggle="popover" title="积分：Bytes"
+                   data-content="Bytes 是一种数据单位（字节），但在 Sparkle BTN 也是一种 “虚拟积分”。其名称来源是关于 “数据” 的隐喻。More data = More rules = Less spoiler"></i>
             </div>
         </div>
-        <div class="profile-details">
-            <p>
-                <strong>注册时间：</strong>
-                <span th:text="${#temporals.format(user.getRegisterAt(), 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
-            </p>
-            <p>
-                <strong>最后访问时间：</strong>
-                <span th:text="${#temporals.format(user.getLastSeenAt(), 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
-            </p>
-            <p>
-                <strong>账户状态：</strong>
-                <span th:if="${user.bannedAt == null}" class="status-normal">
+        <!-- 现有代码 -->
+        <p>
+            <strong>电子邮件：</strong>
+            <span th:text="${user.email}">user@example.com</span>
+        </p>
+        <p>
+            <strong>注册时间：</strong>
+            <span th:text="${#temporals.format(user.getRegisterAt(), 'yyyy-MM-dd HH:mm:ss')}">注册时间</span>
+        </p>
+        <p>
+            <strong>最后访问时间：</strong>
+            <span th:text="${#temporals.format(user.getLastSeenAt(), 'yyyy-MM-dd HH:mm:ss')}">最后访问时间</span>
+        </p>
+        <p>
+            <strong>账户状态：</strong>
+            <span th:if="${user.bannedAt == null}" class="status-normal">
                     <i class="fa-solid fa-check"></i> 正常
                 </span>
-                <span th:if="${user.bannedAt != null}" class="status-banned"
-                      th:title="${'暂停原因：' + user.bannedReason}">
-                    <i class="fa-solid fa-ban"></i> 已暂停
+            <span th:if="${user.bannedAt != null}" class="status-banned" th:title="${'暂停原因：' + user.bannedReason}">
+                    <i class="fa-solid fa-ban"></i> 已暂停 (暂停状态下，您将无法继续提交数据。已提交的数据将在下一次数据更新时排除在外。)
                 </span>
-            </p>
-        </div>
+        </p>
     </div>
 </div>
 
 <div th:replace="~{components/common::footer}"></div>
 </body>
+
 </html>
