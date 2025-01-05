@@ -194,6 +194,7 @@ public class PingController extends SparkleController {
         if (rev.equals(version)) {
 //            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, UA={})",
 //                    ip(req), cred.getAppId(), ua(req));
+            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(204).build();
         }
         btn.setVersion(rev);
