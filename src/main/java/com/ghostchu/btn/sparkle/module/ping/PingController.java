@@ -74,6 +74,7 @@ public class PingController extends SparkleController {
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
+        userApplicationService.updateUserApplicationLastAccessTime(cred);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -81,7 +82,6 @@ public class PingController extends SparkleController {
                     ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_PEERS_SUBMIT", false, audit);
-            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         service.handlePeers(InetAddress.getByName(ip(req)), cred, ping);
@@ -90,13 +90,13 @@ public class PingController extends SparkleController {
         audit.put("peers_size", ping.getPeers().size());
         // audit.put("peers_handled", handled);
         auditService.log(req, "BTN_PEERS_SUBMIT", true, audit);
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
         return ResponseEntity.status(200).build();
     }
 
     @PostMapping("/histories/submit")
     public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
+        userApplicationService.updateUserApplicationLastAccessTime(cred);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -104,7 +104,6 @@ public class PingController extends SparkleController {
                     ip(req), cred.getAppId(), cred.getAppSecret(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_HISTORY_SUBMIT", false, audit);
-            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         var handled = service.handlePeerHistories(InetAddress.getByName(ip(req)), cred, ping);
@@ -113,13 +112,13 @@ public class PingController extends SparkleController {
         audit.put("peers_size", ping.getPeers().size());
         audit.put("peers_handled", handled);
         auditService.log(req, "BTN_HISTORY_SUBMIT", true, audit);
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
         return ResponseEntity.status(200).build();
     }
 
     @PostMapping("/bans/submit")
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
+        userApplicationService.updateUserApplicationLastAccessTime(cred);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -127,7 +126,6 @@ public class PingController extends SparkleController {
                     ip(req), cred.getAppId(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_BANS_SUBMIT", false, audit);
-            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         service.handleBans(InetAddress.getByName(ip(req)), cred, ping);
@@ -135,13 +133,13 @@ public class PingController extends SparkleController {
 //                ip(req), handled, cred.getAppId(), ua(req));
         audit.put("bans_size", ping.getBans().size());
         auditService.log(req, "BTN_BANS_SUBMIT", true, audit);
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
         return ResponseEntity.status(200).build();
     }
 
     @GetMapping("/config")
     public ResponseEntity<Object> config() throws AccessDeniedException, JsonProcessingException, UnknownHostException {
         var cred = cred();
+        userApplicationService.updateUserApplicationLastAccessTime(cred);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -149,7 +147,6 @@ public class PingController extends SparkleController {
                     ip(req), cred.getAppId(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_CONFIG", false, audit);
-            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
 //        log.info("[OK] [Config] [{}] 响应配置元数据 (AppId={}, UA={})",
@@ -171,13 +168,13 @@ public class PingController extends SparkleController {
         if (countryIso != null && countryIso.equalsIgnoreCase("CN")) {
             json = json.replace(sparkleRoot, sparkleRootChina);
         }
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
         return ResponseEntity.ok().body(json);
     }
 
     @GetMapping("/rules/retrieve")
     public ResponseEntity<String> rule() throws IOException, AccessDeniedException {
         var cred = cred();
+        userApplicationService.updateUserApplicationLastAccessTime(cred);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -185,7 +182,6 @@ public class PingController extends SparkleController {
                     ip(req), cred.getAppId(), ua(req));
             audit.put("error", "UserApplication Banned");
             auditService.log(req, "BTN_RULES_RETRIEVE", false, audit);
-            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(403).body("UserApplication 已被管理员封禁，请与服务器管理员联系");
         }
         String version = req.getParameter("rev");
@@ -194,7 +190,6 @@ public class PingController extends SparkleController {
         if (rev.equals(version)) {
 //            log.info("[OK] [Rule] [{}] 规则无变化，响应 204 状态码 (AppId={}, UA={})",
 //                    ip(req), cred.getAppId(), ua(req));
-            userApplicationService.updateUserApplicationLastAccessTime(cred);
             return ResponseEntity.status(204).build();
         }
         btn.setVersion(rev);
@@ -203,7 +198,6 @@ public class PingController extends SparkleController {
         audit.put("from", version);
         audit.put("to", rev);
         auditService.log(req, "BTN_RULES_RETRIEVE", true, audit);
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
         return ResponseEntity.status(200).contentType(MediaType.APPLICATION_JSON).body(objectMapper.writeValueAsString(btn));
     }
 

@@ -9,14 +9,11 @@ import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplicationRepositor
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -24,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class UserApplicationService {
     private final UserApplicationRepository userApplicationRepository;
@@ -70,7 +68,7 @@ public class UserApplicationService {
     @Transactional
     public UserApplication generateUserApplicationForUser(User user, String comment, OffsetDateTime createdAt) throws TooManyUserApplicationException {
         long userOwnedApps = userApplicationRepository.countByUser(user);
-        if(userOwnedApps >= userMaxApps){
+        if (userOwnedApps >= userMaxApps) {
             throw new TooManyUserApplicationException();
         }
         UserApplication userApplication = new UserApplication();
@@ -121,10 +119,13 @@ public class UserApplicationService {
 
     @Transactional
     @Lock(value = LockModeType.PESSIMISTIC_WRITE)
-    @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     public void updateUserApplicationLastAccessTime(UserApplication userApplication) {
         userApplication.setLastAccessAt(OffsetDateTime.now());
-        userApplicationRepository.save(userApplication);
+        try {
+            userApplicationRepository.save(userApplication);
+        } catch (Exception e) {
+            log.info("Failed to update last access time for user application: {}", userApplication.getId(), e);
+        }
     }
 
     public UserApplicationDto toDto(UserApplication userApplication) {
