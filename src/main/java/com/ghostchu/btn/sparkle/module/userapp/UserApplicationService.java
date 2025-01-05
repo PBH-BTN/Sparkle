@@ -120,7 +120,7 @@ public class UserApplicationService {
     }
 
     @Transactional
-    @Lock(value = LockModeType.OPTIMISTIC)
+    @Lock(value = LockModeType.PESSIMISTIC_WRITE)
     @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     public void updateUserApplicationLastAccessTime(UserApplication userApplication) {
         userApplication.setLastAccessAt(OffsetDateTime.now());
