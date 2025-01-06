@@ -307,8 +307,8 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                         }
                     }
                     if (
-                            !((peerInfo.getUserAgent().contains("Transmission") == peerId.startsWith("-TR")))
-                                    || !((peerInfo.getUserAgent().contains("aria2") == peerId.startsWith("A2")))
+                            (peerInfo.getUserAgent().contains("Transmission") != peerId.startsWith("-TR"))
+                                    || (peerInfo.getUserAgent().contains("aria2") != peerId.startsWith("A2"))
                     ) {
                         var ip = IPUtil.toIPAddress(peerInfo.getIp().getClientIp().toByteArray());
                         if (!ip.isLocal() && !ip.isLoopback()) {
