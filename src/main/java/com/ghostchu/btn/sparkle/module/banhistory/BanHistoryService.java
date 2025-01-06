@@ -7,12 +7,14 @@ import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
+import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -81,6 +83,14 @@ public class BanHistoryService {
     @Transactional
     public void saveBanHistories(List<BanHistory> banHistoryList) {
         banHistoryRepository.saveAll(banHistoryList);
+    }
+
+    public List<BanHistory> queryRecentRelatedBanHistory(InetAddress peerIp, String torrentIdentifier, int amount) {
+        Page<BanHistory> banHistories = banHistoryRepository
+                .findByPeerIpAndTorrent_IdentifierAndInsertTimeGreaterThanEqualOrderByInsertTimeDesc
+                        (peerIp, torrentIdentifier, OffsetDateTime.now().minusDays(7)
+                                , PageRequest.ofSize(amount));
+        return banHistories.toList();
     }
 
     public SparklePage<BanHistory, BanHistoryDto> queryRecent(PageRequest pageable) {

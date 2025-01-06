@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -44,4 +45,6 @@ public interface BanHistoryRepository extends SparkleCommonRepository<BanHistory
     List<BanHistory> findDistinctByInsertTimeBetweenAndPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String peerClientName);
 
     List<BanHistory> findDistinctByInsertTimeBetweenAndModuleAndPeerClientNameLike(OffsetDateTime from, OffsetDateTime to, String module, String peerClientName);
+
+    Page<BanHistory> findByPeerIpAndTorrent_IdentifierAndInsertTimeGreaterThanEqualOrderByInsertTimeDesc(InetAddress peerIp, String torrentIdentifier, OffsetDateTime insertTime, Pageable pageable);
 }

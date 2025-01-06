@@ -287,7 +287,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
     public void cronUpdateTrunkerFile() {
         // Trunker, A BitTorrent Tracker, not a typo but a name
         var startAt = System.currentTimeMillis();
-        final DualIPv4v6AssociativeTries<String> ipTries = new DualIPv4v6AssociativeTries<>();
+        final DualIPv4v6AssociativeTries<Peer.PeerInfo> ipTries = new DualIPv4v6AssociativeTries<>();
         List<ClientIdentity> clientDiscoveries = new CopyOnWriteArrayList<>();
         BloomFilter<String> bloomFilter = BloomFilter.create((from, into) -> into.putString(from, StandardCharsets.ISO_8859_1), 10_000_000, 0.01);
         AtomicLong count = new AtomicLong(0);
@@ -317,7 +317,8 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                                 if (ip.getPrefixLength() == null && ip.isIPv6()) {
                                     ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength);
                                 }
-                                ipTries.putNode(ip, ByteUtil.filterUTF8("特征信息：PeerId: " + peerId + ", ClientName: " + peerClientName));
+                                // 去除控制符，保留其他所有字符
+                                ipTries.putNode(ip, peerInfo);
                             } catch (Exception e) {
                                 log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
                             }
@@ -342,7 +343,26 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         // var filtered = filterIP(ipTries); // too slow
 
         List<AnalysedRule> rules = new ArrayList<>();
-        ipTries.nodeIterator(false).forEachRemaining(node -> rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + node.getValue())));
+        ipTries.nodeIterator(false)
+                .forEachRemaining(node -> {
+                    //                   StringJoiner joiner = new StringJoiner("\n");
+                    String info = null;
+                    if (node.getValue() != null) {
+                        var filteredClientName = node.getValue().getUserAgent().chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining());
+                        // 查询此 Peer 最近一次
+                        var trackerData = "Tracker 数据 {PeerId: {0}, 端口号: {1}, UserAgent: {2}, 汇报事件: {3}, " +
+                                "剩余需要下载的字节数（自汇报不可信）: {4}, 上传字节数（自汇报不可信）: {5}, 下载字节数（自汇报不可信）: {6}}";
+                        trackerData = MsgUtil.fillArgs(trackerData, PeerUtil.cutPeerId(new String(node.getValue().getPeerId().toByteArray(), StandardCharsets.ISO_8859_1)),
+                                String.valueOf(node.getValue().getPort()), filteredClientName, node.getValue().getEvent().name(), String.valueOf(node.getValue().getLeft()), String.valueOf(node.getValue().getUploaded()), String.valueOf(node.getValue().getDownloaded()));
+                        info = trackerData; // TODO : unfinished
+//                        var infoHash = ByteUtil.bytesToHex(node.getValue().getInfoHash().toByteArray());
+//                        for (int i = 0; i < banHistoryRepository.findByPeerIpAndTorrent_IdentifierAndInsertTimeGreaterThanEqualOrderByInsertTimeDesc(node.getKey().toInetAddress(), InfoHashUtil.getHashedIdentifier(node.getValue().getInfoHash().), ); i++) {
+//
+//                        }
+//                        var btnData = "BTN 数据  {}";
+                    }
+                    rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + info));
+                });
         analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, rules);
         meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), rules.size());
         log.info("Tracker HighRisk identity: {}, tooked {} ms; success: {}/{}.", rules.size(), System.currentTimeMillis() - startAt, success.get(), count.get());
