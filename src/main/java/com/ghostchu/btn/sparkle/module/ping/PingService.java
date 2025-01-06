@@ -205,8 +205,8 @@ public class PingService {
             for (AnalysedRule analysedRule : analysedRules) {
                 ipTrie.add(IPUtil.toIPAddress(analysedRule.getIp()));
             }
-            var filtered = analyseService.filterIP(ipTrie);
             analysedRules.clear();
+            var filtered = analyseService.filterIP(ipTrie);
             for (var ip : filtered) {
                 rules.add(new RuleDto(null, module, ip.toNormalizedString(), "ip", 0L, 0L));
             }
