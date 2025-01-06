@@ -348,11 +348,12 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                     //                   StringJoiner joiner = new StringJoiner("\n");
                     String info = null;
                     if (node.getValue() != null) {
-                        var filteredClientName = node.getValue().getUserAgent().chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining());
+                        var filteredClientName = ByteUtil.filterUTF8(node.getValue().getUserAgent().chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining()));
+                        var filteredPeerId = ByteUtil.filterUTF8(node.getValue().getPeerId().toString(StandardCharsets.ISO_8859_1).chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining()));
                         // 查询此 Peer 最近一次
                         var trackerData = "Tracker 数据 {PeerId: {0}, 端口号: {1}, UserAgent: {2}, 汇报事件: {3}, " +
                                 "剩余需要下载的字节数（自汇报不可信）: {4}, 上传字节数（自汇报不可信）: {5}, 下载字节数（自汇报不可信）: {6}}";
-                        trackerData = MsgUtil.fillArgs(trackerData, PeerUtil.cutPeerId(new String(node.getValue().getPeerId().toByteArray(), StandardCharsets.ISO_8859_1)),
+                        trackerData = MsgUtil.fillArgs(trackerData, filteredPeerId,
                                 String.valueOf(node.getValue().getPort()), filteredClientName, node.getValue().getEvent().name(), String.valueOf(node.getValue().getLeft()), String.valueOf(node.getValue().getUploaded()), String.valueOf(node.getValue().getDownloaded()));
                         info = trackerData; // TODO : unfinished
 //                        var infoHash = ByteUtil.bytesToHex(node.getValue().getInfoHash().toByteArray());
