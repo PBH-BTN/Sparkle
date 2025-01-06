@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
@@ -20,8 +21,10 @@ public interface ClientDiscoveryRepository extends SparkleCommonRepository<Clien
     long deleteAllByClientNameLike(String clientName);
 
     @Modifying
-    @Transactional
-    @Query(value = "INSERT into clientdiscovery (hash, client_name, peer_id, found_at) values (:hash, :clientName, :peerId, :foundAt) on conflict (hash) do nothing", nativeQuery = true)
+    @Transactional(propagation = Propagation.REQUIRED)
+    @Query(value = "INSERT into clientdiscovery (hash, client_name, peer_id, found_at) " +
+            "values (:hash, :clientName, :peerId, :foundAt) " +
+            "on conflict (hash) do nothing", nativeQuery = true)
     void saveIgnoreConflict(
             @Param("hash") Long hash,
             @Param("clientName") String clientName,
