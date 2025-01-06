@@ -344,7 +344,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         // var filtered = filterIP(ipTries); // too slow
 
         List<AnalysedRule> rules = new ArrayList<>();
-        ipTries.forEach(ip -> rules.add(new AnalysedRule(null, ip.toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + ip)));
+        ipTries.forEach(ip -> rules.add(new AnalysedRule(null, ip.toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + ipTries.get(ip))));
         analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, rules);
         meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), rules.size());
         log.info("Tracker HighRisk identity: {}, tooked {} ms; success: {}/{}.", rules.size(), System.currentTimeMillis() - startAt, success.get(), count.get());
