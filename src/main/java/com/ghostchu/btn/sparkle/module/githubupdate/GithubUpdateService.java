@@ -1,7 +1,6 @@
 package com.ghostchu.btn.sparkle.module.githubupdate;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
-import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.util.IPUtil;
@@ -65,13 +64,19 @@ public class GithubUpdateService {
 
     private String generateTrackerHighRiskIps() {
         var strJoiner = new StringJoiner("\n");
-        analyseService.getTrackerHighRisk().forEach(r -> strJoiner.add(r.getIp()));
+        analyseService.getTrackerHighRisk().forEach(r -> {
+            strJoiner.add("# " + r.getComment());
+            strJoiner.add(r.getIp());
+        });
         return strJoiner.toString();
     }
 
     private String generateUntrustedIps() {
         var strJoiner = new StringJoiner("\n");
-        analyseService.getUntrustedIPAddresses().forEach(r -> strJoiner.add(r.getIp()));
+        analyseService.getUntrustedIPAddresses().forEach(r -> {
+            strJoiner.add("# " + r.getComment());
+            strJoiner.add(r.getIp());
+        });
         return strJoiner.toString();
     }
 
@@ -91,7 +96,10 @@ public class GithubUpdateService {
 
     private String generateHighRiskIps() {
         var strJoiner = new StringJoiner("\n");
-        analyseService.getHighRiskIps().forEach(r -> strJoiner.add(r.getIp()));
+        analyseService.getHighRiskIps().forEach(r -> {
+            strJoiner.add("# " + r.getComment());
+            strJoiner.add(r.getIp());
+        });
         return strJoiner.toString();
     }
 
@@ -207,7 +215,12 @@ public class GithubUpdateService {
 
 
     private String generateOverDownloadIps() {
-        return String.join("\n", analyseService.getOverDownloadIPAddresses().stream().map(AnalysedRule::getIp).toList());
+        var strJoiner = new StringJoiner("\n");
+        analyseService.getOverDownloadIPAddresses().forEach(r -> {
+            strJoiner.add("# " + r.getComment());
+            strJoiner.add(r.getIp());
+        });
+        return strJoiner.toString();
     }
 
     private OffsetDateTime nowTimestamp() {
