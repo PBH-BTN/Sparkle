@@ -133,14 +133,15 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 );
         ips.forEach(projection -> {
             try {
-                ipTries.put(IPUtil.toIPAddress(projection.getPeerIp().getHostAddress()), projection.getCount());
+                ipTries.putNode(IPUtil.toIPAddress(projection.getPeerIp().getHostAddress()), projection.getCount());
             } catch (Exception e) {
                 log.error("Unable to convert IP address: {}", projection.getPeerIp().getHostAddress(), e);
             }
         });
         var filtered = filterIP(ipTries);
         List<AnalysedRule> rules = new ArrayList<>();
-        filtered.forEach(ip -> rules.add(new AnalysedRule(null, ip.toNormalizedString(), UNTRUSTED_IP, "[AutoGen] Untrusted by " + filtered.get(ip) + " UserApplications")));
+        filtered.nodeIterator(false).forEachRemaining(node -> rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), UNTRUSTED_IP,
+                "[AutoGen] 被 " + node.getValue() + " 个用户应用程序上报为不信任的 IP 地址")));
         meterRegistry.gauge("sparkle_analyse_untrusted_ip_address", Collections.emptyList(), rules.size());
         analysedRuleRepository.replaceAll(UNTRUSTED_IP, rules);
         log.info("Untrusted IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
@@ -319,7 +320,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                                 if (ip.getPrefixLength() == null && ip.isIPv6()) {
                                     ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength);
                                 }
-                                ipTries.put(ip, "PeerId: " + peerId + ", ClientName: " + peerClientName);
+                                ipTries.putNode(ip, "特征信息：PeerId: " + peerId + ", ClientName: " + peerClientName);
                             } catch (Exception e) {
                                 log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
                             }
@@ -344,7 +345,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         // var filtered = filterIP(ipTries); // too slow
 
         List<AnalysedRule> rules = new ArrayList<>();
-        ipTries.forEach(ip -> rules.add(new AnalysedRule(null, ip.toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + ipTries.get(ip))));
+        ipTries.nodeIterator(false).forEachRemaining(node -> rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + node.getValue())));
         analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, rules);
         meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), rules.size());
         log.info("Tracker HighRisk identity: {}, tooked {} ms; success: {}/{}.", rules.size(), System.currentTimeMillis() - startAt, success.get(), count.get());
@@ -447,12 +448,15 @@ WITH NO DATA
         List<Object[]> queryResult = query.getResultList();
         DualIPv4v6AssociativeTries<String> ipTries = new DualIPv4v6AssociativeTries<>();
         for (Object[] arr : queryResult) {
+            if (Long.parseLong(arr[3].toString()) < 1024 * 1024 * 64 && Long.parseLong(arr[2].toString()) < 1024 * 1024 * 128) {
+                continue;
+            }
             var ipAddr = IPUtil.toIPAddress(((InetAddress) arr[1]).getHostAddress());
-            ipTries.put(ipAddr, "从大小为 " + FileUtils.byteCountToDisplaySize(Long.parseLong(arr[3].toString())) + " 的种子上下载了 " + FileUtils.byteCountToDisplaySize(Long.parseLong(arr[2].toString())) + " 的数据。下载比(100%=完整下载1次种子的大小)： " + String.format("%.2f", Double.parseDouble(arr[4].toString()) * 100) + "%");
+            ipTries.putNode(ipAddr, "从大小为 " + FileUtils.byteCountToDisplaySize(Long.parseLong(arr[3].toString())) + " 的种子上下载了 " + FileUtils.byteCountToDisplaySize(Long.parseLong(arr[2].toString())) + " 的数据。下载比(100%=完整下载1次种子的大小)： " + String.format("%.2f", Double.parseDouble(arr[4].toString())) + "%");
         }
         var filtered = filterIP(ipTries);
         List<AnalysedRule> rules = new ArrayList<>();
-        filtered.forEach(ip -> rules.add(new AnalysedRule(null, ip.toNormalizedString(), OVER_DOWNLOAD, "[AutoGen] " + filtered.get(ip))));
+        filtered.nodeIterator(false).forEachRemaining(node -> rules.add(new AnalysedRule(null, node.getKey().toString(), OVER_DOWNLOAD, "[AutoGen] " + node.getValue())));
         analysedRuleRepository.replaceAll(OVER_DOWNLOAD, rules);
         meterRegistry.gauge("sparkle_analyse_over_download_ips", Collections.emptyList(), rules.size());
         log.info("Over download IPs: {}, tooked {} ms", rules.size(), System.currentTimeMillis() - startAt);
