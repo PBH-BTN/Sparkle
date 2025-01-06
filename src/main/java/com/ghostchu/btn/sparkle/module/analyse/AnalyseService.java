@@ -7,10 +7,7 @@ import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientIdentity;
-import com.ghostchu.btn.sparkle.util.IPMerger;
-import com.ghostchu.btn.sparkle.util.IPUtil;
-import com.ghostchu.btn.sparkle.util.PeerUtil;
-import com.ghostchu.btn.sparkle.util.TimeUtil;
+import com.ghostchu.btn.sparkle.util.*;
 import com.google.common.hash.BloomFilter;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.format.util.DualIPv4v6AssociativeTries;
@@ -320,7 +317,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                                 if (ip.getPrefixLength() == null && ip.isIPv6()) {
                                     ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength);
                                 }
-                                ipTries.putNode(ip, "特征信息：PeerId: " + peerId + ", ClientName: " + peerClientName);
+                                ipTries.putNode(ip, ByteUtil.filterUTF8("特征信息：PeerId: " + peerId + ", ClientName: " + peerClientName));
                             } catch (Exception e) {
                                 log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
                             }
