@@ -1,6 +1,8 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
 import com.ghostchu.btn.sparkle.module.analyse.AnalyseService;
+import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRule;
+import com.ghostchu.btn.sparkle.module.analyse.impl.AnalysedRuleRepository;
 import com.ghostchu.btn.sparkle.module.banhistory.BanHistoryService;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.clientdiscovery.ClientDiscoveryService;
@@ -22,6 +24,7 @@ import com.ghostchu.btn.sparkle.module.userscore.UserScoreService;
 import com.ghostchu.btn.sparkle.util.*;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.google.common.hash.BloomFilter;
+import inet.ipaddr.format.util.DualIPv4v6Tries;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -62,6 +65,8 @@ public class PingService {
     private PeerHistoryService peerHistoryService;
     @Autowired
     private UserScoreService userScoreService;
+    @Autowired
+    private AnalysedRuleRepository analysedRuleRepository;
 
     @Modifying
     @Transactional
@@ -191,12 +196,22 @@ public class PingService {
     }
 
     @Cacheable({"btnRule#60000"})
-    public BtnRule generateBtnRule() {
-        List<RuleDto> rules = new LinkedList<>();
-        rules.addAll(analyseService.getAnalysedRules()
-                .stream()
-                .map(rule -> new RuleDto(null, rule.getModule(), rule.getIp(), "ip", 0L, 0L))
-                .toList());
+    public synchronized BtnRule generateBtnRule() {
+        List<RuleDto> rules = new ArrayList<>();
+        List<String> modules = analysedRuleRepository.getAllModules();
+        for (String module : modules) {
+            DualIPv4v6Tries ipTrie = new DualIPv4v6Tries();
+            List<AnalysedRule> analysedRules = analysedRuleRepository.findByModuleOrderByIpAsc(module);
+            for (AnalysedRule analysedRule : analysedRules) {
+                ipTrie.add(IPUtil.toIPAddress(analysedRule.getIp()));
+            }
+            var filtered = analyseService.filterIP(ipTrie);
+            analysedRules.clear();
+            for (var ip : filtered) {
+                rules.add(new RuleDto(null, module, ip.toNormalizedString(), "ip", 0L, 0L));
+            }
+            meterRegistry.gauge("sparkle_ping_rules_" + module, ipTrie.size());
+        }
         rules.addAll(ruleService.getUnexpiredRules());
         rules.sort(Comparator.comparing(RuleDto::getContent));
         meterRegistry.gauge("sparkle_ping_rules", rules.size());
