@@ -26,7 +26,7 @@ public class AnalysedRule {
     private String ip;
     @Column(nullable = false)
     private String module;
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String comment;
 
     @Override
