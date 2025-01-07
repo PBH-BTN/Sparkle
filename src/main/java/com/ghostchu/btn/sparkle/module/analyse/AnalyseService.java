@@ -588,13 +588,14 @@ WITH NO DATA
 
     public <T> DualIPv4v6AssociativeTries<T> filterIP(DualIPv4v6AssociativeTries<T> ips) {
         DualIPv4v6AssociativeTries<T> dualIPv4v6Tries = new DualIPv4v6AssociativeTries<>();
-        ips.forEach(ip -> {
+        ips.nodeIterator(false).forEachRemaining(node -> {
+            var ip = node.getKey();
             if (!ip.isLocal() && !ip.isLoopback()) {
                 try {
                     if (ip.getPrefixLength() == null && ip.isIPv6()) {
                         ip = ip.toPrefixBlock(ipv6ConvertToPrefixLength);
                     }
-                    dualIPv4v6Tries.put(ip, ips.get(ip));
+                    dualIPv4v6Tries.put(ip, node.getValue());
                 } catch (Exception e) {
                     log.error("Unable to convert {} with prefix block {}.", ip, ipv6ConvertToPrefixLength, e);
                 }
