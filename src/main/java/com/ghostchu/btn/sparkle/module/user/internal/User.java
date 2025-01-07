@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "user",
-        uniqueConstraints = {@UniqueConstraint(columnNames = "githubId")},
+        uniqueConstraints = {@UniqueConstraint(columnNames = "githubUserId")},
         indexes = {@Index(columnList = "githubLogin"),@Index(columnList = "githubUserId")})
 @AllArgsConstructor
 @NoArgsConstructor
