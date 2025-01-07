@@ -309,7 +309,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 info = MsgUtil.fillArgs(TEMPLATE_TRACKER_DATA, filteredPeerId,
                         String.valueOf(node.getValue().getPort()), node.getValue().getEvent().name(), String.valueOf(node.getValue().getLeft()), String.valueOf(node.getValue().getUploaded()), String.valueOf(node.getValue().getDownloaded()), filteredUserAgent);
             }
-            rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + info));
+            rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, ByteUtil.filterUTF8("[AutoGen] " + info)));
         }
         analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, rules);
         meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), rules.size());
