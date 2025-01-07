@@ -54,6 +54,8 @@ public class AnalyseService {
     private static final String HIGH_RISK_IPV6_IDENTITY = "高风险 IPV6 特征";
     private static final String TRACKER_HIGH_RISK = "Tracker 高风险特征";
     private static final String PCB_MODULE_NAME = "com.ghostchu.peerbanhelper.module.impl.rule.ProgressCheatBlocker";
+    private static final String TEMPLATE_TRACKER_DATA = "Tracker 数据 {PeerId: {}, 端口号: {}, 汇报事件: {}, " +
+            "剩余需要下载的字节数（自汇报）: {}, 上传字节数（自汇报）: {}, 下载字节数（自汇报）: {}, UserAgent: {}}";
 
     @Autowired
     private BanHistoryRepository banHistoryRepository;
@@ -287,11 +289,35 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
     public void cronUpdateTrunkerFile() {
         // Trunker, A BitTorrent Tracker, not a typo but a name
         var startAt = System.currentTimeMillis();
-        final DualIPv4v6AssociativeTries<Peer.PeerInfo> ipTries = new DualIPv4v6AssociativeTries<>();
         List<ClientIdentity> clientDiscoveries = new CopyOnWriteArrayList<>();
         BloomFilter<String> bloomFilter = BloomFilter.create((from, into) -> into.putString(from, StandardCharsets.ISO_8859_1), 10_000_000, 0.01);
         AtomicLong count = new AtomicLong(0);
         AtomicLong success = new AtomicLong(0);
+        DualIPv4v6AssociativeTries<Peer.PeerInfo> ipTries = readDataFromTrackerPersistFile(count, bloomFilter, clientDiscoveries, success);
+        List<AnalysedRule> rules = new ArrayList<>();
+        ipTries = filterIP(ipTries);
+        var it = ipTries.nodeIterator(false);
+        while (it.hasNext()) {
+            var node = it.next();
+            //                   StringJoiner joiner = new StringJoiner("\n");
+            String info = null;
+            if (node.getValue() != null) {
+                var filteredUserAgent = ByteUtil.filterUTF8(node.getValue().getUserAgent().chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining()));
+                var filteredPeerId = ByteUtil.filterUTF8(node.getValue().getPeerId().toString(StandardCharsets.ISO_8859_1).chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining()));
+                // 查询此 Peer 最近一次
+                // 这里未来还可以查询 BTN 库
+                info = MsgUtil.fillArgs(TEMPLATE_TRACKER_DATA, filteredPeerId,
+                        String.valueOf(node.getValue().getPort()), node.getValue().getEvent().name(), String.valueOf(node.getValue().getLeft()), String.valueOf(node.getValue().getUploaded()), String.valueOf(node.getValue().getDownloaded()), filteredUserAgent);
+            }
+            rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + info));
+        }
+        analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, rules);
+        meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), rules.size());
+        log.info("Tracker HighRisk identity: {}, tooked {} ms; success: {}/{}.", rules.size(), System.currentTimeMillis() - startAt, success.get(), count.get());
+    }
+
+    private DualIPv4v6AssociativeTries<Peer.PeerInfo> readDataFromTrackerPersistFile(AtomicLong count, BloomFilter<String> bloomFilter, List<ClientIdentity> clientDiscoveries, AtomicLong success) {
+        var ipTries = new DualIPv4v6AssociativeTries<Peer.PeerInfo>();
         try (var service = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors()))) {
             scanFile(peerInfo -> {
                 count.incrementAndGet();
@@ -339,34 +365,7 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
                 }
             }, service);
         }
-
-        // var filtered = filterIP(ipTries); // too slow
-
-        List<AnalysedRule> rules = new ArrayList<>();
-        ipTries.nodeIterator(false)
-                .forEachRemaining(node -> {
-                    //                   StringJoiner joiner = new StringJoiner("\n");
-                    String info = null;
-                    if (node.getValue() != null) {
-                        var filteredClientName = ByteUtil.filterUTF8(node.getValue().getUserAgent().chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining()));
-                        var filteredPeerId = ByteUtil.filterUTF8(node.getValue().getPeerId().toString(StandardCharsets.ISO_8859_1).chars().filter(c -> c >= 32).mapToObj(c -> String.valueOf((char) c)).collect(Collectors.joining()));
-                        // 查询此 Peer 最近一次
-                        var trackerData = "Tracker 数据 {PeerId: {0}, 端口号: {1}, UserAgent: {2}, 汇报事件: {3}, " +
-                                "剩余需要下载的字节数（自汇报不可信）: {4}, 上传字节数（自汇报不可信）: {5}, 下载字节数（自汇报不可信）: {6}}";
-                        trackerData = MsgUtil.fillArgs(trackerData, filteredPeerId,
-                                String.valueOf(node.getValue().getPort()), filteredClientName, node.getValue().getEvent().name(), String.valueOf(node.getValue().getLeft()), String.valueOf(node.getValue().getUploaded()), String.valueOf(node.getValue().getDownloaded()));
-                        info = trackerData; // TODO : unfinished
-//                        var infoHash = ByteUtil.bytesToHex(node.getValue().getInfoHash().toByteArray());
-//                        for (int i = 0; i < banHistoryRepository.findByPeerIpAndTorrent_IdentifierAndInsertTimeGreaterThanEqualOrderByInsertTimeDesc(node.getKey().toInetAddress(), InfoHashUtil.getHashedIdentifier(node.getValue().getInfoHash().), ); i++) {
-//
-//                        }
-//                        var btnData = "BTN 数据  {}";
-                    }
-                    rules.add(new AnalysedRule(null, node.getKey().toNormalizedString(), TRACKER_HIGH_RISK, "[AutoGen] " + info));
-                });
-        analysedRuleRepository.replaceAll(TRACKER_HIGH_RISK, rules);
-        meterRegistry.gauge("sparkle_analyse_tracker_high_risk_identity", Collections.emptyList(), rules.size());
-        log.info("Tracker HighRisk identity: {}, tooked {} ms; success: {}/{}.", rules.size(), System.currentTimeMillis() - startAt, success.get(), count.get());
+        return ipTries;
     }
 
     private void scanFile(Consumer<Peer.PeerInfo> predicate, ExecutorService service) {
