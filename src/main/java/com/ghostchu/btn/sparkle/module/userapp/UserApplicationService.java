@@ -7,16 +7,11 @@ import com.ghostchu.btn.sparkle.module.user.internal.User;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplicationRepository;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -118,19 +113,6 @@ public class UserApplicationService {
         var usrApp = userApplication.get();
         usrApp.setComment(comment);
         return userApplicationRepository.save(usrApp);
-    }
-
-    @Transactional(Transactional.TxType.NOT_SUPPORTED)
-    @Lock(value = LockModeType.OPTIMISTIC)
-    @Retryable(retryFor = ObjectOptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
-    public UserApplication updateUserApplicationLastAccessTime(UserApplication userApplication) {
-        userApplication.setLastAccessAt(OffsetDateTime.now());
-        try {
-            return userApplicationRepository.save(userApplication);
-        } catch (Exception e) {
-            log.info("Failed to update last access time for user application: {}", userApplication.getId(), e);
-        }
-        return userApplication;
     }
 
     public UserApplicationDto toDto(UserApplication userApplication) {

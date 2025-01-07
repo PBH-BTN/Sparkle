@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -72,8 +73,9 @@ public class PingController extends SparkleController {
     private UserScoreService userScoreService;
 
     @PostMapping("/peers/submit")
+    @Transactional
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {
-        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
+        var cred = cred(true);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -93,8 +95,9 @@ public class PingController extends SparkleController {
     }
 
     @PostMapping("/histories/submit")
+    @Transactional
     public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException, UnknownHostException {
-        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
+        var cred = cred(true);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -114,8 +117,9 @@ public class PingController extends SparkleController {
     }
 
     @PostMapping("/bans/submit")
+    @Transactional
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException, UnknownHostException {
-        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
+        var cred = cred(true);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -134,8 +138,9 @@ public class PingController extends SparkleController {
     }
 
     @GetMapping("/config")
+    @Transactional
     public ResponseEntity<Object> config() throws AccessDeniedException, JsonProcessingException, UnknownHostException {
-        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
+        var cred = cred(true);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -168,8 +173,9 @@ public class PingController extends SparkleController {
     }
 
     @GetMapping("/rules/retrieve")
+    @Transactional
     public ResponseEntity<String> rule() throws IOException, AccessDeniedException {
-        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
+        var cred = cred(true);
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -200,7 +206,8 @@ public class PingController extends SparkleController {
         return userApplication.getBannedAt() != null || userApplication.getUser().getBannedAt() != null;
     }
 
-    private UserApplication cred() throws AccessDeniedException {
+    @Transactional
+    protected UserApplication cred(boolean updateAccessAt) throws AccessDeniedException {
         ClientAuthenticationCredential cred = ServletUtil.getAuthenticationCredential(req);
         if (!cred.isValid()) {
             log.warn("[FAIL] [UserApp] [{}] Credential not provided.", ip(req));
@@ -216,6 +223,10 @@ public class PingController extends SparkleController {
             throw new AccessDeniedException("UserApplication 鉴权失败：指定的用户应用程序不存在，这可能是因为：" +
                     "(1)未配置 AppId/AppSecret 或配置不正确 (2)您重置了 AppSecret 但忘记在客户端中更改 (3)用户应用程序被管理员停用或删除，请检查。");
         }
-        return userAppOptional.get();
+        var userApp = userAppOptional.get();
+        if (updateAccessAt) {
+            userApp.setLastAccessAt(OffsetDateTime.now());
+        }
+        return userApp;
     }
 }
