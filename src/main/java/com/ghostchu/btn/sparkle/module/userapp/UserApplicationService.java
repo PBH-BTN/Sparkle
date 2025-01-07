@@ -123,13 +123,14 @@ public class UserApplicationService {
     @Transactional(Transactional.TxType.NOT_SUPPORTED)
     @Lock(value = LockModeType.OPTIMISTIC)
     @Retryable(retryFor = ObjectOptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
-    public void updateUserApplicationLastAccessTime(UserApplication userApplication) {
+    public UserApplication updateUserApplicationLastAccessTime(UserApplication userApplication) {
         userApplication.setLastAccessAt(OffsetDateTime.now());
         try {
-            userApplicationRepository.save(userApplication);
+            return userApplicationRepository.save(userApplication);
         } catch (Exception e) {
             log.info("Failed to update last access time for user application: {}", userApplication.getId(), e);
         }
+        return userApplication;
     }
 
     public UserApplicationDto toDto(UserApplication userApplication) {

@@ -73,8 +73,7 @@ public class PingController extends SparkleController {
 
     @PostMapping("/peers/submit")
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {
-        var cred = cred();
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
+        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -95,8 +94,7 @@ public class PingController extends SparkleController {
 
     @PostMapping("/histories/submit")
     public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException, UnknownHostException {
-        var cred = cred();
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
+        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -117,8 +115,7 @@ public class PingController extends SparkleController {
 
     @PostMapping("/bans/submit")
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException, UnknownHostException {
-        var cred = cred();
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
+        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -138,8 +135,7 @@ public class PingController extends SparkleController {
 
     @GetMapping("/config")
     public ResponseEntity<Object> config() throws AccessDeniedException, JsonProcessingException, UnknownHostException {
-        var cred = cred();
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
+        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -173,8 +169,7 @@ public class PingController extends SparkleController {
 
     @GetMapping("/rules/retrieve")
     public ResponseEntity<String> rule() throws IOException, AccessDeniedException {
-        var cred = cred();
-        userApplicationService.updateUserApplicationLastAccessTime(cred);
+        var cred = userApplicationService.updateUserApplicationLastAccessTime(cred());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
