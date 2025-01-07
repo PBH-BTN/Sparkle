@@ -12,9 +12,9 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -122,7 +122,7 @@ public class UserApplicationService {
 
     @Transactional(Transactional.TxType.NOT_SUPPORTED)
     @Lock(value = LockModeType.OPTIMISTIC)
-    @Retryable(retryFor = OptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
+    @Retryable(retryFor = ObjectOptimisticLockingFailureException.class, backoff = @Backoff(delay = 100, multiplier = 2))
     public void updateUserApplicationLastAccessTime(UserApplication userApplication) {
         userApplication.setLastAccessAt(OffsetDateTime.now());
         try {
