@@ -37,7 +37,7 @@ public class UserScoreService {
 
     @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     @Transactional
-    @Lock(value = LockModeType.OPTIMISTIC)
+    @Lock(value = LockModeType.PESSIMISTIC_WRITE)
     public void addUserScoreBytes(User user, long changes, String reason) {
         UserScore userScore = userScoreRepository.findByUser(user);
         if (userScore != null) {
