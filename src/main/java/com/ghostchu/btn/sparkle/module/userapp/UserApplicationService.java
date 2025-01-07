@@ -117,7 +117,7 @@ public class UserApplicationService {
         return userApplicationRepository.save(usrApp);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     @Lock(value = LockModeType.PESSIMISTIC_WRITE)
     public void updateUserApplicationLastAccessTime(UserApplication userApplication) {
         userApplication.setLastAccessAt(OffsetDateTime.now());
