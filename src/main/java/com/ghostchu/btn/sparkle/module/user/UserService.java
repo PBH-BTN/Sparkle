@@ -91,7 +91,7 @@ public class UserService {
     }
 
     @Transactional
-    @Lock(LockModeType.OPTIMISTIC)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Retryable(retryFor = {ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class}, backoff = @Backoff(delay = 100, multiplier = 2))
     public User saveUser(User user) {
         if (user.isSystemAccount()) {

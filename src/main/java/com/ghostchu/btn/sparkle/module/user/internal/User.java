@@ -44,9 +44,9 @@ public class User implements Serializable {
     private String bannedReason;
     @Column(nullable = false)
     private Integer randomGroup;
-    @Version
+    //@Version
     @Column(nullable = false)
-    private long version;
+    private long version = 0;
 
     public boolean isSystemAccount() {
         return email.endsWith("@sparkle.system");

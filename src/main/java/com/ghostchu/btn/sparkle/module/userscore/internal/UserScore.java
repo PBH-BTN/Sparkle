@@ -25,7 +25,7 @@ public class UserScore {
     private User user;
     @Column(nullable = false)
     private Long scoreBytes;
-    @Version
+    //@Version
     @Column(nullable = false)
-    private long version;
+    private long version = 0;
 }

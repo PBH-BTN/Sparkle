@@ -41,6 +41,6 @@ public class UserApplication {
     @Column
     private OffsetDateTime deletedAt;
     @Column(nullable = false)
-    @Version
-    private long version;
+    //@Version
+    private long version = 0;
 }
