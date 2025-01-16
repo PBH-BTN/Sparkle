@@ -38,6 +38,10 @@ public class TorrentService {
             Torrent torrent = new Torrent(null, torrentIdentifier, torrentSize, isPrivate);
             t = torrentRepository.save(torrent);
         }
+        if (t.getSize() == -1 && torrentSize != -1) {
+            t.setSize(torrentSize);
+            t = torrentRepository.save(t);
+        }
         if (t.getPrivateTorrent() == null && isPrivate != null) {
             t.setPrivateTorrent(isPrivate);
             t = torrentRepository.save(t);
