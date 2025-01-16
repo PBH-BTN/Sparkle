@@ -17,6 +17,8 @@
             <th scope="col">ID</th>
             <th scope="col">AppId</th>
             <th scope="col">备注</th>
+            <th scope="col">创建时间</th>
+            <th scope="col">最近访问</th>
             <th scope="col">状态</th>
             <th scope="col">操作</th>
         </tr>
@@ -27,6 +29,12 @@
             <!-- 合并图标到 th 的 text 里 -->
             <td th:text="${app.getAppId()}">000000000000000</td>
             <td th:text="${app.getComment()}">测试</td>
+            <td th:text="${app.getCreatedAt() != null ? #temporals.format(app.getCreatedAt(), 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">
+                测试
+            </td>
+            <td th:text="${app.getLastAccessAt() != null ? #temporals.format(app.getLastAccessAt(), 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">
+                测试
+            </td>
             <th><i class="fa-solid fa-check" th:if="${app.getBannedAt() == null}" title="正常"></i>
                 <i class="fa-solid fa-ban" th:if="${app.getBannedAt() != null}"
                    th:title="'已暂停：' + ${app.getBannedReason()} + '暂停状态下此 UserApp 无法继续提交数据，且在下次数据更新时，已提交的数据将被排除在外。'"></i>

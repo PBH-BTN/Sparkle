@@ -20,5 +20,6 @@ public class UserApplicationDto implements Serializable {
     private OffsetDateTime createdAt;
     private UserDto user;
     private OffsetDateTime bannedAt;
+    private OffsetDateTime lastAccessAt;
     private String bannedReason;
 }

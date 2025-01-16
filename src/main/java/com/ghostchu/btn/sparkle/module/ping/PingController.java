@@ -75,6 +75,7 @@ public class PingController extends SparkleController {
     @Transactional
     public ResponseEntity<String> submitPeers(@RequestBody @Validated BtnPeerPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
+        userApplicationService.setUserApplicationLastAccess(cred.getId());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -97,6 +98,7 @@ public class PingController extends SparkleController {
     @Transactional
     public ResponseEntity<String> submitPeerHistories(@RequestBody @Validated BtnPeerHistoryPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
+        userApplicationService.setUserApplicationLastAccess(cred.getId());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -119,6 +121,7 @@ public class PingController extends SparkleController {
     @Transactional
     public ResponseEntity<String> submitBans(@RequestBody @Validated BtnBanPing ping) throws AccessDeniedException, UnknownHostException {
         var cred = cred();
+        userApplicationService.setUserApplicationLastAccess(cred.getId());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -140,6 +143,7 @@ public class PingController extends SparkleController {
     @Transactional
     public ResponseEntity<Object> config() throws AccessDeniedException, JsonProcessingException, UnknownHostException {
         var cred = cred();
+        userApplicationService.setUserApplicationLastAccess(cred.getId());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {
@@ -175,6 +179,7 @@ public class PingController extends SparkleController {
     @Transactional
     public ResponseEntity<String> rule() throws IOException, AccessDeniedException {
         var cred = cred();
+        userApplicationService.setUserApplicationLastAccess(cred.getId());
         var audit = new LinkedHashMap<String, Object>();
         audit.put("appId", cred.getAppId());
         if (isCredBanned(cred)) {

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -27,6 +28,10 @@ public class UserApplicationService {
     private final long userMaxApps;
     @Autowired
     private MeterRegistry meterRegistry;
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, String> longRedisTemplate;
 
     public UserApplicationService(UserApplicationRepository userApplicationRepository
             , UserService userService
@@ -60,6 +65,16 @@ public class UserApplicationService {
 
     public List<UserApplication> getUserApplications(User user) {
         return userApplicationRepository.findByUser(user);
+    }
+
+    public void setUserApplicationLastAccess(long userAppId) {
+        longRedisTemplate.opsForValue().set("userapp_recent_active:" + userAppId, String.valueOf(System.currentTimeMillis()));
+    }
+
+    public long getUserApplicationLastAccess(long userAppId) {
+        Object object = longRedisTemplate.opsForValue().get("userapp_recent_active:" + userAppId);
+        if (object == null) return -1;
+        return Long.parseLong(object.toString());
     }
 
     @Modifying
@@ -116,6 +131,8 @@ public class UserApplicationService {
     }
 
     public UserApplicationDto toDto(UserApplication userApplication) {
+        long lastAccessAt = getUserApplicationLastAccess(userApplication.getId());
+        OffsetDateTime lastAccessAtTime = lastAccessAt == -1 ? null : OffsetDateTime.ofInstant(java.time.Instant.ofEpochMilli(lastAccessAt), java.time.ZoneOffset.UTC);
         return UserApplicationDto.builder()
                 .id(userApplication.getId())
                 .user(userService.toDto(userApplication.getUser()))
@@ -124,6 +141,7 @@ public class UserApplicationService {
                 .createdAt(userApplication.getCreatedAt())
                 .bannedAt(userApplication.getBannedAt())
                 .bannedReason(userApplication.getBannedReason())
+                .lastAccessAt(lastAccessAtTime)
                 .build();
     }
 
