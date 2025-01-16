@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.ping.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,9 @@ public class BtnPeerHistory {
     private String torrentIdentifier;
     @JsonProperty("torrent_size")
     private long torrentSize;
+    @Nullable
+    @JsonProperty("torrent_is_private")
+    private Boolean privateTorrent;
     @JsonProperty("downloaded")
     private long downloaded;
     @JsonProperty("downloaded_offset")

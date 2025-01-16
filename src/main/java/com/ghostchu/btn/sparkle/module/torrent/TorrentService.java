@@ -13,8 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class TorrentService {
-
-    private Cache<String, Torrent> torrentCache = CacheBuilder
+    private final Cache<String, Torrent> torrentCache = CacheBuilder
             .newBuilder()
             .concurrencyLevel(20)
             .expireAfterAccess(5, TimeUnit.MINUTES)
@@ -29,17 +28,21 @@ public class TorrentService {
     @Modifying
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     //@Cacheable(value = "torrent#600000", key = "#torrentIdentifier+'-'+#torrentSize")
-    public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize) {
+    public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize, Boolean isPrivate) {
         var t = torrentCache.getIfPresent(torrentIdentifier + "@" + torrentSize);
         if (t == null) {
             var torrentOptional = torrentRepository.findByIdentifierAndSize(torrentIdentifier, torrentSize);
             if (torrentOptional.isPresent()) {
                 return torrentOptional.get();
             }
-            Torrent torrent = new Torrent(null, torrentIdentifier, torrentSize);
+            Torrent torrent = new Torrent(null, torrentIdentifier, torrentSize, isPrivate);
             t = torrentRepository.save(torrent);
-            torrentCache.put(torrentIdentifier + "@" + torrentSize, t);
         }
+        if (t.getPrivateTorrent() == null && isPrivate != null) {
+            t.setPrivateTorrent(isPrivate);
+            t = torrentRepository.save(t);
+        }
+        torrentCache.put(torrentIdentifier + "@" + torrentSize, t);
         return t;
     }
 
@@ -48,6 +51,7 @@ public class TorrentService {
                 .id(torrent.getId())
                 .identifier(torrent.getIdentifier())
                 .size(torrent.getSize())
+                .privateTorrent(torrent.getPrivateTorrent() != null && torrent.getPrivateTorrent())
                 .build();
     }
 }

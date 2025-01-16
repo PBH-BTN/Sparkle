@@ -16,4 +16,5 @@ public class TorrentDto implements Serializable {
     private Long id;
     private String identifier;
     private Long size;
+    private Boolean privateTorrent;
 }

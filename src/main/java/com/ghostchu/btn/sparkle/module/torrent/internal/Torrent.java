@@ -25,4 +25,6 @@ public class Torrent implements Serializable {
     private String identifier;
     @Column(nullable = false)
     private Long size;
+    @Column()
+    private Boolean privateTorrent;
 }

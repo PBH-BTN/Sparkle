@@ -1,6 +1,7 @@
 package com.ghostchu.btn.sparkle.module.ping.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -44,6 +45,10 @@ public class BtnPeer implements Serializable {
     @PositiveOrZero
     @JsonProperty("torrent_size")
     private long torrentSize;
+
+    @Nullable
+    @JsonProperty("torrent_is_private")
+    private Boolean privateTorrent;
 
     @NotNull
     @JsonProperty("downloaded")
