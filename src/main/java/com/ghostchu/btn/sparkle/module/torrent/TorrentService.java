@@ -31,7 +31,7 @@ public class TorrentService {
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize, Boolean isPrivate) {
         var t = torrentCache.getIfPresent(torrentIdentifier + "@" + torrentSize);
         if (t == null) {
-            var torrentOptional = torrentRepository.findByIdentifier(torrentIdentifier);
+            var torrentOptional = torrentRepository.findByIdentifierAndSize(torrentIdentifier, torrentSize);
             if (torrentOptional.isPresent()) {
                 t = torrentOptional.get();
             } else {
