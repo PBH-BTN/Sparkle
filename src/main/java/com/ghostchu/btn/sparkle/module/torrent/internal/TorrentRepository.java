@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface TorrentRepository extends SparkleCommonRepository<Torrent, Long> {
     Optional<Torrent> findByIdentifierAndSize(@NonNull String identifier, @NonNull Long size);
+
+    Optional<Torrent> findByIdentifier(@NonNull String identifier);
 }

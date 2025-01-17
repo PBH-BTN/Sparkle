@@ -20,7 +20,7 @@ public class TorrentService {
     //@Cacheable(value = "torrent#600000", key = "#torrentIdentifier+'-'+#torrentSize")
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize, Boolean isPrivate) {
         Torrent t;
-        var torrentOptional = torrentRepository.findByIdentifierAndSize(torrentIdentifier, torrentSize);
+        var torrentOptional = torrentRepository.findByIdentifier(torrentIdentifier);
         if (torrentOptional.isEmpty()) {
             t = new Torrent(null, torrentIdentifier, torrentSize, isPrivate);
             t = torrentRepository.save(t);
