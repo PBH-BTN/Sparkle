@@ -2,13 +2,23 @@ package com.ghostchu.btn.sparkle.module.torrent;
 
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.module.torrent.internal.TorrentRepository;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.TimeUnit;
+
 @Service
 public class TorrentService {
+    private final Cache<String, Torrent> torrentCache = CacheBuilder
+            .newBuilder()
+            .concurrencyLevel(20)
+            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .build();
     private final TorrentRepository torrentRepository;
 
     public TorrentService(TorrentRepository torrentRepository) {
@@ -19,13 +29,15 @@ public class TorrentService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     //@Cacheable(value = "torrent#600000", key = "#torrentIdentifier+'-'+#torrentSize")
     public Torrent createOrGetTorrent(String torrentIdentifier, long torrentSize, Boolean isPrivate) {
-        Torrent t;
-        var torrentOptional = torrentRepository.findByIdentifier(torrentIdentifier);
-        if (torrentOptional.isEmpty()) {
-            t = new Torrent(null, torrentIdentifier, torrentSize, isPrivate);
-            t = torrentRepository.save(t);
-        } else {
-            t = torrentOptional.get();
+        var t = torrentCache.getIfPresent(torrentIdentifier + "@" + torrentSize);
+        if (t == null) {
+            var torrentOptional = torrentRepository.findByIdentifier(torrentIdentifier);
+            if (torrentOptional.isPresent()) {
+                t = torrentOptional.get();
+            } else {
+                t = new Torrent(null, torrentIdentifier, torrentSize, isPrivate);
+                t = torrentRepository.save(t);
+            }
         }
         if (t.getSize() == -1 && torrentSize != -1) {
             t.setSize(torrentSize);
@@ -35,6 +47,7 @@ public class TorrentService {
             t.setPrivateTorrent(isPrivate);
             t = torrentRepository.save(t);
         }
+        torrentCache.put(torrentIdentifier + "@" + torrentSize, t);
         return t;
     }
 
