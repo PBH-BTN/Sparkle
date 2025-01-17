@@ -43,10 +43,11 @@ public class UserApplicationViewController {
     @GetMapping("/{appId}/resetAppSecret")
     public String resetUserApplicationAppSecret(Model model, @PathVariable("appId") String appId) throws UserApplicationNotFoundException {
         var userApp = userApplicationService.getUserApplication(appId).orElseThrow(UserApplicationNotFoundException::new);
+        var resetUsrApp = userApplicationService.resetUserApplicationSecret(userApp.getId());
         if (!Objects.equals(userApp.getUser().getId(), StpUtil.getLoginIdAsLong())) {
             StpUtil.checkPermission("userapp.reset-other-appsecret");
         }
-        model.addAttribute("userapp", userApp);
+        model.addAttribute("userapp", resetUsrApp);
         return "modules/userapp/created";
     }
 
