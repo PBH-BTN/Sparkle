@@ -169,9 +169,9 @@ public class IPDB implements AutoCloseable {
     private void loadMMDB() throws IOException {
         this.languageTag = List.of("zh", "zh-CN", "en");
         this.mmdbCity = new DatabaseReader.Builder(mmdbCityFile)
-                .locales(languageTag).build();
+                .locales(languageTag).fileMode(Reader.FileMode.MEMORY_MAPPED).build();
         this.mmdbASN = new DatabaseReader.Builder(mmdbASNFile)
-                .locales(languageTag).build();
+                .locales(languageTag).fileMode(Reader.FileMode.MEMORY_MAPPED).build();
         this.geoCN = new Reader(mmdbGeoCNFile);
     }
 
@@ -193,8 +193,8 @@ public class IPDB implements AutoCloseable {
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .userAgent(userAgent)
                 .defaultHeader("Accept-Encoding", "gzip,deflate")
-                .connectTimeout(Duration.of(15, ChronoUnit.SECONDS))
-                .headersTimeout(Duration.of(15, ChronoUnit.SECONDS))
+                .connectTimeout(Duration.of(60, ChronoUnit.SECONDS))
+                .headersTimeout(Duration.of(60, ChronoUnit.SECONDS))
                 .build();
     }
 

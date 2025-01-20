@@ -2,8 +2,11 @@ package com.ghostchu.btn.sparkle.module.peerhistory.internal;
 
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
+import com.ghostchu.btn.sparkle.util.ipdb.IPGeoData;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
@@ -54,6 +57,9 @@ public class PeerHistory {
     private String flags;
     @Column(nullable = false)
     private InetAddress submitterIp;
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonType.class)
+    private IPGeoData geoIP;
 //    @Column( columnDefinition = "jsonb")
 //    @Type(JsonType.class)
 //    private IPGeoData geoIP;

@@ -108,6 +108,7 @@ public class PingService {
                     .downloaderProgress(peer.getDownloaderProgress())
                     .flags(peer.getPeerFlag())
                     .submitterIp(submitterIp)
+                    .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
                     .build());
             identitySet.add(new ClientIdentity(peerId, peerClientName));
             it.remove();
@@ -257,6 +258,7 @@ public class PingService {
                     .firstTimeSeen(TimeUtil.toUTC(peer.getFirstTimeSeen().getTime()))
                     .lastTimeSeen(TimeUtil.toUTC(peer.getLastTimeSeen().getTime()))
                     .submitterIp(inetAddress)
+                    .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
                     .build());
             if (bloomFilter.put(peerId + "@@@" + peerClientName)) {
                 identitySet.add(new ClientIdentity(peerId, peerClientName));
