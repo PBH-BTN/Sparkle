@@ -401,6 +401,8 @@ SELECT time_bucket('7 day', "insert_time") AS bucket, peer_ip, COUNT(DISTINCT us
         refreshSnapshots.executeUpdate();
         var refreshAggregated = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW overdownload_aggregated_uploads;");
         refreshAggregated.executeUpdate();
+        var refreshConcurrentPerIp = entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW grafana_analyse_concurrent_torrent_activities_cidr;");
+        refreshConcurrentPerIp.executeUpdate();
         log.info("Refreshed materialized views for overdownload analyse, tooked {} ms", System.currentTimeMillis() - startAt);
     }
 
