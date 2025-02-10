@@ -1,11 +1,9 @@
 package com.ghostchu.btn.sparkle.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.redis.connection.RedisSocketConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -13,10 +11,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class SpringRedisConfig {
-    @Bean
-    public LettuceConnectionFactory redisConnectionFactory(@Value("${sparkle.redis.unixsocket}") String redisSocket) {
-        return new LettuceConnectionFactory(new RedisSocketConfiguration(redisSocket));
-    }
+//    @Bean
+//    public LettuceConnectionFactory redisConnectionFactory(@Value("${sparkle.redis.unixsocket}") String redisSocket) {
+//        return new LettuceConnectionFactory(new RedisSocketConfiguration(redisSocket));
+//    }
 
     @Bean
     @Primary
