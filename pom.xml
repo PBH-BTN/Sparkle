@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.1</version>
+        <version>3.5.7</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.ghostchu.btn</groupId>
@@ -30,6 +30,7 @@
         <java.version>21</java.version>
         <spring-modulith.version>1.2.1</spring-modulith.version>
         <skipTests>true</skipTests>
+        <satoken.version>1.44.0</satoken.version>
     </properties>
     <dependencies>
         <dependency>
@@ -155,22 +156,22 @@
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-spring-boot3-starter</artifactId>
-            <version>1.38.0</version>
+            <version>${satoken.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-spring-aop</artifactId>
-            <version>1.38.0</version>
+            <version>${satoken.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-redis-jackson</artifactId>
-            <version>1.38.0</version>
+            <version>${satoken.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-dialect-thymeleaf</artifactId>
-            <version>1.38.0</version>
+            <version>${satoken.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
         <dependency>
