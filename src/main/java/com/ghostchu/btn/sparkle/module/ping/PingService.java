@@ -27,6 +27,8 @@ import com.google.common.hash.BloomFilter;
 import inet.ipaddr.format.util.DualIPv4v6Tries;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +86,9 @@ public class PingService {
         var submitId = UUID.randomUUID().toString();
         while (it.hasNext()) {
             var peer = it.next();
+            if(!isLegalIp(peer.getIpAddress())){
+                continue;
+            }
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             if (peerClientName.length() > 250) {
@@ -145,6 +150,9 @@ public class PingService {
         while (it.hasNext()) {
             var ban = it.next();
             var peer = ban.getPeer();
+            if(!isLegalIp(peer.getIpAddress())){
+                continue;
+            }
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             if (peerClientName.length() > 250) {
@@ -196,6 +204,33 @@ public class PingService {
         processed += banHistoryList.size();
     }
 
+    private boolean isLegalIp(@NotNull @NotEmpty String ipAddress) {
+        try {
+            var ip = IPUtil.toIPAddress(ipAddress);
+            // 只允许 Internet IP
+            if(ip.isIPv4()){
+                var ipv4 = ip.toIPv4();
+                if(ipv4.isLoopback() || ipv4.isPrivate() || ipv4.isLinkLocal() || ipv4.isMulticast() || ipv4.isUnspecified()) {
+                    log.info("Filtered illegal IPv4 address: {}", ipAddress);
+                    return false;
+                }
+            }else if(ip.isIPv6()){
+                var ipv6 = ip.toIPv6();
+                if(ipv6.isLoopback() || ipv6.isUniqueLocal() || ipv6.isLinkLocal() || ipv6.isMulticast() || ipv6.isUnspecified()) {
+                    log.info("Filtered illegal IPv6 address: {}", ipAddress);
+                    return false;
+                }
+            }else{
+                log.info("Filtered illegal address: {}", ipAddress);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("Unable to filter address: {}", ipAddress, e);
+            return false;
+        }
+    }
+
     @Cacheable({"btnRule#60000"})
     public synchronized BtnRule generateBtnRule() {
         List<RuleDto> rules = new ArrayList<>();
@@ -235,6 +270,9 @@ public class PingService {
         BloomFilter<String> bloomFilter = BloomFilter.create((from, into) -> into.putString(from, StandardCharsets.ISO_8859_1), 10_000_000, 0.01);
         while (it.hasNext()) {
             var peer = it.next();
+            if(!isLegalIp(peer.getIpAddress())){
+                continue;
+            }
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
             var peerClientName = ByteUtil.filterUTF8(PeerUtil.cutClientName(peer.getClientName()));
             if (peerClientName.length() > 250) {
