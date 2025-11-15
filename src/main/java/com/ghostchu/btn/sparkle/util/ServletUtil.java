@@ -25,6 +25,10 @@ public class ServletUtil {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
+        // XFF 可能是多个 IP 的列，获取最原始的用户 IP
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
         return ip;
     }
 
