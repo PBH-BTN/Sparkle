@@ -127,7 +127,7 @@ public class PingService {
                 snapshotList.clear();
                 identitySet.clear();
             }
-            pingWebSocketManager.broadcast(Map.of("eventType", "submitPeers", "data", peer));
+            //pingWebSocketManager.broadcast(Map.of("eventType", "submitPeers", "data", peer));
         }
         snapshotService.saveSnapshots(snapshotList);
         meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
@@ -319,7 +319,7 @@ public class PingService {
                 identitySet.clear();
             }
 
-            pingWebSocketManager.broadcast(Map.of("eventType", "submitHistory", "data", peer));
+           // pingWebSocketManager.broadcast(Map.of("eventType", "submitHistory", "data", peer));
         }
         peerHistoryService.saveHistories(peerHistoryList);
         clientDiscoveryService.handleIdentities(now, now, identitySet);
