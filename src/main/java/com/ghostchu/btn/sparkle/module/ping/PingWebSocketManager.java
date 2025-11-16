@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -14,6 +13,20 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Manager for WebSocket sessions and message broadcasting.
+ * <p>
+ * This Spring-managed component handles:
+ * - Registration and unregistration of WebSocket sessions
+ * - Broadcasting messages to all connected clients
+ * - Periodic logging of connection statistics
+ * </p>
+ * <p>
+ * Thread-safety:
+ * - Uses {@link CopyOnWriteArraySet} for thread-safe session management
+ * - Broadcasts are handled in virtual threads for better concurrency
+ * </p>
+ */
 @Slf4j
 @Component
 public class PingWebSocketManager {

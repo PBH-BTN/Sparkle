@@ -1,26 +1,51 @@
 package com.ghostchu.btn.sparkle.module.ping;
 
+import com.ghostchu.btn.sparkle.config.SpringWebSocketServerEndpointConfigurator;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/**
+ * WebSocket endpoint for handling ping event streams.
+ * <p>
+ * This class uses {@link SpringWebSocketServerEndpointConfigurator} to enable Spring dependency injection
+ * in Jakarta WebSocket endpoints. The configurator ensures that Spring manages the lifecycle of this
+ * endpoint and properly injects all required dependencies.
+ * </p>
+ * <p>
+ * Architecture:
+ * - {@link SpringWebSocketServerEndpointConfigurator} bridges Jakarta WebSocket and Spring container
+ * - Dependencies are injected via constructor (constructor injection)
+ * - {@link PingWebSocketManager} manages all active WebSocket sessions and handles broadcasting
+ * - Uses prototype scope to create a new instance for each WebSocket connection
+ * </p>
+ */
 @Slf4j
 @Component
-@ServerEndpoint("/ping/eventStream")
-@NoArgsConstructor
+@Scope("prototype")
+@ServerEndpoint(value = "/ping/eventStream", configurator = SpringWebSocketServerEndpointConfigurator.class)
 public class PingWebSocketSession {
-    @Autowired
-    private UserApplicationService userApplicationService;
-    @Autowired
-    private PingWebSocketManager pingWebSocketManager;
+    private final UserApplicationService userApplicationService;
+    private final PingWebSocketManager pingWebSocketManager;
 
     private Session session;
+
+    /**
+     * Constructor for Spring dependency injection.
+     *
+     * @param userApplicationService Service for user application authentication
+     * @param pingWebSocketManager Manager for WebSocket session lifecycle and broadcasting
+     */
+    public PingWebSocketSession(UserApplicationService userApplicationService,
+                                 PingWebSocketManager pingWebSocketManager) {
+        this.userApplicationService = userApplicationService;
+        this.pingWebSocketManager = pingWebSocketManager;
+    }
 
 
     @OnOpen
