@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,7 +35,7 @@ public class PingWebSocketManager {
     private final ObjectMapper objectMapper;
     private final ScheduledExecutorService pingService = Executors.newScheduledThreadPool(1);
 
-    public PingWebSocketManager(ObjectMapper objectMapper){
+    public PingWebSocketManager(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         pingService.scheduleWithFixedDelay(this::printConnections, 0, 5, TimeUnit.MINUTES);
     }
@@ -56,30 +54,17 @@ public class PingWebSocketManager {
 
     @SneakyThrows(JsonProcessingException.class)
     public void broadcast(@NotNull Object jsonSerializable) {
-        if(webSocketServerSet.isEmpty()) return;
+        if (webSocketServerSet.isEmpty()) return;
         WebSocketStdMsg stdMsg = new WebSocketStdMsg(messageId.incrementAndGet(), jsonSerializable);
         String json = objectMapper.writeValueAsString(stdMsg);
-        Thread.ofVirtual().name("PingWebSocket-Broadcast-" + messageId.get()).start(() -> {
-            List<CompletableFuture<Void>> futureList = new ArrayList<>();
-            webSocketServerSet.forEach(session -> {
-                if (!session.isOpen()) return;
-                futureList.add(CompletableFuture.runAsync(()->{
-                    try {
-                        session.getBasicRemote().sendText(json);
-                    } catch (IOException ignored) {}
-                }));
-            });
-            futureList.forEach(f -> {
+        webSocketServerSet.forEach(session -> {
+            if (!session.isOpen()) return;
+            CompletableFuture.runAsync(() -> {
                 try {
-                    f.get(6, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    log.warn("Interrupted when broadcasting to websocket session", e);
-                } catch (ExecutionException e) {
-                    log.warn("Execution exception when broadcasting to websocket session", e);
-                } catch (TimeoutException e) {
-                    log.warn("Timeout when broadcasting to websocket session", e);
+                    session.getBasicRemote().sendText(json);
+                } catch (IOException ignored) {
                 }
-            });
+            }, Executors.newVirtualThreadPerTaskExecutor());
         });
     }
 
