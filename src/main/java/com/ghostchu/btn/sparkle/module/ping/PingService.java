@@ -322,8 +322,9 @@ public class PingService {
                 clientDiscoveryService.handleIdentities(now, now, identitySet);
                 identitySet.clear();
             }
-
-           // pingWebSocketManager.broadcast(Map.of("eventType", "submitHistory", "data", peer));
+            if(eventStreamHistory) {
+                pingWebSocketManager.broadcast(Map.of("eventType", "submitHistory", "data", peer));
+            }
         }
         peerHistoryService.saveHistories(peerHistoryList);
         clientDiscoveryService.handleIdentities(now, now, identitySet);
