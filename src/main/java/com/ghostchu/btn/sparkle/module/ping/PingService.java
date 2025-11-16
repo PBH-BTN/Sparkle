@@ -71,6 +71,8 @@ public class PingService {
     private AnalysedRuleRepository analysedRuleRepository;
     @Autowired
     private PingWebSocketManager pingWebSocketManager;
+    @Value("${service.ping.event-stream.peer-history}")
+    private boolean eventStreamHistory;
 
     @Modifying
     @Transactional
@@ -127,7 +129,9 @@ public class PingService {
                 snapshotList.clear();
                 identitySet.clear();
             }
-            //pingWebSocketManager.broadcast(Map.of("eventType", "submitPeers", "data", peer));
+            if(eventStreamHistory){
+                pingWebSocketManager.broadcast(Map.of("eventType", "submitPeers", "data", peer));
+            }
         }
         snapshotService.saveSnapshots(snapshotList);
         meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
