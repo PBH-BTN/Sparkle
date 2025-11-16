@@ -55,6 +55,7 @@ public class PingWebSocketManager {
 
     @SneakyThrows(JsonProcessingException.class)
     public void broadcast(@NotNull Object jsonSerializable) {
+        if(webSocketServerSet.isEmpty()) return;
         WebSocketStdMsg stdMsg = new WebSocketStdMsg(messageId.incrementAndGet(), jsonSerializable);
         String json = objectMapper.writeValueAsString(stdMsg);
         Thread.ofVirtual().name("PingWebSocket-Broadcast-" + messageId.get()).start(() -> {
@@ -77,6 +78,6 @@ public class PingWebSocketManager {
         });
     }
 
-    public record WebSocketStdMsg(long msgId, Object jsonSerializable) {
+    public record WebSocketStdMsg(long msgId, Object message) {
     }
 }

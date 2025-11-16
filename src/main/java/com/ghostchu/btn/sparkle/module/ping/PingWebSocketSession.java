@@ -5,6 +5,7 @@ import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +33,7 @@ import java.io.IOException;
 public class PingWebSocketSession {
     private final UserApplicationService userApplicationService;
     private final PingWebSocketManager pingWebSocketManager;
+    private final boolean enabled;
 
     private Session session;
 
@@ -42,25 +44,33 @@ public class PingWebSocketSession {
      * @param pingWebSocketManager Manager for WebSocket session lifecycle and broadcasting
      */
     public PingWebSocketSession(UserApplicationService userApplicationService,
-                                 PingWebSocketManager pingWebSocketManager) {
+                                 PingWebSocketManager pingWebSocketManager, @Value("${service.ping.event-stream}") boolean enabled) {
         this.userApplicationService = userApplicationService;
         this.pingWebSocketManager = pingWebSocketManager;
+        this.enabled = enabled;
     }
 
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
+        if(!enabled){
+            session.getAsyncRemote().sendText("Feature disabled");
+            session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Feature disabled"));
+            return;
+        }
         this.session = session;
         var queryParameters = session.getRequestParameterMap();
         String appId = queryParameters.get("appId").getFirst();
         String appSecret = queryParameters.get("appSecret").getFirst();
         var userAppOptional = userApplicationService.getUserApplication(appId, appSecret);
         if (userAppOptional.isEmpty()) {
+            session.getAsyncRemote().sendText("UserApplication authorize failed");
             session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "UserApplication authorize failed"));
             return;
         }
         var userApp = userAppOptional.get();
         if (userApp.getBannedAt() != null || userApp.getUser().getBannedAt() != null) {
+            session.getAsyncRemote().sendText("UserApplication is banned by administrator\"");
             session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "UserApplication is banned by administrator"));
             return;
         }
