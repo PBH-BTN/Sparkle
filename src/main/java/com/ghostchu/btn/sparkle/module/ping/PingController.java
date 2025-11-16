@@ -229,4 +229,8 @@ public class PingController extends SparkleController {
         }
         return userAppOptional.get();
     }
+
+    public void onWs(){
+
+    }
 }

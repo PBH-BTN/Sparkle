@@ -69,6 +69,8 @@ public class PingService {
     private UserScoreService userScoreService;
     @Autowired
     private AnalysedRuleRepository analysedRuleRepository;
+    @Autowired
+    private PingWebSocketManager pingWebSocketManager;
 
     @Modifying
     @Transactional
@@ -86,7 +88,7 @@ public class PingService {
         var submitId = UUID.randomUUID().toString();
         while (it.hasNext()) {
             var peer = it.next();
-            if(!isLegalIp(peer.getIpAddress())){
+            if (!isLegalIp(peer.getIpAddress())) {
                 continue;
             }
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
@@ -125,6 +127,7 @@ public class PingService {
                 snapshotList.clear();
                 identitySet.clear();
             }
+            pingWebSocketManager.broadcast(Map.of("eventType", "submitPeers", "data", peer));
         }
         snapshotService.saveSnapshots(snapshotList);
         meterRegistry.counter("sparkle_ping_peers_processed").increment(snapshotList.size());
@@ -150,7 +153,7 @@ public class PingService {
         while (it.hasNext()) {
             var ban = it.next();
             var peer = ban.getPeer();
-            if(!isLegalIp(peer.getIpAddress())){
+            if (!isLegalIp(peer.getIpAddress())) {
                 continue;
             }
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
@@ -196,6 +199,7 @@ public class PingService {
                 banHistoryList.clear();
                 identitySet.clear();
             }
+            pingWebSocketManager.broadcast(Map.of("eventType", "submitBan", "data", peer));
         }
         banHistoryService.saveBanHistories(banHistoryList);
         meterRegistry.counter("sparkle_ping_bans_processed").increment(banHistoryList.size());
@@ -208,19 +212,19 @@ public class PingService {
         try {
             var ip = IPUtil.toIPAddress(ipAddress);
             // 只允许 Internet IP
-            if(ip.isIPv4()){
+            if (ip.isIPv4()) {
                 var ipv4 = ip.toIPv4();
-                if(ipv4.isLoopback() || ipv4.isPrivate() || ipv4.isLinkLocal() || ipv4.isMulticast() || ipv4.isUnspecified()) {
+                if (ipv4.isLoopback() || ipv4.isPrivate() || ipv4.isLinkLocal() || ipv4.isMulticast() || ipv4.isUnspecified()) {
                     log.info("Filtered illegal IPv4 address: {}", ipAddress);
                     return false;
                 }
-            }else if(ip.isIPv6()){
+            } else if (ip.isIPv6()) {
                 var ipv6 = ip.toIPv6();
-                if(ipv6.isLoopback() || ipv6.isUniqueLocal() || ipv6.isLinkLocal() || ipv6.isMulticast() || ipv6.isUnspecified()) {
+                if (ipv6.isLoopback() || ipv6.isUniqueLocal() || ipv6.isLinkLocal() || ipv6.isMulticast() || ipv6.isUnspecified()) {
                     log.info("Filtered illegal IPv6 address: {}", ipAddress);
                     return false;
                 }
-            }else{
+            } else {
                 log.info("Filtered illegal address: {}", ipAddress);
                 return false;
             }
@@ -270,7 +274,7 @@ public class PingService {
         BloomFilter<String> bloomFilter = BloomFilter.create((from, into) -> into.putString(from, StandardCharsets.ISO_8859_1), 10_000_000, 0.01);
         while (it.hasNext()) {
             var peer = it.next();
-            if(!isLegalIp(peer.getIpAddress())){
+            if (!isLegalIp(peer.getIpAddress())) {
                 continue;
             }
             var peerId = ByteUtil.filterUTF8(PeerUtil.cutPeerId(peer.getPeerId()));
@@ -314,6 +318,8 @@ public class PingService {
                 clientDiscoveryService.handleIdentities(now, now, identitySet);
                 identitySet.clear();
             }
+
+            pingWebSocketManager.broadcast(Map.of("eventType", "submitHistory", "data", peer));
         }
         peerHistoryService.saveHistories(peerHistoryList);
         clientDiscoveryService.handleIdentities(now, now, identitySet);
