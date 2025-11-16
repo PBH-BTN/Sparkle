@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -59,10 +60,14 @@ public class PingWebSocketManager {
         WebSocketStdMsg stdMsg = new WebSocketStdMsg(messageId.incrementAndGet(), jsonSerializable);
         String json = objectMapper.writeValueAsString(stdMsg);
         Thread.ofVirtual().name("PingWebSocket-Broadcast-" + messageId.get()).start(() -> {
-            List<Future<Void>> futureList = new ArrayList<>();
+            List<CompletableFuture<Void>> futureList = new ArrayList<>();
             webSocketServerSet.forEach(session -> {
                 if (!session.isOpen()) return;
-                futureList.add(session.getAsyncRemote().sendText(json));
+                futureList.add(CompletableFuture.runAsync(()->{
+                    try {
+                        session.getBasicRemote().sendText(json);
+                    } catch (IOException ignored) {}
+                }));
             });
             futureList.forEach(f -> {
                 try {
