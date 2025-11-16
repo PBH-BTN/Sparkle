@@ -3,7 +3,9 @@ package com.ghostchu.btn.sparkle.module.ping;
 import com.ghostchu.btn.sparkle.module.userapp.UserApplicationService;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -11,16 +13,15 @@ import java.io.IOException;
 @Slf4j
 @Component
 @ServerEndpoint("/ping/eventStream")
+@NoArgsConstructor
 public class PingWebSocketSession {
+    @Autowired
+    private UserApplicationService userApplicationService;
+    @Autowired
+    private PingWebSocketManager pingWebSocketManager;
 
-    private final UserApplicationService userApplicationService;
-    private final PingWebSocketManager pingWebSocketManager;
     private Session session;
 
-    public PingWebSocketSession(UserApplicationService userApplicationService, PingWebSocketManager pingWebSocketManager) {
-        this.userApplicationService = userApplicationService;
-        this.pingWebSocketManager = pingWebSocketManager;
-    }
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
@@ -30,15 +31,15 @@ public class PingWebSocketSession {
         String appSecret = queryParameters.get("appSecret").getFirst();
         var userAppOptional = userApplicationService.getUserApplication(appId, appSecret);
         if (userAppOptional.isEmpty()) {
-            session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"UserApplication authorize failed" ));
+            session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "UserApplication authorize failed"));
             return;
         }
         var userApp = userAppOptional.get();
         if (userApp.getBannedAt() != null || userApp.getUser().getBannedAt() != null) {
-            session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"UserApplication is banned by administrator" ));
+            session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "UserApplication is banned by administrator"));
             return;
         }
-        session.getContainer().setAsyncSendTimeout(5*1000);
+        session.getContainer().setAsyncSendTimeout(5 * 1000);
         pingWebSocketManager.registerSession(session);
         log.info("Connected to WebSocket: userAppId={}, userId={}; Session: {}", userApp.getId(), userApp.getUser().getId(), session);
     }
