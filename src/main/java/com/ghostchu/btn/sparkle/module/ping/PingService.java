@@ -220,17 +220,17 @@ public class PingService {
             if (ip.isIPv4()) {
                 var ipv4 = ip.toIPv4();
                 if (ipv4.isLoopback() || ipv4.isPrivate() || ipv4.isLinkLocal() || ipv4.isMulticast() || ipv4.isUnspecified()) {
-                    log.info("Filtered illegal IPv4 address: {}", ipAddress);
+                    log.debug("Filtered illegal IPv4 address: {}", ipAddress);
                     return false;
                 }
             } else if (ip.isIPv6()) {
                 var ipv6 = ip.toIPv6();
                 if (ipv6.isLoopback() || ipv6.isUniqueLocal() || ipv6.isLinkLocal() || ipv6.isMulticast() || ipv6.isUnspecified()) {
-                    log.info("Filtered illegal IPv6 address: {}", ipAddress);
+                    log.debug("Filtered illegal IPv6 address: {}", ipAddress);
                     return false;
                 }
             } else {
-                log.info("Filtered illegal address: {}", ipAddress);
+                log.debug("Filtered illegal address: {}", ipAddress);
                 return false;
             }
             return true;
