@@ -1,0 +1,14 @@
+package com.ghostchu.btn.sparkle.wrapper;
+
+import java.util.LinkedHashMap;
+
+public final class StructuredData<K,V> extends LinkedHashMap<K,V> {
+    public static StructuredData<String, Object> create(){
+        return new StructuredData<>();
+    }
+
+    public StructuredData<K,V> add(K key,V value){
+        put(key, value);
+        return this;
+    }
+}

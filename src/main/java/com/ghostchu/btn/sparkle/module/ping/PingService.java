@@ -192,6 +192,7 @@ public class PingService {
                     .rule(ByteUtil.filterUTF8(rule))
                     .banUniqueId(ByteUtil.filterUTF8(ban.getBanUniqueId()))
                     .geoIP(geoIPManager.geoData(IPUtil.toInet(peer.getIpAddress())))
+                    .structuredData(ban.getStructuredData())
                     .build());
             identitySet.add(new ClientIdentity(peerId, peerClientName));
             it.remove();

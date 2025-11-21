@@ -1,7 +1,9 @@
 package com.ghostchu.btn.sparkle.module.ping.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ghostchu.btn.sparkle.wrapper.StructuredData;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,4 +34,7 @@ public class BtnBan implements Serializable {
     @NotNull
     @JsonProperty("peer")
     private BtnPeer peer;
+
+    @JsonProperty("structured_data")
+    private StructuredData<String,Object> structuredData;
 }

@@ -32,4 +32,5 @@ public class BanHistoryDto implements Serializable {
     private String module;
     private String rule;
     private String banUniqueId;
+    private String structuredData;
 }

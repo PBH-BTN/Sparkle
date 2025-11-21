@@ -77,4 +77,6 @@ public class BtnPeer implements Serializable {
     @NotNull
     @JsonProperty("peer_flag")
     private String peerFlag;
+
+
 }

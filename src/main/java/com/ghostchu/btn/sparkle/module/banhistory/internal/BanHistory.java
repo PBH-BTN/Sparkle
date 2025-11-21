@@ -3,6 +3,7 @@ package com.ghostchu.btn.sparkle.module.banhistory.internal;
 import com.ghostchu.btn.sparkle.module.torrent.internal.Torrent;
 import com.ghostchu.btn.sparkle.module.userapp.internal.UserApplication;
 import com.ghostchu.btn.sparkle.util.ipdb.IPGeoData;
+import com.ghostchu.btn.sparkle.wrapper.StructuredData;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -75,5 +76,8 @@ public class BanHistory {
     @Column(columnDefinition = "jsonb")
     @Type(JsonType.class)
     private IPGeoData geoIP;
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonType.class)
+    private StructuredData<String, Object> structuredData;
 
 }

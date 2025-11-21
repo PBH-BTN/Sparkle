@@ -1,11 +1,14 @@
 package com.ghostchu.btn.sparkle.module.banhistory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistory;
 import com.ghostchu.btn.sparkle.module.banhistory.internal.BanHistoryRepository;
 import com.ghostchu.btn.sparkle.module.torrent.TorrentService;
 import com.ghostchu.btn.sparkle.util.ipdb.GeoIPManager;
 import com.ghostchu.btn.sparkle.util.paging.SparklePage;
 import jakarta.transaction.Transactional;
+import lombok.SneakyThrows;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,11 +25,13 @@ import java.util.List;
 public class BanHistoryService {
     private final TorrentService torrentService;
     private final BanHistoryRepository banHistoryRepository;
+    private final ObjectMapper objectMapper;
 
     public BanHistoryService(BanHistoryRepository banHistoryRepository,
-                             TorrentService torrentService, GeoIPManager geoIPManager) {
+                             TorrentService torrentService, GeoIPManager geoIPManager, ObjectMapper objectMapper) {
         this.banHistoryRepository = banHistoryRepository;
         this.torrentService = torrentService;
+        this.objectMapper = objectMapper;
 //        AtomicInteger count = new AtomicInteger();
 //        CompletableFuture.runAsync(() -> {
 //            while(true){
@@ -56,27 +61,32 @@ public class BanHistoryService {
     }
 
     public BanHistoryDto toDto(BanHistory banHistory) {
-        return BanHistoryDto.builder()
-                .id(banHistory.getId())
-                .appId(banHistory.getUserApplication().getAppId())
-                .submitId(banHistory.getSubmitId())
-                .peerIp(banHistory.getPeerIp().getHostAddress())
-                .peerPort(banHistory.getPeerPort())
-                .peerId(banHistory.getPeerId())
-                .peerClientName(banHistory.getPeerClientName())
-                .torrent(torrentService.toDto(banHistory.getTorrent()))
-                .fromPeerTraffic(banHistory.getFromPeerTraffic())
-                .fromPeerTrafficSpeed(banHistory.getFromPeerTrafficSpeed())
-                .toPeerTraffic(banHistory.getToPeerTraffic())
-                .toPeerTrafficSpeed(banHistory.getToPeerTrafficSpeed())
-                .peerProgress(banHistory.getPeerProgress())
-                .downloaderProgress(banHistory.getDownloaderProgress())
-                .flags(banHistory.getFlags())
-                .btnBan(banHistory.getBtnBan())
-                .module(banHistory.getModule())
-                .rule(banHistory.getRule())
-                .banUniqueId(banHistory.getBanUniqueId())
-                .build();
+        try {
+            return BanHistoryDto.builder()
+                    .id(banHistory.getId())
+                    .appId(banHistory.getUserApplication().getAppId())
+                    .submitId(banHistory.getSubmitId())
+                    .peerIp(banHistory.getPeerIp().getHostAddress())
+                    .peerPort(banHistory.getPeerPort())
+                    .peerId(banHistory.getPeerId())
+                    .peerClientName(banHistory.getPeerClientName())
+                    .torrent(torrentService.toDto(banHistory.getTorrent()))
+                    .fromPeerTraffic(banHistory.getFromPeerTraffic())
+                    .fromPeerTrafficSpeed(banHistory.getFromPeerTrafficSpeed())
+                    .toPeerTraffic(banHistory.getToPeerTraffic())
+                    .toPeerTrafficSpeed(banHistory.getToPeerTrafficSpeed())
+                    .peerProgress(banHistory.getPeerProgress())
+                    .downloaderProgress(banHistory.getDownloaderProgress())
+                    .flags(banHistory.getFlags())
+                    .btnBan(banHistory.getBtnBan())
+                    .module(banHistory.getModule())
+                    .rule(banHistory.getRule())
+                    .banUniqueId(banHistory.getBanUniqueId())
+                    .structuredData(objectMapper.writeValueAsString(banHistory.getStructuredData()))
+                    .build();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Modifying
